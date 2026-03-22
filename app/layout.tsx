@@ -1,8 +1,8 @@
-// --- app/layout.tsx Block Open ---
 import type { Metadata } from "next";
 import "./globals.css";
 import ClientLayout from "./components/ClientLayout";
 import { Toaster } from "react-hot-toast";
+import { Suspense } from "react"; // Added Suspense import
 
 export const metadata: Metadata = {
   title: "Lab Seven",
@@ -39,11 +39,20 @@ export default function RootLayout({
                 },
             }} 
         />
-        <ClientLayout>
-          {children}
-        </ClientLayout>
+
+        {/* We wrap ClientLayout in Suspense because it uses 'useSearchParams'.
+          The fallback is what users see for a split second while the page loads.
+        */}
+        <Suspense fallback={
+          <div className="flex h-screen items-center justify-center bg-gray-50 text-gray-400 font-medium">
+            Loading Lab Seven...
+          </div>
+        }>
+          <ClientLayout>
+            {children}
+          </ClientLayout>
+        </Suspense>
       </body>
     </html>
   );
 }
-// --- app/layout.tsx Block Close ---
