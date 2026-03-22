@@ -1,11 +1,10 @@
+// --- BLOCK app/components/Sidebar.tsx OPEN ---
 "use client";
 
-// BLOCK IMPORTS OPEN
-import React, { useState } from 'react';
-import { Home, Users, FileText, Settings, TestTube, ChevronDown, ChevronUp } from 'lucide-react';
-// BLOCK IMPORTS CLOSE
+import React from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { LayoutDashboard, Home, UserPlus, Users, FileEdit, FileText, List, ClipboardList, TestTube, TestTubes, Server, Database, Layout, LayoutTemplate, Shield, ShieldCheck, Stethoscope, HeartPulse, Building2, Hospital, Microscope, Bug, Pill, FlaskConical } from 'lucide-react';
 
-// BLOCK COMPONENT DEFINITION OPEN
 interface SidebarProps {
   isSidebarOpen: boolean;
   activeView: string;
@@ -13,86 +12,167 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: SidebarProps) {
-  // Moved menu state here since it's local to the sidebar
-  const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const currentView = 
+    pathname.includes('/results') ? 'entry' : 
+    pathname.includes('/tests') || pathname.includes('/department') ? 'tests' : 
+    pathname.includes('/parameters') ? 'parameters' : 
+    pathname.includes('/masters') ? 'masters' : 
+    pathname.includes('/list') ? 'list' : 
+    pathname.includes('/referrals') ? 'referrals' : 
+    pathname.includes('/reports') ? 'reports' : 
+    pathname.includes('/authorizations') ? 'authorizations' : 
+    pathname.includes('/lab-profile') ? 'lab-profile' :
+    pathname.includes('/sensitivity') ? 'sensitivity' :
+    activeView;
+
+  const handleNavigation = (viewId: string) => {
+    // --- MODULE ROUTING ---
+    if (viewId === 'entry') { router.push('/results/entry'); return; } 
+    if (viewId === 'tests') { router.push('/tests'); return; } 
+    if (viewId === 'masters') { router.push('/masters'); return; } 
+    if (viewId === 'list') { router.push('/list'); return; } 
+    if (viewId === 'referrals') { router.push('/referrals'); return; } 
+    if (viewId === 'reports') { router.push('/reports'); return; } 
+    if (viewId === 'authorizations') { router.push('/authorizations'); return; }
+    if (viewId === 'lab-profile') { router.push('/lab-profile'); return; } 
+    if (viewId === 'sensitivity') { router.push('/sensitivity'); return; } 
+    
+    if (pathname !== '/') {
+      router.push(`/?view=${viewId}`); 
+    } else {
+      setActiveView(viewId);
+    }
+  };
+
+  // Base class for all items
+  const getLiClass = (isActive: boolean) => `
+    relative group flex items-center transition-all duration-300 cursor-pointer rounded-none
+    ${isSidebarOpen ? 'px-6 py-3 gap-3' : 'flex-col justify-center px-1 py-3 gap-1'}
+    ${isActive 
+      ? 'bg-[#9575cd] text-white shadow-sm shadow-[#9575cd]/20 border-l-4 border-l-[#5e35b1]' 
+      : 'text-[#7e57c2] hover:bg-[#9575cd]/15 hover:text-[#5e35b1] border-l-4 border-l-transparent'
+    }
+  `;
+
+  // Helper function to handle mobile visibility
+  // If showOnMobile is true, it always shows. If false, it's hidden on small screens and displayed on md+
+  const getResponsiveLiClass = (isActive: boolean, showOnMobile: boolean) => {
+      const baseClass = getLiClass(isActive);
+      if (showOnMobile) return baseClass;
+      return `${baseClass} hidden md:flex`;
+  };
 
   return (
     <aside 
-      className={`${isSidebarOpen ? 'w-56' : 'w-16'} transition-all duration-300 flex flex-col shadow-md border-r bg-white h-full overflow-y-auto shrink-0 z-40`}
+      className={`${isSidebarOpen ? 'w-64' : 'w-[80px]'} transition-all duration-300 flex flex-col shadow-[4px_0_24px_rgba(149,117,205,0.1)] border-r border-[#d1c4e9] h-full overflow-y-auto shrink-0 z-40`}
       style={{ background: 'linear-gradient(to bottom, #e8eaf6, #f3e5f5)' }}
     >
       <nav className="flex-1 py-4">
-        <ul className="space-y-1 px-2"> 
+        <ul className="space-y-1"> 
           
-          {[
-            { id: 'dashboard', icon: <Home size={18}/>, label: 'Dashboard' },
-            { id: 'registration', icon: <Users size={18}/>, label: 'New registration' },
-            { id: 'entry', icon: <FileText size={18}/>, label: 'Result entry' },
-            { id: 'list', icon: <Users size={18}/>, label: 'Patient list' },
-          ].map((item) => (
-            <li key={item.id} onClick={() => setActiveView(item.id)}
-                className={`flex items-center ${isSidebarOpen ? 'justify-start gap-3' : 'justify-center'} p-2.5 rounded-lg cursor-pointer transition-all hover:bg-white/50`}
-                style={{ 
-                  backgroundColor: activeView === item.id ? 'rgba(149, 117, 205, 0.15)' : 'transparent', 
-                  color: activeView === item.id ? '#9575cd' : '#455a64' 
-                }}>
-              <span className="flex-shrink-0">{item.icon}</span>
-              {isSidebarOpen && <span className="text-[13px] font-medium capitalize tracking-tight">{item.label}</span>}
-            </li>
-          ))}
-
-          <div className="mt-1">
-            <li onClick={() => isSidebarOpen && setOpenMenus(prev => ({ ...prev, test: !prev.test }))}
-              className={`flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'} p-2.5 rounded-lg text-[#455a64] font-medium text-[13px] cursor-pointer hover:bg-white/50 capitalize`}
-            >
-              <div className="flex items-center gap-3">
-                <TestTube size={18} className="flex-shrink-0" />
-                {isSidebarOpen && <span className="tracking-tight">Test</span>}
-              </div>
-              {isSidebarOpen && (openMenus.test ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-            </li>
-            {isSidebarOpen && openMenus.test && (
-              <ul className="ml-8 mt-1 space-y-1 border-l border-purple-200"> 
-                {['Tests', 'Specimen & formats', 'Parameters', 'Templates', 'Packages'].map((sub) => (
-                  <li key={sub} onClick={() => setActiveView(sub.toLowerCase().replace(/ /g, '_'))}
-                      className="p-2 text-[13px] font-medium text-slate-500 hover:text-[#9575cd] cursor-pointer pl-4 capitalize transition-colors">
-                    {sub}
-                  </li>
-                ))}
-              </ul>
+          <li onClick={() => handleNavigation('dashboard')} className={getResponsiveLiClass(currentView === 'dashboard', false)}>
+            {currentView === 'dashboard' ? (
+                <Home size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <LayoutDashboard size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
             )}
-          </div>
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'dashboard' ? 'font-bold' : 'font-medium'}`}>Dashboard</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'dashboard' ? 'font-bold' : 'font-medium'}`}>Dashboard</span>}
+          </li>
 
-          <div className="mt-1">
-            <li onClick={() => isSidebarOpen && setOpenMenus(prev => ({ ...prev, setup: !prev.setup }))}
-              className={`flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'} p-2.5 rounded-lg text-[#455a64] font-medium text-[13px] cursor-pointer hover:bg-white/50 capitalize`}
-            >
-              <div className="flex items-center gap-3">
-                <Settings size={18} className="flex-shrink-0" />
-                {isSidebarOpen && <span className="tracking-tight">Setup</span>}
-              </div>
-              {isSidebarOpen && (openMenus.setup ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-            </li>
-            {isSidebarOpen && openMenus.setup && (
-              <ul className="ml-8 mt-1 space-y-1 border-l border-cyan-200">
-                {['Reports', 'UOM', 'Multivalues', 'Vacutainer', 'Doctors', 'Department'].map((sub) => (
-                  <li key={sub} onClick={() => setActiveView(sub.toLowerCase())}
-                      className="p-2 text-[13px] font-medium text-slate-500 hover:text-[#4dd0e1] cursor-pointer pl-4 capitalize transition-colors">
-                    {sub}
-                  </li>
-                ))}
-              </ul>
+          {/* ALWAYS VISIBLE ON MOBILE */}
+          <li onClick={() => handleNavigation('registration')} className={getResponsiveLiClass(currentView === 'registration', true)}>
+            {currentView === 'registration' ? (
+                <Users size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <UserPlus size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
             )}
-          </div>
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'registration' ? 'font-bold' : 'font-medium'}`}>New Registration</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'registration' ? 'font-bold' : 'font-medium'}`}>Registration</span>}
+          </li>
 
-          <li onClick={() => setActiveView('profile')}
-              className={`flex items-center ${isSidebarOpen ? 'justify-start gap-3' : 'justify-center'} p-2.5 mt-1 rounded-lg cursor-pointer transition-all hover:bg-white/50 text-[#455a64]`}
-              style={{ 
-                backgroundColor: activeView === 'profile' ? 'rgba(149, 117, 205, 0.15)' : 'transparent', 
-                color: activeView === 'profile' ? '#9575cd' : '#455a64' 
-              }}>
-            <FileText size={18} className="flex-shrink-0" />
-            {isSidebarOpen && <span className="text-[13px] font-medium capitalize tracking-tight">Lab profile</span>}
+          {/* ALWAYS VISIBLE ON MOBILE */}
+          <li onClick={() => handleNavigation('entry')} className={getResponsiveLiClass(currentView === 'entry', true)}>
+            {currentView === 'entry' ? (
+                <FileText size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <FileEdit size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            )}
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'entry' ? 'font-bold' : 'font-medium'}`}>Result Entry</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'entry' ? 'font-bold' : 'font-medium'}`}>Result Entry</span>}
+          </li>
+
+          {/* ALWAYS VISIBLE ON MOBILE */}
+          <li onClick={() => handleNavigation('list')} className={getResponsiveLiClass(currentView === 'list', true)}>
+            {currentView === 'list' ? (
+                <ClipboardList size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <List size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            )}
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'list' ? 'font-bold' : 'font-medium'}`}>Patient List</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'list' ? 'font-bold' : 'font-medium'}`}>Patient List</span>}
+          </li>
+
+          <li onClick={() => handleNavigation('tests')} className={getResponsiveLiClass(currentView === 'tests', false)}>
+            {currentView === 'tests' ? (
+                <FlaskConical size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <Microscope size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            )}
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'tests' ? 'font-bold' : 'font-medium'}`}>Test Config</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'tests' ? 'font-bold' : 'font-medium'}`}>Test Config</span>}
+          </li>
+
+          <li onClick={() => handleNavigation('sensitivity')} className={getResponsiveLiClass(currentView === 'sensitivity', false)}>
+            {currentView === 'sensitivity' ? (
+                <Pill size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <Bug size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            )}
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'sensitivity' ? 'font-bold' : 'font-medium'}`}>Sensitivity</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'sensitivity' ? 'font-bold' : 'font-medium'}`}>Sensitivity</span>}
+          </li>
+
+          <li onClick={() => handleNavigation('masters')} className={getResponsiveLiClass(currentView === 'masters', false)}>
+            {currentView === 'masters' ? (
+                <Database size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <Server size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            )}
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'masters' ? 'font-bold' : 'font-medium'}`}>Masters</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'masters' ? 'font-bold' : 'font-medium'}`}>Masters</span>}
+          </li>
+
+          <li onClick={() => handleNavigation('referrals')} className={getResponsiveLiClass(currentView === 'referrals', false)}>
+            {currentView === 'referrals' ? (
+                <HeartPulse size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <Stethoscope size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            )}
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'referrals' ? 'font-bold' : 'font-medium'}`}>Referrals</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'referrals' ? 'font-bold' : 'font-medium'}`}>Referrals</span>}
+          </li>
+
+          <li onClick={() => handleNavigation('lab-profile')} className={getResponsiveLiClass(currentView === 'lab-profile', false)}>
+            {currentView === 'lab-profile' ? (
+                <Hospital size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <Building2 size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            )}
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'lab-profile' ? 'font-bold' : 'font-medium'}`}>Lab Profile</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'lab-profile' ? 'font-bold' : 'font-medium'}`}>Lab Profile</span>}
+          </li>
+
+          <li onClick={() => handleNavigation('reports')} className={getResponsiveLiClass(currentView === 'reports', false)}>
+            {currentView === 'reports' ? (
+                <LayoutTemplate size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <Layout size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            )}
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'reports' ? 'font-bold' : 'font-medium'}`}>Reports Formating</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'reports' ? 'font-bold' : 'font-medium'}`}>Reports Formating</span>}
+          </li>
+
+          <li onClick={() => handleNavigation('authorizations')} className={getResponsiveLiClass(currentView === 'authorizations', false)}>
+            {currentView === 'authorizations' ? (
+                <ShieldCheck size={isSidebarOpen ? 20 : 22} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            ) : (
+                <Shield size={isSidebarOpen ? 20 : 22} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+            )}
+            {isSidebarOpen ? <span className={`text-[13px] tracking-wide ${currentView === 'authorizations' ? 'font-bold' : 'font-medium'}`}>Authorizations</span> : <span className={`text-[10px] tracking-tight text-center leading-tight ${currentView === 'authorizations' ? 'font-bold' : 'font-medium'}`}>Authorizations</span>}
           </li>
 
         </ul>
@@ -100,4 +180,4 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
     </aside>
   );
 }
-// BLOCK COMPONENT DEFINITION CLOSE
+// --- BLOCK app/components/Sidebar.tsx CLOSE ---

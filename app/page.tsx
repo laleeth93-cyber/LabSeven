@@ -1,18 +1,14 @@
-// FILE: app/page.tsx
+// --- app/page.tsx Block Open ---
 "use client";
 
-// BLOCK IMPORTS OPEN
-import React, { useState } from 'react';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
+import React, { useState, useEffect, Suspense } from 'react'; 
+import { useSearchParams } from 'next/navigation';
+import { Loader2 } from 'lucide-react'; 
 import DashboardOverview from './components/DashboardOverview';
 import NewRegistration from './components/NewRegistration';
 import CustomizeRegistrationModal from './components/CustomizeRegistrationModal';
 import QuotationModal from './components/QuotationModal';
-import BillingModal from './components/BillingModal';
-// BLOCK IMPORTS CLOSE
 
-// BLOCK TYPES DEFINITION OPEN
 export interface FieldData {
   id: number;
   label: string;
@@ -26,126 +22,148 @@ export interface FieldData {
   options?: string[];
 }
 
+// --- INITIAL DATA ---
 const initialFieldsData: FieldData[] = [
   // Basic Info
   { id: 1, label: "Patient ID", category: "Basic Info", isVisible: true, order: 1, width: '180px', required: true, inputType: 'text', placeholder: 'Auto-generated' },
-  { id: 2, label: "Designation", category: "Basic Info", isVisible: true, order: 2, width: '120px', required: false, inputType: 'select', options: ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Baby', 'Master'] },
-  { id: 3, label: "First Name", category: "Basic Info", isVisible: true, order: 3, width: '230px', required: true, inputType: 'text', placeholder: 'First name' },
-  { id: 4, label: "Last Name", category: "Basic Info", isVisible: true, order: 4, width: '230px', required: true, inputType: 'text', placeholder: 'Last name' },
-  { id: 5, label: "Age", category: "Basic Info", isVisible: true, order: 5, width: '80px', required: true, inputType: 'age' },
-  { id: 6, label: "Gender", category: "Basic Info", isVisible: true, order: 6, width: '120px', required: true, inputType: 'select', options: ['Male', 'Female', 'Other'] },
+  { id: 2, label: "Designation", category: "Basic Info", isVisible: true, order: 2, width: '120px', required: true, inputType: 'select', options: ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Baby', 'Master'] },
+  { id: 3, label: "First Name", category: "Basic Info", isVisible: true, order: 3, width: '220px', required: true, inputType: 'text', placeholder: 'First Name' },
+  { id: 4, label: "Last Name", category: "Basic Info", isVisible: true, order: 4, width: '220px', required: true, inputType: 'text', placeholder: 'Last Name' },
+  { id: 6, label: "Gender", category: "Basic Info", isVisible: true, order: 5, width: '150px', required: true, inputType: 'select', options: ['Male', 'Female', 'Other'] },
   
   // Vitals
-  { id: 7, label: "Weight (kg)", category: "Vitals", isVisible: true, order: 7, width: '120px', required: false, inputType: 'text', placeholder: 'Weight' },
-  { id: 8, label: "Height (cm)", category: "Vitals", isVisible: true, order: 8, width: '120px', required: false, inputType: 'text', placeholder: 'Height' },
+  { id: 5, label: "Age", category: "Vitals", isVisible: true, order: 6, width: '180px', required: true, inputType: 'age' },
+  { id: 7, label: "Height (cm)", category: "Vitals", isVisible: false, order: null, width: '140px', required: false, inputType: 'text', placeholder: '0' },
+  { id: 8, label: "Weight (kg)", category: "Vitals", isVisible: false, order: null, width: '140px', required: false, inputType: 'text', placeholder: '0' },
   
   // Contact Info
-  { id: 9, label: "Phone Number", category: "Contact Info", isVisible: true, order: 9, width: '230px', required: true, inputType: 'phone' },
-  { id: 10, label: "Email", category: "Contact Info", isVisible: true, order: 10, width: '300px', required: false, inputType: 'text', placeholder: 'Email' },
-  { id: 11, label: "Address", category: "Contact Info", isVisible: true, order: 11, width: '100%', required: false, inputType: 'textarea', placeholder: 'Address' },
-  
+  { id: 9, label: "Phone Number", category: "Contact Info", isVisible: true, order: 7, width: '240px', required: true, inputType: 'phone' },
+  { id: 10, label: "Email Address", category: "Contact Info", isVisible: false, order: null, width: '240px', required: false, inputType: 'text', placeholder: 'example@mail.com' },
+  { id: 11, label: "Address", category: "Contact Info", isVisible: true, order: 8, width: '100%', required: false, inputType: 'textarea', placeholder: 'Full Address' },
+
   // Identification
-  { id: 12, label: "Aadhaar Number", category: "Identification", isVisible: false, order: null, width: '230px', required: false, inputType: 'text', placeholder: 'Aadhaar number' },
-  { id: 13, label: "Insurance Number", category: "Identification", isVisible: false, order: null, width: '230px', required: false, inputType: 'text', placeholder: 'Insurance number' },
-  { id: 14, label: "UHID", category: "Identification", isVisible: false, order: null, width: '180px', required: false, inputType: 'text', placeholder: 'UHID' },
-  { id: 15, label: "Barcode", category: "Identification", isVisible: false, order: null, width: '180px', required: false, inputType: 'text', placeholder: 'Barcode' },
-  { id: 16, label: "Passport Number", category: "Identification", isVisible: false, order: null, width: '230px', required: false, inputType: 'text', placeholder: 'Passport number' },
-  { id: 17, label: "Owner Name", category: "Identification", isVisible: false, order: null, width: '230px', required: false, inputType: 'text', placeholder: 'Owner name' },
-  { id: 18, label: "Breed", category: "Identification", isVisible: false, order: null, width: '180px', required: false, inputType: 'text', placeholder: 'Breed' },
-
-  // Patient Info
-  { id: 19, label: "Category", category: "Patient Info", isVisible: false, order: null, width: '180px', required: false, inputType: 'select', options: ['General', 'VIP', 'Staff', 'Emergency'] },
-
-  // Medical Info
-  { id: 20, label: "Clinical History", category: "Medical Info", isVisible: false, order: null, width: '100%', required: false, inputType: 'textarea', placeholder: 'Clinical history' },
-  { id: 21, label: "Documents", category: "Medical Info", isVisible: false, order: null, width: '100%', required: false, inputType: 'file' },
-
-  // Billing
-  { id: 22, label: "Payment", category: "Billing", isVisible: false, order: null, width: '180px', required: true, inputType: 'select', options: ['Cash', 'Card', 'UPI', 'Insurance'] },
-  { id: 23, label: "Rate List Type", category: "Billing", isVisible: false, order: null, width: '180px', required: true, inputType: 'select', options: ['Standard', 'Corporate', 'Camp'] },
+  { id: 12, label: "Aadhaar Number", category: "Identification", isVisible: false, order: null, width: '200px', required: false, inputType: 'text' },
+  { id: 13, label: "UHID / MRN", category: "Identification", isVisible: false, order: null, width: '180px', required: false, inputType: 'text' },
+  { id: 14, label: "Passport Number", category: "Identification", isVisible: false, order: null, width: '180px', required: false, inputType: 'text' },
 
   // Referral
-  { id: 24, label: "Referring Doctor", category: "Referral", isVisible: false, order: null, width: '230px', required: false, inputType: 'select', options: ['Dr. Smith', 'Dr. Jones', 'Self'] },
-  { id: 25, label: "Referring Hospital", category: "Referral", isVisible: false, order: null, width: '230px', required: false, inputType: 'select', options: ['City Hospital', 'General Hospital'] },
-  { id: 26, label: "Company", category: "Referral", isVisible: false, order: null, width: '230px', required: false, inputType: 'select', options: ['Corp A', 'Corp B'] },
+  { id: 24, label: "Referring Doctor", category: "Referral", isVisible: true, order: 9, width: '230px', required: false, inputType: 'select', options: ['Self', 'Dr. Smith', 'Dr. Jones', 'Dr. Akram'] },
+  { id: 30, label: "Referral Lab", category: "Referral", isVisible: false, order: null, width: '230px', required: false, inputType: 'select', options: ['Self'] },
+  { id: 19, label: "Referral Type", category: "Referral", isVisible: false, order: null, width: '180px', required: false, inputType: 'select', options: ['Walk-in', 'Doctor', 'Hospital', 'Camp'] },
 
   // Collection
-  { id: 27, label: "Collected At", category: "Collection", isVisible: false, order: null, width: '180px', required: false, inputType: 'select', options: ['Home', 'Lab', 'Center A'] },
-  { id: 28, label: "Collection Date & Time", category: "Collection", isVisible: false, order: null, width: '230px', required: false, inputType: 'date' },
-  { id: 29, label: "Dispatch Methods", category: "Collection", isVisible: false, order: null, width: '230px', required: false, inputType: 'multi-select', options: ['Email', 'SMS', 'Hard Copy', 'WhatsApp', 'Manual WhatsApp'] },
-];
-// BLOCK TYPES DEFINITION CLOSE
+  { id: 22, label: "Collection Date", category: "Collection", isVisible: true, order: 10, width: '180px', required: true, inputType: 'date' },
+  { id: 23, label: "Collected By", category: "Collection", isVisible: false, order: null, width: '200px', required: false, inputType: 'select', options: ['Lab Technician', 'Nurse', 'Phlebotomist'] },
+  { id: 29, label: "Report Delivery", category: "Collection", isVisible: true, order: 11, width: '250px', required: false, inputType: 'multi-select', options: ['Hard Copy', 'Email', 'WhatsApp', 'App'] },
 
-export default function Dashboard() {
-  
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // Medical Info
+  { id: 17, label: "Clinical History", category: "Medical Info", isVisible: false, order: null, width: '100%', required: false, inputType: 'textarea' },
+  { id: 18, label: "Current Meds", category: "Medical Info", isVisible: false, order: null, width: '100%', required: false, inputType: 'textarea' }
+];
+
+// --- SEPARATE COMPONENT FOR SEARCH PARAMS LOGIC ---
+function DashboardContent() {
   const [activeView, setActiveView] = useState('dashboard');
+  
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
-  const [isBillingModalOpen, setIsBillingModalOpen] = useState(false);
   
-  const [currentPatientData, setCurrentPatientData] = useState<any>(null);
-  
+  // Initialize directly to avoid flicker, load from LS in effect
   const [registrationFields, setRegistrationFields] = useState<FieldData[]>(initialFieldsData);
 
-  const handleOpenBilling = (patientDetails: any) => {
-    setCurrentPatientData(patientDetails);
-    setIsBillingModalOpen(true);
-  };
+  const searchParams = useSearchParams();
+
+  // 1. Efficiently handle View Changes
+  useEffect(() => {
+    const viewParam = searchParams.get('view');
+    if (viewParam) {
+      setActiveView(viewParam);
+    } else {
+      setActiveView('dashboard');
+    }
+  }, [searchParams]);
+
+  // 2. Load LocalStorage ONCE on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const savedSettings = localStorage.getItem('lab_registration_fields');
+        if (savedSettings) {
+          try { 
+            const parsed = JSON.parse(savedSettings);
+            if (Array.isArray(parsed) && parsed.length > 5) {
+              // Smart Merge: Add new fields that might have been added to initialFieldsData
+              const mergedFields = [...parsed];
+              initialFieldsData.forEach(initialField => {
+                if (!mergedFields.find(f => f.id === initialField.id)) {
+                  mergedFields.push(initialField);
+                }
+              });
+              setRegistrationFields(mergedFields);
+            }
+          } catch (e) { 
+            console.error("Error loading settings", e); 
+          }
+        }
+    }
+  }, []); // Empty dependency array = run once
+
+  // 3. Save to LocalStorage whenever fields change
+  useEffect(() => {
+    if (typeof window !== 'undefined' && registrationFields !== initialFieldsData) {
+        localStorage.setItem('lab_registration_fields', JSON.stringify(registrationFields));
+    }
+  }, [registrationFields]);
+
+  const handleOpenCustomize = () => setIsCustomizeModalOpen(true);
+  const handleOpenQuotation = () => setIsQuotationModalOpen(true);
 
   return (
-    <div className="h-screen w-full flex flex-col overflow-hidden bg-[#eceff1]">
-      <Header isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+    <div className="w-full h-full flex flex-col p-6 overflow-hidden">
+      <div className="w-full h-full flex flex-col mx-auto overflow-hidden">
+        
+        {/* VIEW RENDERER */}
+        {activeView === 'dashboard' && <DashboardOverview />}
 
-      <div className="flex flex-1 overflow-hidden"> 
-        <Sidebar isSidebarOpen={isSidebarOpen} activeView={activeView} setActiveView={setActiveView} />
+        {activeView === 'registration' && (
+          <NewRegistration 
+            fields={registrationFields}
+            onCustomizeClick={handleOpenCustomize} 
+            onQuotationClick={handleOpenQuotation}
+          />
+        )}
 
-        <main className="flex-1 p-6 overflow-hidden h-full bg-[#eceff1]">
-          <div className="w-full h-full flex flex-col mx-auto">
-            
-            {activeView === 'dashboard' && <DashboardOverview />}
-
-            {activeView === 'registration' && (
-              <NewRegistration 
-                fields={registrationFields}
-                onCustomizeClick={() => setIsCustomizeModalOpen(true)} 
-                onQuotationClick={() => setIsQuotationModalOpen(true)}
-                onBillingClick={handleOpenBilling}
-              />
-            )}
-
+        {/* MODALS */}
+        {isCustomizeModalOpen && (
             <CustomizeRegistrationModal 
-              isOpen={isCustomizeModalOpen} 
-              onClose={() => setIsCustomizeModalOpen(false)} 
-              fields={registrationFields}
-              setFields={setRegistrationFields}
+            isOpen={isCustomizeModalOpen} 
+            onClose={() => setIsCustomizeModalOpen(false)} 
+            fields={registrationFields}
+            setFields={setRegistrationFields}
             />
-
+        )}
+        
+        {isQuotationModalOpen && (
             <QuotationModal 
-              isOpen={isQuotationModalOpen}
-              onClose={() => setIsQuotationModalOpen(false)}
+            isOpen={isQuotationModalOpen}
+            onClose={() => setIsQuotationModalOpen(false)}
             />
-
-            <BillingModal 
-              isOpen={isBillingModalOpen}
-              onClose={() => setIsBillingModalOpen(false)}
-              patientData={currentPatientData}
-              // Pass fields config to control visibility in billing sidebar
-              fields={registrationFields}
-            />
-
-            {!['dashboard', 'registration'].includes(activeView) && (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="p-6 bg-white rounded-3xl shadow-lg border border-purple-100">
-                   <h2 className="text-xl font-bold text-[#9575cd] uppercase mb-2">{activeView.replace(/_/g, ' ')}</h2>
-                   <p className="text-slate-400">This module is currently under development.</p>
-                </div>
-              </div>
-            )}
-
-          </div>
-        </main>
+        )}
       </div>
     </div>
   );
 }
+
+// --- MAIN PAGE WRAPPER ---
+export default function DashboardPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-screen w-full items-center justify-center gap-2 text-[#9575cd]">
+                <Loader2 className="animate-spin" size={32} />
+                <span className="font-bold text-lg">Loading Lab Seven...</span>
+            </div>
+        }>
+            <DashboardContent />
+        </Suspense>
+    );
+}
+// --- app/page.tsx Block Close ---

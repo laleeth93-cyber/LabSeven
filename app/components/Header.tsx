@@ -1,22 +1,98 @@
+// --- BLOCK app/components/Header.tsx OPEN ---
 "use client";
 
-// BLOCK IMPORTS OPEN
-import React from 'react';
-import { Menu, TestTube, Search, Bell } from 'lucide-react';
-// BLOCK IMPORTS CLOSE
+import React, { useState, useEffect, useRef } from 'react';
+import { Menu, Search, Bell, Building2, Loader2, User, Hash, X } from 'lucide-react';
+import { getLabProfile } from '@/app/actions/lab-profile';
+import { searchPatients } from '@/app/actions/patient';
+import { useRouter } from 'next/navigation';
 
-// BLOCK COMPONENT DEFINITION OPEN
 interface HeaderProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (isOpen: boolean) => void;
 }
 
 export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps) {
+  const [labProfile, setLabProfile] = useState<any>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+
+  // --- GLOBAL SEARCH STATES ---
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      const cachedProfile = localStorage.getItem('labseven_profile_cache');
+      if (cachedProfile) {
+        setLabProfile(JSON.parse(cachedProfile));
+        setIsProfileLoading(false);
+      }
+
+      try {
+        const res = await getLabProfile();
+        if (res.success && res.data) {
+          setLabProfile(res.data);
+          localStorage.setItem('labseven_profile_cache', JSON.stringify(res.data));
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile in background");
+      } finally {
+        setIsProfileLoading(false);
+      }
+    };
+    
+    loadProfile();
+    const handleProfileUpdate = () => loadProfile();
+    window.addEventListener('labProfileUpdated', handleProfileUpdate);
+    return () => window.removeEventListener('labProfileUpdated', handleProfileUpdate);
+  }, []);
+
+  // --- GLOBAL SEARCH LOGIC ---
+  useEffect(() => {
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    
+    if (searchQuery.trim().length >= 2) {
+      setIsSearching(true);
+      setShowDropdown(true);
+      searchTimeout.current = setTimeout(async () => {
+        const results = await searchPatients(searchQuery);
+        setSearchResults(results || []);
+        setIsSearching(false);
+      }, 400);
+    } else {
+      setSearchResults([]);
+      setIsSearching(false);
+      setShowDropdown(false);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectResult = (patientId: string) => {
+    setShowDropdown(false);
+    setSearchQuery('');
+    router.push(`/list?search=${patientId}`);
+  };
+
   return (
     <header 
-      className="h-16 flex items-center justify-between px-6 shadow-sm border-b shrink-0 z-50 select-none"
+      className="h-16 flex items-center justify-between px-6 shadow-sm border-b shrink-0 z-[100] relative select-none"
       style={{ background: 'linear-gradient(to right, #b3e5fc, #e1bee7)' }}
     >
+      {/* LEFT SIDE: Software Branding */}
       <div className="flex items-center gap-4 min-w-fit">
         <button 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -25,33 +101,128 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
         >
           <Menu size={20} />
         </button>
-        <div className="flex items-center gap-2">
-          <TestTube size={24} style={{ color: '#9575cd' }} />
-          <h1 className="text-lg font-bold" style={{ color: '#f06292' }}>MediLab Pro</h1>
+        <div className="flex items-center">
+          <img 
+             src="/logo.png.png" 
+             alt="Software Logo" 
+             className="h-14 w-auto object-contain drop-shadow-sm scale-[1.35] origin-left ml-3" 
+          />
         </div>
       </div>
 
-      <div className="flex-1 max-w-xs relative">
-        <input 
-          type="text" 
-          placeholder="Search..." 
-          className="w-full py-1.5 px-4 pr-10 rounded-full border bg-white/80 text-sm focus:outline-none focus:ring-2 transition"
-          style={{ borderColor: 'rgba(77,208,225,0.4)', color: '#455a64' }} 
-        />
-        <span className="absolute right-4 top-2 text-purple-400">
-          <Search size={16} style={{ color: '#9575cd' }} />
-        </span>
+      {/* CENTER: Global Search Bar (Original Size & Colors) */}
+      <div className="flex-1 max-w-xs relative" ref={searchContainerRef}>
+        <div className="relative flex items-center w-full">
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => { if (searchQuery.length >= 2) setShowDropdown(true); }}
+              className="w-full py-1.5 px-4 pr-16 rounded-full border bg-white/80 text-sm font-medium focus:outline-none focus:ring-2 transition placeholder:text-slate-400"
+              style={{ borderColor: 'rgba(77,208,225,0.4)', color: '#455a64' }} 
+            />
+            
+            {/* Search Icons / Clear Button */}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                {searchQuery && (
+                    <button onClick={() => {setSearchQuery(''); setShowDropdown(false);}} className="p-0.5 rounded-full hover:bg-slate-200 text-slate-400 transition-colors">
+                        <X size={13}/>
+                    </button>
+                )}
+                <span className="text-purple-400 flex items-center justify-center w-4 h-4">
+                  {isSearching ? <Loader2 size={14} className="animate-spin text-[#9575cd]" /> : <Search size={16} style={{ color: '#9575cd' }} />}
+                </span>
+            </div>
+        </div>
+
+        {/* --- GLOBAL SEARCH DROPDOWN --- */}
+        {showDropdown && (
+            <div className="absolute top-[calc(100%+8px)] left-0 w-[360px] bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-[200] animate-in slide-in-from-top-2 duration-200 -ml-4">
+                {isSearching ? (
+                    <div className="px-4 py-8 text-center flex flex-col items-center justify-center text-slate-400 gap-3">
+                        <Loader2 size={28} className="animate-spin text-[#9575cd]" />
+                        <span className="text-xs font-bold uppercase tracking-wider">Searching Database...</span>
+                    </div>
+                ) : searchResults.length > 0 ? (
+                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                        <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between sticky top-0 z-10 backdrop-blur-sm bg-slate-50/90">
+                            <span>Patients Found</span>
+                            <span className="text-[#9575cd] bg-purple-50 px-2 py-0.5 rounded-full">{searchResults.length}</span>
+                        </div>
+                        {searchResults.map((p) => (
+                            <div 
+                                key={p.id} 
+                                onClick={() => handleSelectResult(p.patientId)}
+                                className="px-4 py-3 border-b border-slate-50 hover:bg-purple-50 cursor-pointer flex items-center justify-between group transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 group-hover:bg-[#9575cd] group-hover:text-white flex items-center justify-center font-black text-sm transition-colors border border-slate-200 shadow-sm shrink-0">
+                                        {p.firstName?.charAt(0)}{p.lastName?.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-slate-700 group-hover:text-[#5e35b1] transition-colors leading-tight">{p.firstName} {p.lastName}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex items-center gap-1 border border-slate-200/50"><Hash size={10}/> {p.patientId}</span>
+                                            <span className="text-[10px] text-slate-400 font-medium">• {p.phone || 'No Phone'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                    <span className="text-[11px] font-bold text-slate-500 block">{p.gender}</span>
+                                    <span className="text-[10px] text-slate-400 block mt-0.5">{p.ageY}Y {p.ageM}M</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="px-4 py-8 text-center flex flex-col items-center justify-center text-slate-400 gap-2">
+                        <User size={36} className="opacity-20 mb-2" />
+                        <span className="text-sm font-bold text-slate-600">No patients found</span>
+                        <span className="text-xs font-medium">Try searching by name or number.</span>
+                    </div>
+                )}
+            </div>
+        )}
       </div>
 
-      <div className="flex items-center gap-4 min-w-fit">
-        <div className="hidden lg:flex items-center gap-2 text-slate-700">
-           <span className="font-semibold text-sm">Metropolitan Diagnostic Center</span>
+      {/* RIGHT SIDE: Lab Details & User Account */}
+      <div className="flex items-center gap-5 min-w-fit">
+        
+        {/* LAB NAME */}
+        <div className="hidden lg:flex items-center gap-3 transition-all duration-300 cursor-default group">
+           {isProfileLoading && !labProfile ? (
+             <div className="flex items-center gap-3 animate-pulse">
+               <div className="h-9 w-9 rounded-full bg-white/50"></div>
+               <div className="h-5 w-40 bg-white/50 rounded"></div>
+             </div>
+           ) : (
+             <>
+               {labProfile?.logoUrl ? (
+                 <div className="h-9 w-9 rounded-full bg-white shadow-sm border border-white/60 flex items-center justify-center overflow-hidden p-1 shrink-0">
+                     <img src={labProfile.logoUrl} alt="Lab Logo" className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110" />
+                 </div>
+               ) : (
+                 <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#9575cd] to-[#7e57c2] shadow-sm flex items-center justify-center text-white shrink-0 transition-transform duration-500 group-hover:scale-110">
+                     <Building2 size={16} />
+                 </div>
+               )}
+               <div className="flex items-center">
+                   <span className="font-extrabold text-[17px] text-[#5e35b1] truncate max-w-[280px] tracking-tight">
+                     {labProfile?.name || 'Lab Seven'}
+                   </span>
+               </div>
+             </>
+           )}
         </div>
         
+        {/* DIVIDER */}
+        <div className="h-8 w-[1px] bg-slate-400/30 hidden lg:block mx-1"></div>
+        
         <div className="flex items-center gap-4">
-          <div className="relative p-2 rounded-lg bg-purple-200/30" style={{ color: '#9575cd' }}>
+          <div className="relative p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer" style={{ color: '#9575cd' }}>
             <Bell size={20} />
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white font-bold"
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white font-bold shadow-sm"
                   style={{ background: '#f06292' }}>3</span>
           </div>
 
@@ -70,11 +241,11 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
               JD
             </div>
             
-            <span className="absolute left-11 text-xs font-medium text-slate-700 transition-all duration-300 opacity-100 group-hover:opacity-0 group-hover:translate-x-4">
+            <span className="absolute left-11 text-xs font-bold text-slate-700 transition-all duration-300 opacity-100 group-hover:opacity-0 group-hover:translate-x-4">
               Dr. John Doe
             </span>
 
-            <span className="absolute left-11 text-[10px] font-bold text-red-400 uppercase tracking-widest transition-all duration-300 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0">
+            <span className="absolute left-11 text-[10px] font-black text-red-500 uppercase tracking-widest transition-all duration-300 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 drop-shadow-sm">
               Slide to Logout →
             </span>
           </div>
@@ -83,4 +254,4 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
     </header>
   );
 }
-// BLOCK COMPONENT DEFINITION CLOSE
+// --- BLOCK app/components/Header.tsx CLOSE ---

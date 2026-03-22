@@ -1,262 +1,342 @@
-// FILE: app/components/NewRegistration.tsx
+// --- BLOCK app/components/NewRegistration.tsx OPEN ---
 "use client";
 
-// BLOCK IMPORTS OPEN
-import React, { useState, useRef, useEffect } from 'react';
-import { Users, ReceiptText, SlidersHorizontal, CreditCard, Paperclip, Calendar, X, ChevronDown } from 'lucide-react';
-import { FieldData } from '../page';
-// BLOCK IMPORTS CLOSE
+import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import { Loader2, CheckCircle, Type, X, User, Receipt } from 'lucide-react';
 
-// BLOCK COMPONENT DEFINITION OPEN
+import { registerPatient } from '@/app/actions/patient';
+import { getReferrals } from '@/app/actions/referral'; 
+import { createBill } from '@/app/actions/billing'; 
+
+import InvoiceModal from './InvoiceModal';
+import RegistrationLeftPane from './RegistrationLeftPane';
+import BillingRightPane from './BillingRightPane';
+
+const RichTextEditor = dynamic(() => import('./RichTextEditor'), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-slate-50 flex items-center justify-center text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading Editor...</div>
+});
+
+export interface FieldData {
+  id: number;
+  label: string;
+  category: string;
+  isVisible: boolean;
+  order: number | null;
+  width: string;
+  required: boolean;
+  placeholder?: string;
+  inputType: 'text' | 'select' | 'date' | 'textarea' | 'file' | 'age' | 'phone' | 'multi-select';
+  options?: string[];
+}
+
+export interface BillItem {
+  id: number; 
+  code: string;
+  name: string;
+  price: number;
+  type: string;
+  isUrgent: boolean;
+}
+
 interface NewRegistrationProps {
   onCustomizeClick: () => void;
   onQuotationClick: () => void;
-  // Updated prop to accept data
-  onBillingClick: (patientDetails: any) => void;
   fields: FieldData[];
 }
 
-export default function NewRegistration({ onCustomizeClick, onQuotationClick, onBillingClick, fields }: NewRegistrationProps) {
+export default function NewRegistration({ onCustomizeClick, onQuotationClick, fields }: NewRegistrationProps) {
   
+  // ==========================================
+  // MOBILE UI STATE
+  // ==========================================
+  const [activeMobileTab, setActiveMobileTab] = useState<'patient' | 'billing'>('patient');
+
+  // ==========================================
+  // REGISTRATION SHARED STATES
+  // ==========================================
   const [formValues, setFormValues] = useState<Record<string, any>>({});
+  const [multiSelectValues, setMultiSelectValues] = useState<Record<number, string[]>>({ 29: ['Hard Copy'] });
+  const [currentPatientId, setCurrentPatientId] = useState('');
+  const [referralsList, setReferralsList] = useState<any[]>([]);
+
+  // ==========================================
+  // BILLING SHARED STATES
+  // ==========================================
+  const [currentBillNumber, setCurrentBillNumber] = useState('');
+  const [billingDate, setBillingDate] = useState(''); 
+  const [isManualTime, setIsManualTime] = useState(false);
+  const [billItems, setBillItems] = useState<BillItem[]>([]);
   
-  const [multiSelectValues, setMultiSelectValues] = useState<Record<number, string[]>>({
-    29: ['Hard Copy'] 
+  const [discountPercent, setDiscountPercent] = useState('');
+  const [discountAmount, setDiscountAmount] = useState('');
+  const [discountBy, setDiscountBy] = useState('');
+  const [discountReason, setDiscountReason] = useState('');
+  const [isDuePayment, setIsDuePayment] = useState(false);
+  const [advancePaid, setAdvancePaid] = useState('');
+  
+  const [selectedModes, setSelectedModes] = useState<string[]>(['Cash']);
+  const [paymentDetails, setPaymentDetails] = useState<Record<string, { amount: string, txnId: string }>>({
+    'Cash': { amount: '0', txnId: '-' }, 'UPI': { amount: '0', txnId: '' }, 'Card': { amount: '0', txnId: '' }
   });
 
-  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isNotesEditorOpen, setIsNotesEditorOpen] = useState(false);
+  const [notesContent, setNotesContent] = useState('');
+  const [tempNotesContent, setTempNotesContent] = useState('');
+
+  // ==========================================
+  // GLOBAL WORKFLOW STATES
+  // ==========================================
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [invoiceData, setInvoiceData] = useState<any>(null);
+
+  // --- INITIALIZATION ---
+  const getLocalISOString = () => {
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    return (new Date(now.getTime() - tzOffset)).toISOString().slice(0, 19);
+  };
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenDropdownId(null);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    setCurrentPatientId(`${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`);
+    setCurrentBillNumber(`INV-${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`);
+    setBillingDate(getLocalISOString());
+
+    const fetchRefs = async () => {
+      try {
+          const [docs, labs, hosps, out] = await Promise.all([ getReferrals('Doctor'), getReferrals('Lab'), getReferrals('Hospital'), getReferrals('Outsource') ]);
+          let combined: any[] = [];
+          if (docs.success) combined.push(...docs.data);
+          if (labs.success) combined.push(...labs.data);
+          if (hosps.success) combined.push(...hosps.data);
+          if (out.success) combined.push(...out.data);
+          setReferralsList(combined.filter((r: any) => r.isActive));
+      } catch (e) { console.error("Failed to load referrals", e); }
     };
+    fetchRefs();
   }, []);
 
-  const handleInputChange = (fieldId: number, value: any) => {
-    setFormValues(prev => ({ ...prev, [fieldId]: value }));
-  };
+  // --- LIVE CLOCK ---
+  useEffect(() => {
+    if (isManualTime) return;
+    const interval = setInterval(() => setBillingDate(getLocalISOString()), 1000);
+    return () => clearInterval(interval);
+  }, [isManualTime]);
 
-  const handleAgeChange = (fieldId: number, part: 'Y' | 'M' | 'D', value: string) => {
-    setFormValues(prev => {
-      const currentAge = prev[fieldId] || { Y: '', M: '', D: '' };
-      return { ...prev, [fieldId]: { ...currentAge, [part]: value } };
-    });
-  };
+  const handleManualDateChange = (newDate: string) => { setIsManualTime(true); setBillingDate(newDate); };
+  const handleOpenNotes = () => { setTempNotesContent(notesContent); setIsNotesEditorOpen(true); };
+  const handleSaveNotes = () => { setNotesContent(tempNotesContent); setIsNotesEditorOpen(false); };
 
-  const toggleOption = (fieldId: number, option: string) => {
-    setMultiSelectValues(prev => {
-      const current = prev[fieldId] || [];
-      const newValues = current.includes(option) ? current.filter(item => item !== option) : [...current, option];
-      handleInputChange(fieldId, newValues);
-      return { ...prev, [fieldId]: newValues };
-    });
-  };
+  // ==========================================
+  // CALCULATIONS
+  // ==========================================
+  const subTotal = billItems.reduce((sum, item) => sum + item.price, 0);
+  const discPerc = parseFloat(discountPercent) || 0;
+  const discAmtInput = parseFloat(discountAmount) || 0;
+  const finalDiscount = discPerc > 0 ? (subTotal * discPerc / 100) : discAmtInput;
+  const netAmount = Math.max(0, subTotal - finalDiscount);
+  
+  const paidFromModes = selectedModes.reduce((acc, mode) => acc + (parseFloat(paymentDetails[mode]?.amount) || 0), 0);
+  const paidAdvance = parseFloat(advancePaid) || 0;
+  const totalPaid = Math.max(paidFromModes, paidAdvance); 
+  const dueAmount = Math.max(0, netAmount - totalPaid);
 
-  const removeOption = (e: React.MouseEvent, fieldId: number, option: string) => {
-    e.stopPropagation(); 
-    setMultiSelectValues(prev => {
-      const newValues = (prev[fieldId] || []).filter(item => item !== option);
-      handleInputChange(fieldId, newValues);
-      return { ...prev, [fieldId]: newValues };
-    });
-  };
+  const visibleFields = fields.filter(f => f.isVisible).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  // VALIDATION & DATA MAPPING LOGIC
-  const handleGoToBilling = () => {
-    const visibleFields = fields.filter(f => f.isVisible);
+  // ==========================================
+  // UNIFIED SUBMISSION
+  // ==========================================
+  const handleSaveAndGenerate = async () => {
     const missingFields: string[] = [];
-
-    // 1. Validate Required Fields
     visibleFields.forEach(field => {
-      if (field.required) {
-        if (field.label === 'Patient ID') return; // Skip read-only
-
+      if (field.required && field.label !== 'Patient ID') {
         const val = formValues[field.id];
-        
         if (field.inputType === 'multi-select') {
-           const selected = multiSelectValues[field.id] || [];
-           if (selected.length === 0) missingFields.push(field.label);
-           return;
-        }
-
-        if (field.inputType === 'age') {
+           if ((multiSelectValues[field.id] || []).length === 0) missingFields.push(field.label);
+        } else if (field.inputType === 'age') {
           if (!val || (!val.Y && !val.M && !val.D)) missingFields.push(field.label);
-          return;
-        }
-
-        if (!val || val.toString().trim() === '' || val === 'Select') {
+        } else if (!val || val.toString().trim() === '' || val === 'Select') {
           missingFields.push(field.label);
         }
       }
     });
 
     if (missingFields.length > 0) {
-      alert(`Please fill the following required fields:\n- ${missingFields.join('\n- ')}`);
-    } else {
-      // 2. Map Data for Billing Modal
-      // We map based on fixed IDs from page.tsx (3=First Name, 4=Last Name, etc.)
-      const patientDetails = {
-        firstName: formValues[3] || '',
-        lastName: formValues[4] || '',
-        age: formValues[5] || { Y: '', M: '', D: '' },
-        gender: formValues[6] || 'Not specified',
-        phone: formValues[9] || 'Not specified',
-        email: formValues[10] || 'Not specified',
-        address: formValues[11] || 'Not specified',
+        setActiveMobileTab('patient');
+        return alert(`Please fill required registration fields:\n- ${missingFields.join('\n- ')}`);
+    }
+    if (billItems.length === 0) {
+        setActiveMobileTab('billing');
+        return alert("❌ Cannot generate a bill without selecting tests.");
+    }
+
+    setIsSaving(true); 
+
+    try {
+      const refFields = fields.filter(f => (f.category === 'Referral' && !f.label.toLowerCase().includes('type')) || f.label.toLowerCase().includes('doctor') || f.label.toLowerCase().includes('hospital') || f.label.toLowerCase().includes('lab'));
+      let docName = ''; let hospName = ''; let labName = '';
+
+      for (const f of refFields) {
+          const val = formValues[f.id];
+          if (typeof val === 'string' && val.trim() && val.trim().toLowerCase() !== 'self' && !val.trim().toLowerCase().startsWith('select')) {
+              const lowerLabel = f.label.toLowerCase();
+              if (lowerLabel.includes('hospital')) hospName = val.trim();
+              else if (lowerLabel.includes('lab') || lowerLabel.includes('outsource')) labName = val.trim();
+              else docName = val.trim();
+          }
+      }
+
+      let finalReferralString = '';
+      if (!docName && !hospName && !labName) finalReferralString = 'Self'; 
+      else {
+          if (docName) finalReferralString += docName;
+          if (hospName) finalReferralString += (finalReferralString ? ` (${hospName})` : `(${hospName})`);
+          if (labName) finalReferralString += (finalReferralString ? ` - ${labName}` : `- ${labName}`);
+      }
+
+      let primaryRefName = docName || hospName || labName || 'Self';
+      const matchedRef = referralsList.find(r => r.name === primaryRefName);
+
+      const dbPatientData = {
+        patientId: currentPatientId, 
+        firstName: formValues[3] || '', lastName: formValues[4] || '', gender: formValues[6] || 'Not specified',
+        phone: formValues[9] || '', email: formValues[10] || '', address: formValues[11] || '',
+        age: formValues[5] || { Y: 0, M: 0, D: 0 }, prefix: formValues[2] || 'Mr.',
+        height: formValues[7], weight: formValues[8],
+        referralType: matchedRef ? matchedRef.type : (primaryRefName.toLowerCase() !== 'self' ? 'Other' : 'Self'),
+        refDoctor: finalReferralString.trim(),
       };
-      
-      onBillingClick(patientDetails);
+
+      const regResult = await registerPatient(dbPatientData);
+      if (!regResult.success || !regResult.patient) throw new Error("Patient Registration Failed: " + (regResult.message || "Unknown error"));
+
+      const billPayload = {
+        billNumber: currentBillNumber, date: billingDate, patientId: regResult.patient.patientId,
+        subTotal, discountPercent: parseFloat(discountPercent) || 0, discountAmount: finalDiscount,
+        netAmount, paidAmount: totalPaid, dueAmount, paymentMode: selectedModes[0] || 'Cash',
+        discountReason: discountReason, items: billItems.map(item => ({ testId: item.id, price: item.price })),
+        referredBy: dbPatientData.refDoctor || 'Self', 
+      };
+
+      const billResult = await createBill(billPayload);
+      if (!billResult.success) throw new Error("Bill Creation Failed: " + billResult.message);
+
+      const fullName = `${dbPatientData.prefix} ${dbPatientData.firstName} ${dbPatientData.lastName}`.trim();
+      const ageString = `${dbPatientData.age.Y || 0} Y / ${dbPatientData.gender}`;
+
+      setInvoiceData({
+        billId: billResult.billNumber, billDate: new Date(billingDate).toLocaleString('en-GB'),
+        patientName: fullName, ageGender: ageString, referredBy: dbPatientData.refDoctor || 'Self',
+        paymentType: selectedModes.join(', '), items: billItems.map(item => ({ id: item.id, name: item.name, price: item.price })),
+        subTotal, discount: finalDiscount, totalAmount: netAmount, paidAmount: totalPaid, balanceDue: dueAmount, note: notesContent
+      });
+
+      setShowSuccessPopup(true);
+      setTimeout(() => {
+          setShowSuccessPopup(false);
+          setIsInvoiceOpen(true);
+      }, 1500);
+
+    } catch (error: any) {
+      alert(`❌ ${error.message || 'Critical Error: Could not save.'}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const visibleFields = fields.filter(f => f.isVisible).sort((a, b) => (a.order || 0) - (b.order || 0));
-
   return (
-    <div className="animate-in slide-in-from-bottom-2 duration-500 h-full flex flex-col">
-      <div className="bg-white rounded-[10px] shadow-xl shadow-slate-200/50 h-full w-full mx-auto flex flex-col overflow-hidden border border-slate-100">
-        
-        {/* Top Action Bar */}
-        <div className="p-8 pb-4 bg-white shrink-0">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
-            <div className="flex items-center gap-3">
-              <div className="p-1.5 rounded-lg bg-cyan-50 text-[#4dd0e1] shadow-sm">
-                <Users size={20} />
-              </div>
-              <h2 className="text-xl font-bold text-slate-700 tracking-tight">New Registration</h2>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-3">
-              <button 
-                onClick={onQuotationClick}
-                className="flex items-center gap-2 px-6 py-1.5 rounded-[5px] text-white font-medium text-[13px] capitalize shadow-md transition-all hover:opacity-90 active:scale-95"
-                style={{ background: 'linear-gradient(to right, #4dd0e1, #64b5f6)' }}
-              >
-                <ReceiptText size={16} className="opacity-60" />
-                Quotation
-              </button>
-
-              <button 
-                onClick={onCustomizeClick}
-                className="flex items-center gap-2 px-6 py-1.5 rounded-[5px] text-white font-medium text-[13px] capitalize shadow-md transition-all hover:opacity-90 active:scale-95"
-                style={{ background: 'linear-gradient(to right, #9d7df0, #f062a4)' }}>
-                <SlidersHorizontal size={16} className="opacity-60" />
-                Customize registration
-              </button>
-
-              <button 
-                onClick={handleGoToBilling}
-                className="flex items-center gap-2 px-6 py-1.5 rounded-[5px] text-white font-medium text-[13px] capitalize shadow-md transition-all hover:opacity-90 active:scale-95"
-                style={{ background: 'linear-gradient(to right, #4dd0e1, #64b5f6)' }}>
-                <CreditCard size={16} className="opacity-60" />
-                Go to billing
-              </button>
-            </div>
-          </div>
-          <div className="h-[0.5px] w-full" style={{ backgroundColor: 'rgba(77, 208, 225, 0.2)' }}></div>
-        </div>
-
-        {/* Form Content Area */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          <div className="w-full min-h-full border-2 border-dashed rounded-lg p-4" style={{ borderColor: 'rgba(77, 208, 225, 0.4)' }}>
-             <div className="flex flex-wrap gap-x-4 gap-y-3 items-end pb-24"> 
-                {visibleFields.map((field) => (
-                  <div key={field.id} className="flex-none relative" style={{ width: field.width }}>
-                    <label className="block text-[11px] font-medium text-slate-700 mb-1 truncate" title={field.label}>
-                      {field.label} {field.required && <span className="text-red-400">*</span>}
-                    </label>
-
-                    {field.label === 'Patient ID' ? (
-                       <div className="py-0.5"><span className="text-lg font-bold text-[#e65100] tracking-wide">260125003</span></div>
-                    ) : (
-                      <>
-                        {field.inputType === 'text' && (
-                          <input type="text" placeholder={field.placeholder} onChange={(e) => handleInputChange(field.id, e.target.value)} className="w-full px-3 py-0.5 rounded border border-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-[#4dd0e1] transition-all text-slate-700 placeholder:text-slate-400" />
-                        )}
-                        {field.inputType === 'select' && (
-                           <div className="relative w-full">
-                             <select onChange={(e) => handleInputChange(field.id, e.target.value)} className="w-full px-3 py-0.5 rounded border border-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-[#4dd0e1] transition-all text-slate-700 appearance-none bg-white">
-                               <option value="">Select</option>
-                               {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                             </select>
-                             <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500"><ChevronDown size={10} /></div>
-                           </div>
-                        )}
-                        {field.inputType === 'multi-select' && (
-                           <div className="relative w-full" ref={dropdownRef}>
-                             <div onClick={() => setOpenDropdownId(openDropdownId === field.id ? null : field.id)} className="w-full px-1 py-0.5 min-h-[26px] rounded border border-slate-400 bg-white flex items-center flex-wrap gap-1 cursor-pointer focus-within:ring-2 focus-within:ring-[#4dd0e1]">
-                               {(multiSelectValues[field.id] || []).length === 0 && <span className="text-slate-400 text-xs px-2">Select options...</span>}
-                               {(multiSelectValues[field.id] || []).map(tag => (
-                                 <div key={tag} className="flex items-center gap-1 bg-slate-100 text-slate-700 px-1.5 rounded border border-slate-300 text-[10px] font-medium">
-                                   <span>{tag}</span>
-                                   <div onClick={(e) => removeOption(e, field.id, tag)} className="cursor-pointer hover:text-red-500 rounded-full p-0.5"><X size={10} /></div>
-                                 </div>
-                               ))}
-                             </div>
-                             <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500"><ChevronDown size={10} /></div>
-                             {openDropdownId === field.id && (
-                               <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto animate-in zoom-in-95 duration-100">
-                                  {field.options?.map(opt => {
-                                    const isSelected = (multiSelectValues[field.id] || []).includes(opt);
-                                    return (
-                                      <div key={opt} onClick={() => toggleOption(field.id, opt)} className={`px-3 py-2 text-xs cursor-pointer flex items-center justify-between ${isSelected ? 'bg-cyan-50 text-cyan-700 font-medium' : 'text-slate-600 hover:bg-slate-50'}`}>
-                                        <span>{opt}</span>
-                                        {isSelected && <div className="w-2 h-2 rounded-full bg-[#4dd0e1]"></div>}
-                                      </div>
-                                    );
-                                  })}
-                               </div>
-                             )}
-                           </div>
-                        )}
-                        {field.inputType === 'age' && (
-                          <div className="flex gap-1">
-                            <div className="flex-1 min-w-0"><input type="text" placeholder="Y" onChange={(e) => handleAgeChange(field.id, 'Y', e.target.value)} className="w-full px-1 py-0.5 rounded border border-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-[#4dd0e1] text-center" /></div>
-                            <div className="flex-1 min-w-0"><input type="text" placeholder="M" onChange={(e) => handleAgeChange(field.id, 'M', e.target.value)} className="w-full px-1 py-0.5 rounded border border-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-[#4dd0e1] text-center" /></div>
-                            <div className="flex-1 min-w-0"><input type="text" placeholder="D" onChange={(e) => handleAgeChange(field.id, 'D', e.target.value)} className="w-full px-1 py-0.5 rounded border border-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-[#4dd0e1] text-center" /></div>
-                          </div>
-                        )}
-                        {field.inputType === 'phone' && (
-                           <div className="flex w-full">
-                             <select className="w-14 px-1 py-0.5 rounded-l border border-r-0 border-slate-400 text-xs bg-slate-50 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4dd0e1]"><option>+91</option><option>+1</option></select>
-                             <input type="text" placeholder="Number" onChange={(e) => handleInputChange(field.id, e.target.value)} className="flex-1 w-full px-3 py-0.5 rounded-r border border-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-[#4dd0e1] text-slate-700 min-w-0" />
-                           </div>
-                        )}
-                        {field.inputType === 'textarea' && (
-                           <textarea rows={2} placeholder={field.placeholder} onChange={(e) => handleInputChange(field.id, e.target.value)} className="w-full px-3 py-1 rounded border border-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-[#4dd0e1] transition-all text-slate-700 resize-none"></textarea>
-                        )}
-                        {field.inputType === 'date' && (
-                           <div className="relative w-full">
-                             <input type="text" placeholder="Select date" defaultValue="24-Jan-2026" onChange={(e) => handleInputChange(field.id, e.target.value)} className="w-full px-3 py-0.5 rounded border border-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-[#4dd0e1] text-slate-700" />
-                             <Calendar size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
-                           </div>
-                        )}
-                        {field.inputType === 'file' && (
-                          <div className="flex items-center gap-2 w-full">
-                            <div className="relative flex-1 min-w-0">
-                               <input type="file" className="hidden" id="file-upload" onChange={(e) => handleInputChange(field.id, e.target.files?.[0]?.name)} />
-                               <label htmlFor="file-upload" className="w-full flex items-center justify-between px-3 py-0.5 rounded border border-slate-400 text-xs text-slate-700 bg-white cursor-pointer hover:bg-slate-50 transition-all border-dashed whitespace-nowrap overflow-hidden">
-                                 <span className="font-medium truncate">{formValues[field.id] ? formValues[field.id] : 'Choose'}</span>
-                                 <Paperclip size={14} className="text-[#4dd0e1] shrink-0 ml-2" />
-                               </label>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ))}
-             </div>
-          </div>
-        </div>
+    <div className="w-full h-full flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 duration-500 bg-slate-50 md:bg-transparent">
+      
+      {/* --- MOBILE TABS NAVIGATION --- */}
+      <div className="md:hidden flex px-2 pt-2 bg-white border-b border-slate-200 shrink-0 gap-2 mb-2">
+         <button 
+            onClick={() => setActiveMobileTab('patient')}
+            className={`flex-1 py-2.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors ${activeMobileTab === 'patient' ? 'border-[#9575cd] text-[#9575cd]' : 'border-transparent text-slate-500'}`}
+         >
+            <User size={16} /> Patient Details
+         </button>
+         <button 
+            onClick={() => setActiveMobileTab('billing')}
+            className={`flex-1 py-2.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors ${activeMobileTab === 'billing' ? 'border-[#9575cd] text-[#9575cd]' : 'border-transparent text-slate-500'}`}
+         >
+            <Receipt size={16} /> Billing
+            {billItems.length > 0 && (
+                <span className="bg-rose-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full ml-1">{billItems.length}</span>
+            )}
+         </button>
       </div>
+
+      <div className="flex flex-1 overflow-hidden p-2 md:p-0 flex-col md:flex-row gap-0 md:gap-4 relative">
+          
+          {/* LEFT PANE: Using md:contents unwraps this div on desktop so width rules aren't broken */}
+          <div className={`${activeMobileTab === 'patient' ? 'block w-full h-full' : 'hidden'} md:contents`}>
+            <RegistrationLeftPane 
+                fields={fields} formValues={formValues} setFormValues={setFormValues} 
+                multiSelectValues={multiSelectValues} setMultiSelectValues={setMultiSelectValues} 
+                currentPatientId={currentPatientId} setCurrentPatientId={setCurrentPatientId} 
+                referralsList={referralsList} onCustomizeClick={onCustomizeClick} 
+            />
+          </div>
+          
+          {/* RIGHT PANE: Using md:contents unwraps this div on desktop so width rules aren't broken */}
+          <div className={`${activeMobileTab === 'billing' ? 'block w-full h-full' : 'hidden'} md:contents`}>
+            <BillingRightPane 
+                currentBillNumber={currentBillNumber} billingDate={billingDate} handleManualDateChange={handleManualDateChange}
+                onQuotationClick={onQuotationClick} handleOpenNotes={handleOpenNotes} billItems={billItems} setBillItems={setBillItems}
+                discountPercent={discountPercent} setDiscountPercent={setDiscountPercent} discountAmount={discountAmount} setDiscountAmount={setDiscountAmount}
+                discountBy={discountBy} setDiscountBy={setDiscountBy} discountReason={discountReason} setDiscountReason={setDiscountReason}
+                isDuePayment={isDuePayment} setIsDuePayment={setIsDuePayment} advancePaid={advancePaid} setAdvancePaid={setAdvancePaid}
+                selectedModes={selectedModes} setSelectedModes={setSelectedModes} paymentDetails={paymentDetails} setPaymentDetails={setPaymentDetails}
+                subTotal={subTotal} finalDiscount={finalDiscount} netAmount={netAmount} dueAmount={dueAmount}
+                handleSaveAndGenerate={handleSaveAndGenerate} isSaving={isSaving}
+            />
+          </div>
+
+      </div>
+
+      {/* SUCCESS POPUP */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-sm w-full mx-4 border border-slate-100">
+            <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-5 border-[4px] border-emerald-100"><CheckCircle className="text-emerald-500" size={32} strokeWidth={2.5} /></div>
+            <h2 className="text-xl font-black text-slate-800 tracking-tight text-center">Registration & Billing Complete!</h2>
+            <div className="flex gap-4 mt-3">
+               <p className="text-slate-500 text-xs font-medium">ID: <span className="text-[#4dd0e1] font-mono font-bold ml-1">{currentPatientId}</span></p>
+               <p className="text-slate-500 text-xs font-medium">INV: <span className="text-[#9575cd] font-mono font-bold ml-1">{currentBillNumber}</span></p>
+            </div>
+            <div className="mt-8 flex flex-col items-center gap-3"><Loader2 className="animate-spin text-slate-400" size={20} /><p className="text-[11px] text-slate-400 font-bold tracking-wider uppercase">Loading Invoice Preview...</p></div>
+          </div>
+        </div>
+      )}
+
+      {/* NOTES POPUP */}
+      {isNotesEditorOpen && (
+          <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-4">
+            <div className="bg-white w-full max-w-4xl h-[600px] max-h-[90vh] rounded-lg shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden">
+              <div className="px-6 py-4 flex items-center justify-between shrink-0 border-b border-purple-100" style={{ background: 'linear-gradient(to right, #f3e5f5, #e1bee7)' }}>
+                <div className="flex items-center gap-2"><div className="p-1.5 bg-white/50 rounded text-[#9575cd]"><Type size={18} /></div><h3 className="font-bold text-slate-800 text-base">Add Bill Note</h3></div>
+                <button onClick={() => setIsNotesEditorOpen(false)} className="p-1 rounded-full hover:bg-white/50 text-slate-600 transition-colors"><X size={20} /></button>
+              </div>
+              <div className="flex-1 bg-white relative flex flex-col min-h-0"><RichTextEditor value={tempNotesContent} onChange={setTempNotesContent} placeholder="Start typing your note here..." /></div>
+              <div className="p-4 px-6 border-t border-slate-200 bg-slate-50 flex justify-end gap-3 shrink-0">
+                <button onClick={() => setIsNotesEditorOpen(false)} className="px-6 py-2 rounded text-slate-600 font-bold text-sm bg-white border border-slate-300 hover:bg-slate-100 transition-colors">Cancel</button>
+                <button onClick={handleSaveNotes} className="px-6 py-2 rounded text-white font-bold text-sm shadow-md transition-all active:scale-95" style={{ background: 'linear-gradient(to right, #ba68c8, #f06292)' }}>Save Note</button>
+              </div>
+            </div>
+          </div>
+      )}
+
+      {/* INVOICE MODAL */}
+      <InvoiceModal 
+         isOpen={isInvoiceOpen}
+         onClose={() => { setIsInvoiceOpen(false); window.location.reload(); }} 
+         data={invoiceData}
+      />
     </div>
   );
 }
-// BLOCK COMPONENT DEFINITION CLOSE
+// --- BLOCK app/components/NewRegistration.tsx CLOSE ---

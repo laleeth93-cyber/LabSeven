@@ -1,29 +1,68 @@
-/* BLOCK TAILWIND CONFIGURATION OPEN */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* BLOCK TAILWIND CONFIGURATION CLOSE */
 
-/* BLOCK SCROLLBAR STYLES OPEN */
-/* Width for vertical scrollbars */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+/* --- 1. FORCE LIGHT MODE VARIABLES (Crucial Fix) --- */
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 255, 255, 255;
 }
 
-/* Track (background) */
-::-webkit-scrollbar-track {
-  background: transparent; 
+/* We removed the "@media (prefers-color-scheme: dark)" block 
+   to prevent white text on white backgrounds */
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-end-rgb));
 }
 
-/* Handle (the moving part) */
-::-webkit-scrollbar-thumb {
-  background: #cfd8dc; /* Light blue-grey to match theme */
-  border-radius: 10px;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
-/* Handle on hover */
-::-webkit-scrollbar-thumb:hover {
-  background: #b0bec5; 
+/* --- 2. PRINT STYLES --- */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the invoice print area */
+  #invoice-print-area, #invoice-print-area * {
+    visibility: visible;
+  }
+
+  /* Position the invoice at the absolute top-left */
+  #invoice-print-area {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    height: auto;
+    overflow: visible !important;
+  }
+
+  /* FORCE COLORS FOR PRINTER */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Clean up modal styles for print */
+  .modal-backdrop, .modal-content {
+    background: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Force Text Black for Print */
+  p, h1, h2, h3, span, div, label, input, select {
+    color: black !important;
+    text-shadow: none !important;
+  }
 }
-/* BLOCK SCROLLBAR STYLES CLOSE */

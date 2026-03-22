@@ -1,0 +1,357 @@
+// --- BLOCK app/results/entry/page.tsx OPEN ---
+"use client";
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { getPendingWorklist, getResultEntryData, clearAllEntryData } from '@/app/actions/result-entry';
+import WorklistPanel from './components/WorklistPanel';
+import ResultEntryForm from './components/ResultEntryForm';
+import DateRangeFilter from './components/DateRangeFilter';
+import EntryDateTimePicker from './components/EntryDateTimePicker'; 
+import { Loader2, Printer, Search, Trash2, Users, FileEdit } from 'lucide-react';
+
+export default function ResultEntryPage() {
+  // ==========================================
+  // MOBILE UI STATE
+  // ==========================================
+  const [activeMobileTab, setActiveMobileTab] = useState<'worklist' | 'form'>('worklist');
+
+  const [bills, setBills] = useState<any[]>([]);
+  const [selectedBillId, setSelectedBillId] = useState<number | null>(null);
+  const [selectedBillData, setSelectedBillData] = useState<any>(null);
+  const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBillLoading, setIsBillLoading] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+
+  const [activeTab, setActiveTab] = useState('Pending'); 
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // 1. Date Filter State (For searching worklist)
+  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>({
+    from: new Date(), 
+    to: new Date(),
+    label: 'Today'
+  });
+
+  // --- 2. Entry Date/Time Logic (Live Clock) ---
+  const [isManualTime, setIsManualTime] = useState(false);
+  
+  const getLocalISOString = () => {
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    return (new Date(now.getTime() - tzOffset)).toISOString().slice(0, 19);
+  };
+
+  const [entryDateTime, setEntryDateTime] = useState(getLocalISOString());
+
+  useEffect(() => {
+    if (isManualTime) return; 
+    const interval = setInterval(() => {
+        setEntryDateTime(getLocalISOString());
+    }, 1000); 
+    return () => clearInterval(interval);
+  }, [isManualTime]);
+
+  const handleManualDateChange = (newDate: string) => {
+      setIsManualTime(true); 
+      setEntryDateTime(newDate);
+  };
+  // ---------------------------------------------
+
+
+  // 1. Load Worklist
+  useEffect(() => { loadWorklist(); }, []);
+
+  const loadWorklist = async () => {
+    setIsLoading(true);
+    const res = await getPendingWorklist(); 
+    if (res.success) setBills(res.data || []);
+    setIsLoading(false);
+  };
+
+  // 2. Fetch Bill Details
+  useEffect(() => {
+    if (selectedBillId) {
+      fetchBillDetails(selectedBillId);
+    } else {
+        setSelectedBillData(null);
+        setSelectedTestIds([]);
+    }
+  }, [selectedBillId]);
+
+  const fetchBillDetails = async (billId: number) => {
+    setIsBillLoading(true);
+    const res = await getResultEntryData(billId);
+    if (res.success) {
+        setSelectedBillData(res.data);
+        
+        if (res.data && res.data.items) {
+            const items = res.data.items;
+            let idsToSelect: number[] = [];
+
+            if (activeTab === 'Pending') {
+                idsToSelect = items.filter((i: any) => i.status === 'Pending').map((i: any) => i.id);
+            } else if (activeTab === 'Partial') {
+                idsToSelect = items.filter((i: any) => i.status === 'Entered').map((i: any) => i.id);
+            } else if (activeTab === 'Completed') {
+                idsToSelect = items.filter((i: any) => i.status === 'Approved' || i.status === 'Printed').map((i: any) => i.id);
+            } else {
+                idsToSelect = items.map((i: any) => i.id);
+            }
+            setSelectedTestIds(idsToSelect);
+        }
+    }
+    setIsBillLoading(false);
+  };
+
+  const handleSaveSuccess = async () => {
+    const listRes = await getPendingWorklist();
+    if (listRes.success) setBills(listRes.data || []);
+
+    if (selectedBillId) {
+        const billRes = await getResultEntryData(selectedBillId);
+        if (billRes.success) {
+            setSelectedBillData(billRes.data);
+        }
+    }
+  };
+
+  const handleTestToggle = (testId: number) => {
+    setSelectedTestIds(prev => 
+      prev.includes(testId) ? prev.filter(id => id !== testId) : [...prev, testId]                
+    );
+  };
+
+  // Clever Auto-Switch for Mobile: When a patient is clicked, switch to the form tab
+  const handleSelectBill = (id: number) => {
+      setSelectedBillId(id);
+      setActiveMobileTab('form');
+  };
+
+  const handleClearData = async () => {
+    if (confirm("⚠️ WARNING: This will PERMANENTLY DELETE all entered test results for ALL patients.\n\nAre you sure you want to reset everything?")) {
+        setIsClearing(true);
+        const res = await clearAllEntryData();
+        if (res.success) {
+            setSelectedBillId(null);
+            setSelectedBillData(null);
+            setSelectedTestIds([]);
+            setSearchTerm('');
+            await loadWorklist();
+            alert("All data cleared successfully.");
+            setActiveMobileTab('worklist'); // Reset back to worklist on mobile
+        } else {
+            alert("Failed to clear data: " + res.message);
+        }
+        setIsClearing(false);
+    }
+  };
+
+  const filteredBills = useMemo(() => {
+    let filtered = bills;
+
+    if (activeTab !== 'All') {
+      filtered = filtered.filter(bill => {
+        const items = bill.items || [];
+        if (items.length === 0) return false;
+        const hasPending = items.some((i: any) => i.status === 'Pending');
+        const hasEntered = items.some((i: any) => i.status === 'Entered');
+        const hasCompleted = items.some((i: any) => i.status === 'Approved' || i.status === 'Printed');
+
+        if (activeTab === 'Pending') return hasPending;
+        if (activeTab === 'Partial') return hasEntered; 
+        if (activeTab === 'Completed') return hasCompleted;
+        return true;
+      });
+    }
+
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      filtered = filtered.filter(bill => 
+        bill.patient.firstName.toLowerCase().includes(lowerSearch) ||
+        bill.billNumber.toLowerCase().includes(lowerSearch) ||
+        (bill.patient.phone && bill.patient.phone.includes(lowerSearch))
+      );
+    }
+
+    if (dateRange.from && dateRange.to) {
+      filtered = filtered.filter(bill => {
+         const billDate = new Date(bill.date);
+         const bDate = new Date(billDate.getFullYear(), billDate.getMonth(), billDate.getDate());
+         const from = dateRange.from ? new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate()) : null;
+         const to = dateRange.to ? new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate()) : null;
+         if(from && to) return bDate >= from && bDate <= to;
+         return true;
+      });
+    }
+
+    return filtered;
+  }, [bills, searchTerm, activeTab, dateRange]);
+
+  const tabs = useMemo(() => {
+    const getCount = (type: string) => {
+        return bills.filter(b => {
+            const items = b.items || [];
+            if (type === 'Pending') return items.some((i: any) => i.status === 'Pending');
+            if (type === 'Partial') return items.some((i: any) => i.status === 'Entered');
+            if (type === 'Completed') return items.some((i: any) => i.status === 'Approved' || i.status === 'Printed');
+            return false;
+        }).length;
+    };
+
+    return [
+        { label: 'All', count: bills.length, color: 'bg-slate-500' },
+        { label: 'Pending', count: getCount('Pending'), color: 'bg-amber-500' },
+        { label: 'Partial', count: getCount('Partial'), color: 'bg-purple-500' },
+        { label: 'Completed', count: getCount('Completed'), color: 'bg-green-500' }, 
+    ];
+  }, [bills]);
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2"><Loader2 className="animate-spin"/> Loading Worklist...</div>;
+
+  return (
+    <div className="h-full w-full flex flex-col font-sans bg-[#f1f5f9] overflow-hidden">
+      <header className="bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm">
+        
+        {/* ROW 1: TITLE & SEARCH (Responsive Wrap) */}
+        <div className="px-4 md:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h1 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
+                Result Entry
+            </h1>
+            
+            {/* Search Bar - Expands to full width on mobile */}
+            <div className="relative group w-full sm:w-auto">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#9575cd] transition-colors"/>
+                <input 
+                    type="text" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search patient..." 
+                    className="pl-9 pr-3 h-9 w-full sm:w-64 text-sm md:text-xs font-medium bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#9575cd] focus:bg-white transition-all placeholder:text-slate-400"
+                />
+            </div>
+        </div>
+
+        {/* ROW 2: TABS & CONTROLS (Responsive Wrap) */}
+        <div className="px-4 md:px-6 pb-0 flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-t border-slate-50 pt-2 md:pt-3">
+            
+            {/* Worklist Filter Tabs */}
+            <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar w-full xl:w-auto pb-1">
+                {tabs.map(tab => (
+                    <button 
+                        key={tab.label}
+                        onClick={() => { setActiveTab(tab.label); setSelectedBillId(null); setActiveMobileTab('worklist'); }}
+                        className={`flex items-center gap-2 px-3 md:px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all border-b-2 whitespace-nowrap ${
+                            activeTab === tab.label 
+                            ? 'border-[#9575cd] text-[#9575cd] bg-purple-50/50 rounded-t-md' 
+                            : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-t-md'
+                        }`}
+                    >
+                        {tab.label}
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] text-white ${tab.color}`}>{tab.count}</span>
+                    </button>
+                ))}
+            </div>
+
+            {/* Date Time & Action Controls */}
+            <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto pb-2 md:pb-0">
+                
+                {/* FIX: Changed from 'flex' to 'hidden sm:flex' 
+                  so the Delete All button is completely hidden on mobile phones! 
+                */}
+                <button 
+                    onClick={handleClearData}
+                    disabled={isClearing}
+                    className="hidden sm:flex items-center justify-center gap-2 px-3 py-1.5 h-8 bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 hover:text-red-700 transition-all shadow-sm text-xs font-bold"
+                    title="Permanently Delete All Results"
+                >
+                    {isClearing ? <Loader2 size={14} className="animate-spin"/> : <Trash2 size={14} />}
+                    <span>Delete All</span>
+                </button>
+
+                <div className="flex-1 sm:flex-none h-8">
+                    <EntryDateTimePicker 
+                        date={entryDateTime}
+                        onChange={handleManualDateChange}
+                        align="right"
+                    />
+                </div>
+
+                <div className="h-5 w-[1px] bg-slate-200 hidden sm:block"></div>
+
+                <div className="w-full sm:w-auto mt-2 sm:mt-0">
+                    <DateRangeFilter onFilterChange={setDateRange} />
+                </div>
+            </div>
+        </div>
+      </header>
+
+      {/* --- MOBILE TABS NAVIGATION --- */}
+      <div className="md:hidden flex px-2 pt-2 bg-white border-b border-slate-200 shrink-0 gap-2">
+         <button 
+            onClick={() => setActiveMobileTab('worklist')}
+            className={`flex-1 py-2.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors ${activeMobileTab === 'worklist' ? 'border-[#9575cd] text-[#9575cd]' : 'border-transparent text-slate-500'}`}
+         >
+            <Users size={16} /> Worklist
+         </button>
+         <button 
+            onClick={() => setActiveMobileTab('form')}
+            className={`flex-1 py-2.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors ${activeMobileTab === 'form' ? 'border-[#9575cd] text-[#9575cd]' : 'border-transparent text-slate-500'}`}
+         >
+            <FileEdit size={16} /> Enter Results
+            {selectedBillId && (
+                <span className="bg-emerald-500 text-white text-[10px] w-2 h-2 rounded-full ml-1 animate-pulse"></span>
+            )}
+         </button>
+      </div>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="flex flex-1 overflow-hidden p-2 md:p-4 flex-col md:flex-row gap-0 md:gap-4 relative">
+        
+        {/* LEFT PANE (WORKLIST): Visible on Desktop, or on Mobile if 'worklist' tab is active */}
+        <div className={`w-full md:w-[40%] h-full bg-white rounded-lg md:rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-col ${activeMobileTab === 'worklist' ? 'flex' : 'hidden md:flex'}`}>
+            <WorklistPanel 
+                bills={filteredBills} 
+                selectedBillId={selectedBillId} 
+                onSelect={handleSelectBill} 
+                selectedTestIds={selectedTestIds}
+                onToggleTest={handleTestToggle}
+                activeTab={activeTab}
+            />
+        </div>
+
+        {/* RIGHT PANE (RESULT ENTRY FORM): Visible on Desktop, or on Mobile if 'form' tab is active */}
+        <div className={`w-full md:w-[60%] h-full bg-white rounded-lg md:rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-col relative ${activeMobileTab === 'form' ? 'flex' : 'hidden md:flex'}`}>
+            {selectedBillId ? (
+               isBillLoading ? (
+                 <div className="flex-1 flex items-center justify-center text-slate-400 gap-2"><Loader2 className="animate-spin"/> Loading Test Data...</div>
+               ) : (
+                 <ResultEntryForm 
+                    bill={selectedBillData} 
+                    onSaveSuccess={handleSaveSuccess}
+                    filterTestIds={selectedTestIds}
+                    entryDateTime={entryDateTime} 
+                 />
+               )
+            ) : (
+               <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/30 p-6">
+                  <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100">
+                     <Printer size={32} className="text-slate-300 opacity-50"/> 
+                  </div>
+                  <h3 className="text-slate-600 font-bold text-base md:text-lg">No Patient Selected</h3>
+                  <p className="text-slate-400 text-xs md:text-sm mt-1 max-w-xs text-center">Select a patient from the Worklist to start entering test results.</p>
+                  
+                  {/* Button to quickly go back to worklist on mobile */}
+                  <button onClick={() => setActiveMobileTab('worklist')} className="mt-6 md:hidden px-6 py-2.5 bg-[#9575cd] text-white font-bold rounded-lg shadow-md text-sm">
+                      Go to Patient Worklist
+                  </button>
+               </div>
+            )}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+// --- BLOCK app/results/entry/page.tsx CLOSE ---

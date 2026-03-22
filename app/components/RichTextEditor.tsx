@@ -1,4 +1,4 @@
-// FILE: app/components/RichTextEditor.tsx
+// --- app/components/RichTextEditor.tsx Block Open ---
 "use client";
 
 // BLOCK IMPORTS OPEN
@@ -59,9 +59,11 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
            ],
            
            // We define a broad range of formats to ensure TinyMCE recognizes them valid
-           // though our buttons control the exact value now.
            font_size_formats: '1px 2px 3px 4px 5px 6px 7px 8px 9px 10px 11px 12px 14px 16px 18px 24px 36px 48px',
            
+           // FIXED: Added underscores to the property name so TinyMCE recognizes our custom list!
+           line_height_formats: '0 0.5 0.8 1 1.1 1.2 1.3 1.4 1.5 2',
+
            setup: (editor: any) => {
              // REGISTER CUSTOM SMALL ICONS
              
@@ -118,10 +120,10 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
            toolbar: 'undo redo | blocks fontfamily | decrease_fontsize fontsize_display increase_fontsize | ' +
              'bold italic underline strikethrough forecolor backcolor | alignleft aligncenter ' +
-             'alignright alignjustify | bullist numlist outdent indent | ' +
+             'alignright alignjustify lineheight | bullist numlist outdent indent | ' +
              'image table | removeformat | help',
            
-           content_style: 'body { font-family:Inter,Helvetica,Arial,sans-serif; font-size:14px }',
+           content_style: 'body { font-family:Inter,Helvetica,Arial,sans-serif; font-size:14px; line-height:1.5 }',
            
            // Table configuration
            table_sizing_mode: 'fixed',
@@ -163,3 +165,4 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   );
 }
 // BLOCK MAIN COMPONENT CLOSE
+// --- app/components/RichTextEditor.tsx Block Close ---

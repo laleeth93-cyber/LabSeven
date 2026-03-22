@@ -1,5 +1,20 @@
+# Dependencies
 node_modules
+
+# Next.js build output
 .next
 build
 out
+
+# Environment variables
 .env.local
+
+# Prisma
+/app/generated/prisma
+
+# Python Virtual Environments
+.venv
+venv/
+
+# IDE / Editor settings
+.vscode

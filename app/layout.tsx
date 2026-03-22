@@ -1,16 +1,14 @@
-// BLOCK LAYOUT IMPORTS OPEN
+// --- app/layout.tsx Block Open ---
 import type { Metadata } from "next";
-import "./globals.css"; 
-// BLOCK LAYOUT IMPORTS CLOSE
+import "./globals.css";
+import ClientLayout from "./components/ClientLayout";
+import { Toaster } from "react-hot-toast";
 
-// BLOCK SITE METADATA OPEN
 export const metadata: Metadata = {
-  title: "SmartLab Portal",
+  title: "Lab Seven",
   description: "Laboratory Management System",
 };
-// BLOCK SITE METADATA CLOSE
 
-// BLOCK ROOT LAYOUT COMPONENT OPEN
 export default function RootLayout({
   children,
 }: {
@@ -19,9 +17,33 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-gray-50 antialiased">
-        {children}
+        {/* GLOBAL TOAST CONFIGURATION */}
+        <Toaster 
+            position="top-center" 
+            reverseOrder={false} 
+            toastOptions={{
+                duration: 3000,
+                style: {
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    borderRadius: '10px',
+                    padding: '12px 16px',
+                    color: '#1e293b',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                },
+                success: {
+                    iconTheme: { primary: '#10b981', secondary: '#ffffff' },
+                },
+                error: {
+                    iconTheme: { primary: '#ef4444', secondary: '#ffffff' },
+                },
+            }} 
+        />
+        <ClientLayout>
+          {children}
+        </ClientLayout>
       </body>
     </html>
   );
 }
-// BLOCK ROOT LAYOUT COMPONENT CLOSE
+// --- app/layout.tsx Block Close ---
