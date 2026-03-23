@@ -8,6 +8,8 @@ out
 
 # Environment variables
 .env.local
+.env
+.env.*
 
 # Prisma
 /app/generated/prisma
