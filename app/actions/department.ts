@@ -1,4 +1,3 @@
-// BLOCK actions/department.ts OPEN
 "use server";
 
 import { prisma } from '@/lib/prisma';
@@ -21,7 +20,7 @@ export async function generateDepartmentCode() {
     });
 
     return `DEP-${(maxNum + 1).toString().padStart(4, '0')}`;
-  } catch (error) {
+  } catch (error: any) {
     return 'DEP-0001';
   }
 }
@@ -33,9 +32,9 @@ export async function getDepartments() {
       orderBy: { name: 'asc' }
     });
     return { success: true, data };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Get Departments Error:", error);
-    return { success: false, message: "Failed to load departments.", data: [] };
+    return { success: false, message: error?.message || "Failed to load departments.", data: [] };
   }
 }
 
@@ -80,9 +79,10 @@ export async function createDepartment(data: any) {
 
     revalidatePath('/department');
     return { success: true, data: newDept };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Create Department Error:", error);
-    return { success: false, message: "Failed to create department." };
+    // Modified to return the exact database error message
+    return { success: false, message: error?.message || "Failed to create department." };
   }
 }
 
@@ -119,9 +119,10 @@ export async function updateDepartment(id: number, data: any) {
 
     revalidatePath('/department');
     return { success: true, data: updated };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Update Department Error:", error);
-    return { success: false, message: "Failed to update department." };
+    // Modified to return the exact database error message
+    return { success: false, message: error?.message || "Failed to update department." };
   }
 }
 
@@ -140,8 +141,8 @@ export async function deleteDepartment(id: number) {
     await prisma.department.delete({ where: { id } });
     revalidatePath('/department');
     return { success: true };
-  } catch (error) {
-    return { success: false, message: "Failed to delete department." };
+  } catch (error: any) {
+    return { success: false, message: error?.message || "Failed to delete department." };
   }
 }
 
@@ -154,8 +155,7 @@ export async function toggleDepartmentStatus(id: number, currentStatus: boolean)
     });
     revalidatePath('/department');
     return { success: true };
-  } catch (error) {
-    return { success: false, message: "Failed to update status." };
+  } catch (error: any) {
+    return { success: false, message: error?.message || "Failed to update status." };
   }
 }
-// BLOCK actions/department.ts CLOSE
