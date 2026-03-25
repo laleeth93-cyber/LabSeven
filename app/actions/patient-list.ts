@@ -1,14 +1,24 @@
-// --- BLOCK app/actions/patient-list.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+// 🚨 Helper function to get the current tenant's Organization ID
+async function getOrgId() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
+    return session.user.orgId;
+}
 
 // Fetch all bills/patients for the list with optional Date Filtering
 export async function getPatientList(searchQuery: string = '', startDate?: string, endDate?: string) {
     try {
-        // ONLY FETCH BILLS THAT ARE NOT DELETED
-        const whereClause: any = { isDeleted: false };
+        const orgId = await getOrgId();
+
+        // ONLY FETCH BILLS THAT ARE NOT DELETED AND BELONG TO THIS LAB 🚨
+        const whereClause: any = { isDeleted: false, organizationId: orgId };
         
         if (searchQuery) {
             whereClause.OR = [
@@ -48,11 +58,11 @@ export async function getPatientList(searchQuery: string = '', startDate?: strin
                                 type: true, 
                                 isOutsourced: true, 
                                 isConfigured: true,
-                                isCulture: true, // <--- ADDED FIX
-                                cultureColumns: true // <--- ADDED FIX
+                                isCulture: true, 
+                                cultureColumns: true 
                             } 
                         },
-                        results: true // <--- ADDED FIX: Required to print the report!
+                        results: true 
                     }
                 },
                 payments: true
@@ -71,7 +81,10 @@ export async function getPatientList(searchQuery: string = '', startDate?: strin
 // Clear Due Amount
 export async function clearBillDue(billId: number, amount: number, paymentMode: string) {
     try {
-        const bill = await prisma.bill.findUnique({ where: { id: billId } });
+        const orgId = await getOrgId();
+        
+        // 🚨 Verify ownership
+        const bill = await prisma.bill.findUnique({ where: { id: billId, organizationId: orgId } });
         if (!bill) return { success: false, message: "Bill not found" };
 
         const newPaidAmount = bill.paidAmount + amount;
@@ -79,7 +92,8 @@ export async function clearBillDue(billId: number, amount: number, paymentMode: 
 
         await prisma.$transaction([
             prisma.payment.create({
-                data: { billId: billId, amount: amount, mode: paymentMode, date: new Date() }
+                // 🚨 Tag payment to the current lab
+                data: { organizationId: orgId, billId: billId, amount: amount, mode: paymentMode, date: new Date() }
             }),
             prisma.bill.update({
                 where: { id: billId },
@@ -97,7 +111,10 @@ export async function clearBillDue(billId: number, amount: number, paymentMode: 
 // Refund Amount 
 export async function processRefund(billId: number, amount: number, mode: string, reason: string) {
     try {
-        const bill = await prisma.bill.findUnique({ where: { id: billId } });
+        const orgId = await getOrgId();
+        
+        // 🚨 Verify ownership
+        const bill = await prisma.bill.findUnique({ where: { id: billId, organizationId: orgId } });
         if (!bill) return { success: false, message: "Bill not found" };
         if (amount > bill.paidAmount) return { success: false, message: "Refund cannot exceed the paid amount." };
 
@@ -109,6 +126,7 @@ export async function processRefund(billId: number, amount: number, mode: string
         await prisma.$transaction([
             prisma.payment.create({
                 data: { 
+                    organizationId: orgId, // 🚨 Tag payment to the current lab
                     billId: billId, 
                     amount: -amount, 
                     mode: refundModeString, 
@@ -136,8 +154,13 @@ export async function processRefund(billId: number, amount: number, mode: string
 // Delete Bill Entirely (Soft Delete to keep metrics)
 export async function deleteBill(billId: number) {
     try {
-        // SOFT DELETE: Marks the bill as deleted, so it keeps the count for the dashboard
-        // but removes it from the active UI and revenue calculations.
+        const orgId = await getOrgId();
+        
+        // 🚨 Verify ownership
+        const bill = await prisma.bill.findUnique({ where: { id: billId, organizationId: orgId } });
+        if (!bill) return { success: false, message: "Bill not found" };
+
+        // SOFT DELETE
         await prisma.bill.update({ 
             where: { id: billId },
             data: { isDeleted: true }
@@ -154,6 +177,12 @@ export async function deleteBill(billId: number) {
 // Update Patient Details
 export async function updatePatientDetails(patientId: number, data: any) {
     try {
+        const orgId = await getOrgId();
+        
+        // 🚨 Verify ownership
+        const patient = await prisma.patient.findUnique({ where: { id: patientId, organizationId: orgId } });
+        if (!patient) return { success: false, message: "Patient not found" };
+
         await prisma.patient.update({
             where: { id: patientId },
             data: {
@@ -183,8 +212,10 @@ export async function updatePatientDetails(patientId: number, data: any) {
 export async function searchMasterTests(query: string) {
     if (!query || query.length < 2) return [];
     try {
+        const orgId = await getOrgId();
         return await prisma.test.findMany({
             where: {
+                organizationId: orgId, // 🚨 Filter to current lab
                 OR: [ { name: { contains: query, mode: 'insensitive' } }, { code: { contains: query, mode: 'insensitive' } } ],
                 isActive: true
             },
@@ -193,4 +224,3 @@ export async function searchMasterTests(query: string) {
         });
     } catch (error) { return []; }
 }
-// --- BLOCK app/actions/patient-list.ts CLOSE ---

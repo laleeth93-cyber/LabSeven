@@ -1,13 +1,24 @@
-// --- BLOCK app/actions/referral.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+// 🚨 Helper function to get the current tenant's Organization ID
+async function getOrgId() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
+    return session.user.orgId;
+}
 
 // Fetch referrals by type
 export async function getReferrals(type: string, searchQuery: string = '') {
     try {
-        const whereClause: any = { type: type }; 
+        const orgId = await getOrgId();
+
+        // 🚨 Filter by the current lab's organizationId
+        const whereClause: any = { type: type, organizationId: orgId }; 
         
         if (searchQuery) {
             whereClause.OR = [
@@ -35,6 +46,7 @@ export async function getReferrals(type: string, searchQuery: string = '') {
 // Create or Update Referral
 export async function saveReferral(data: any, type: string) {
     try {
+        const orgId = await getOrgId();
         const commissionVal = data.commission ? parseFloat(data.commission) : 0;
 
         const payload = {
@@ -51,6 +63,12 @@ export async function saveReferral(data: any, type: string) {
         };
 
         if (data.id) {
+            // 🚨 Verify ownership before updating
+            const existing = await prisma.doctor.findFirst({
+                where: { id: data.id, organizationId: orgId }
+            });
+            if (!existing) return { success: false, message: "Referral not found." };
+
             const updated = await prisma.doctor.update({
                 where: { id: data.id },
                 data: payload
@@ -60,6 +78,7 @@ export async function saveReferral(data: any, type: string) {
         } else {
             const created = await prisma.doctor.create({
                 data: {
+                    organizationId: orgId, // 🚨 Tag referral to the current lab
                     type: type,
                     ...payload
                 }
@@ -76,6 +95,14 @@ export async function saveReferral(data: any, type: string) {
 // Delete Referral
 export async function deleteReferral(id: number) {
     try {
+        const orgId = await getOrgId();
+        
+        // 🚨 Verify ownership before deleting
+        const existing = await prisma.doctor.findFirst({
+            where: { id: id, organizationId: orgId }
+        });
+        if (!existing) return { success: false, message: "Referral not found." };
+
         await prisma.doctor.delete({ where: { id } });
         revalidatePath('/referrals');
         return { success: true, message: "Deleted successfully!" };
@@ -87,9 +114,17 @@ export async function deleteReferral(id: number) {
 // Toggle Status - FIXED
 export async function toggleReferralStatus(id: number, newStatus: boolean) {
     try {
+        const orgId = await getOrgId();
+
+        // 🚨 Verify ownership
+        const existing = await prisma.doctor.findFirst({
+            where: { id: id, organizationId: orgId }
+        });
+        if (!existing) return { success: false, message: "Referral not found." };
+
         await prisma.doctor.update({
             where: { id },
-            data: { isActive: newStatus } // FIX: Store the new status exactly as provided by the UI
+            data: { isActive: newStatus } 
         });
         revalidatePath('/referrals');
         return { success: true };
@@ -97,4 +132,3 @@ export async function toggleReferralStatus(id: number, newStatus: boolean) {
         return { success: false, message: "Failed to update status." };
     }
 }
-// --- BLOCK app/actions/referral.ts CLOSE ---

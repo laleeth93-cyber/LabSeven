@@ -1,16 +1,26 @@
-// --- BLOCK app/actions/patient.ts OPEN ---
 'use server'
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+// 🚨 Helper function to get the current tenant's Organization ID
+async function getOrgId() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
+    return session.user.orgId;
+}
 
 // 1. SEARCH EXISTING PATIENTS
 export async function searchPatients(query: string) {
   if (!query || query.length < 2) return [];
 
   try {
+    const orgId = await getOrgId();
     const patients = await prisma.patient.findMany({
       where: {
+        organizationId: orgId, // 🚨 Filter to current lab
         OR: [
           { firstName: { contains: query, mode: 'insensitive' } },
           { phone: { contains: query, mode: 'insensitive' } },
@@ -30,9 +40,16 @@ export async function searchPatients(query: string) {
 // 2. REGISTER / UPDATE PATIENT
 export async function registerPatient(data: any) {
   try {
-    // Check if patient with this ID already exists
+    const orgId = await getOrgId();
+
+    // 🚨 Check if patient with this ID already exists FOR THIS LAB
     const existing = await prisma.patient.findUnique({
-      where: { patientId: data.patientId }
+      where: { 
+        organizationId_patientId: { 
+          organizationId: orgId, 
+          patientId: data.patientId 
+        } 
+      }
     });
 
     let result;
@@ -41,7 +58,12 @@ export async function registerPatient(data: any) {
       // UPDATE existing patient
       console.log("Updating existing patient:", data.patientId);
       result = await prisma.patient.update({
-        where: { patientId: data.patientId },
+        where: { 
+          organizationId_patientId: { 
+            organizationId: orgId, 
+            patientId: data.patientId 
+          } 
+        },
         data: {
           designation: data.prefix || 'Mr.',
           firstName: data.firstName,
@@ -54,7 +76,7 @@ export async function registerPatient(data: any) {
           email: data.email,
           address: data.address,
           referralType: data.referralType || "Self",
-          refDoctor: data.refDoctor || "Self", // <--- MUST HAVE THIS LINE
+          refDoctor: data.refDoctor || "Self", 
         }
       });
     } else {
@@ -62,6 +84,7 @@ export async function registerPatient(data: any) {
       console.log("Creating new patient:", data.patientId);
       result = await prisma.patient.create({
         data: {
+          organizationId: orgId, // 🚨 Critical: Attach to lab
           patientId: data.patientId, 
           designation: data.prefix || 'Mr.',
           firstName: data.firstName,
@@ -74,7 +97,7 @@ export async function registerPatient(data: any) {
           email: data.email || null,
           address: data.address || null,
           referralType: data.referralType || "Self",
-          refDoctor: data.refDoctor || "Self", // <--- MUST HAVE THIS LINE
+          refDoctor: data.refDoctor || "Self", 
         }
       });
     }
@@ -87,4 +110,3 @@ export async function registerPatient(data: any) {
     return { success: false, message: "Failed to save. Check inputs." };
   }
 }
-// --- BLOCK app/actions/patient.ts CLOSE ---

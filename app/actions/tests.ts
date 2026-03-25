@@ -1,16 +1,28 @@
-// --- BLOCK app/actions/tests.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+// 🚨 Helper function to get the current tenant's Organization ID
+async function getOrgId() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
+    return session.user.orgId;
+}
 
 export async function generateTestCode(type: string = 'Test') {
   try {
+    const orgId = await getOrgId();
     const prefix = type === 'Package' ? 'PKG' : 'TST';
     
-    const allTests = await prisma.test.findMany({ select: { code: true } });
-    let maxNum = 0;
+    const allTests = await prisma.test.findMany({ 
+        where: { organizationId: orgId }, // 🚨 Scope to current lab
+        select: { code: true } 
+    });
     
+    let maxNum = 0;
     const regex = new RegExp(`^${prefix}-(\\d+)$`);
     
     allTests.forEach(t => {
@@ -29,8 +41,9 @@ export async function generateTestCode(type: string = 'Test') {
 
 export async function getOutsourceLabs() {
   try {
+    const orgId = await getOrgId();
     const data = await prisma.doctor.findMany({ 
-        where: { type: 'Outsource', isActive: true } 
+        where: { type: 'Outsource', isActive: true, organizationId: orgId } 
     });
     return { success: true, data };
   } catch (error) {
@@ -40,7 +53,9 @@ export async function getOutsourceLabs() {
 
 export async function getTests() {
   try {
+    const orgId = await getOrgId();
     const data = await prisma.test.findMany({
+      where: { organizationId: orgId }, // 🚨 Scope to current lab
       orderBy: { updatedAt: 'desc' },
       include: {
         department: true,
@@ -61,8 +76,9 @@ export async function getTests() {
 
 export async function getTestById(id: number) {
   try {
-    const data = await prisma.test.findUnique({
-      where: { id },
+    const orgId = await getOrgId();
+    const data = await prisma.test.findFirst({
+      where: { id: id, organizationId: orgId }, // 🚨 Security Check
       include: {
         department: true,
         method: true,
@@ -75,6 +91,7 @@ export async function getTestById(id: number) {
         }
       }
     });
+    if (!data) return { success: false, message: "Test not found" };
     return { success: true, data };
   } catch (error) {
     return { success: false, message: "Test not found" };
@@ -83,22 +100,29 @@ export async function getTestById(id: number) {
 
 export async function createTest(data: any) {
   try {
+    const orgId = await getOrgId();
     const actualType = data.testType || data.type || 'Test';
     let code = data.code || await generateTestCode(actualType);
     const prefix = actualType === 'Package' ? 'PKG' : 'TST';
     
-    let exists = await prisma.test.findUnique({ where: { code } });
+    // 🚨 Check code availability inside current lab
+    let exists = await prisma.test.findUnique({ 
+        where: { organizationId_code: { organizationId: orgId, code: code } } 
+    });
     const regex = new RegExp(`^${prefix}-(\\d+)$`);
     
     while(exists) {
         const match = code.match(regex);
         let num = match ? parseInt(match[1], 10) + 1 : 1;
         code = `${prefix}-${num.toString().padStart(4, '0')}`;
-        exists = await prisma.test.findUnique({ where: { code } });
+        exists = await prisma.test.findUnique({ 
+            where: { organizationId_code: { organizationId: orgId, code: code } } 
+        });
     }
 
     const newTest = await prisma.test.create({
       data: {
+        organizationId: orgId, // 🚨 Tag test to the lab
         name: data.name || data.testName,
         displayName: data.displayName || data.displayTestName || null,
         code: code,
@@ -149,6 +173,12 @@ export async function createTest(data: any) {
 
 export async function updateTest(id: number, data: any) {
   try {
+    const orgId = await getOrgId();
+    
+    // 🚨 Verify Ownership
+    const existing = await prisma.test.findFirst({ where: { id: id, organizationId: orgId } });
+    if (!existing) return { success: false, message: "Test not found." };
+
     const updated = await prisma.test.update({
       where: { id },
       data: {
@@ -213,6 +243,11 @@ export async function saveTest(data: any) {
 
 export async function deleteTest(id: number) {
   try {
+    const orgId = await getOrgId();
+    // 🚨 Verify Ownership
+    const existing = await prisma.test.findFirst({ where: { id: id, organizationId: orgId } });
+    if (!existing) return { success: false, message: "Test not found." };
+
     await prisma.test.delete({ where: { id } });
     revalidatePath('/tests');
     return { success: true };
@@ -223,6 +258,11 @@ export async function deleteTest(id: number) {
 
 export async function toggleTestStatus(id: number, currentStatus: boolean) {
   try {
+    const orgId = await getOrgId();
+    // 🚨 Verify Ownership
+    const existing = await prisma.test.findFirst({ where: { id: id, organizationId: orgId } });
+    if (!existing) return { success: false, message: "Test not found." };
+
     await prisma.test.update({
       where: { id },
       data: { isActive: !currentStatus }
@@ -233,4 +273,3 @@ export async function toggleTestStatus(id: number, currentStatus: boolean) {
     return { success: false, message: "Failed to toggle status." };
   }
 }
-// --- BLOCK app/actions/tests.ts CLOSE ---

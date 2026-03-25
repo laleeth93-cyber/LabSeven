@@ -1,13 +1,23 @@
-// BLOCK app/actions/parameters.ts OPEN
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+// 🚨 Helper function to get the current tenant's Organization ID
+async function getOrgId() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
+    return session.user.orgId;
+}
 
 // --- HELPER: GENERATE NEXT CODE ---
 export async function generateNextParameterCode() {
   try {
+    const orgId = await getOrgId();
     const allParams = await prisma.parameter.findMany({
+      where: { organizationId: orgId }, // 🚨 Filter to current lab
       select: { code: true }
     });
 
@@ -31,7 +41,9 @@ export async function generateNextParameterCode() {
 // --- GET ALL ---
 export async function getParameters() {
   try {
+    const orgId = await getOrgId();
     const data = await prisma.parameter.findMany({
+      where: { organizationId: orgId }, // 🚨 Filter to current lab
       orderBy: { updatedAt: 'desc' },
       include: { ranges: true }
     });
@@ -45,8 +57,9 @@ export async function getParameters() {
 // --- GET SINGLE ---
 export async function getParameter(id: number) {
   try {
-    const data = await prisma.parameter.findUnique({
-      where: { id },
+    const orgId = await getOrgId();
+    const data = await prisma.parameter.findFirst({
+      where: { id: id, organizationId: orgId }, // 🚨 Ensure it belongs to lab
       include: { ranges: true }
     });
     if (!data) return { success: false, message: "Parameter not found" };
@@ -73,12 +86,17 @@ function safeInt(val: any, defaultVal = 0): number {
 // --- CREATE ---
 export async function createParameter(data: any) {
   try {
+    const orgId = await getOrgId();
+
     // 1. Duplicate Name Check
     const existingName = await prisma.parameter.findFirst({
-        where: { name: { equals: data.name, mode: 'insensitive' } }
+        where: { 
+            name: { equals: data.name, mode: 'insensitive' },
+            organizationId: orgId // 🚨 Filter to current lab
+        }
     });
     if (existingName) {
-        return { success: false, message: "Parameter name already exists." };
+        return { success: false, message: "Parameter name already exists in your lab." };
     }
 
     // 2. Generate Code
@@ -88,16 +106,21 @@ export async function createParameter(data: any) {
     }
     
     // Collision Loop
-    let exists = await prisma.parameter.findFirst({ where: { code: finalCode } });
+    let exists = await prisma.parameter.findFirst({ 
+        where: { code: finalCode, organizationId: orgId } 
+    });
     while(exists) {
         const match = finalCode.match(/PAR-(\d+)/);
         let num = match ? parseInt(match[1], 10) + 1 : 1;
         finalCode = `PAR-${num.toString().padStart(4, '0')}`;
-        exists = await prisma.parameter.findFirst({ where: { code: finalCode } });
+        exists = await prisma.parameter.findFirst({ 
+            where: { code: finalCode, organizationId: orgId } 
+        });
     }
 
     const newParam = await prisma.parameter.create({
       data: {
+        organizationId: orgId, // 🚨 Critical: Attach to lab
         name: data.name,
         code: finalCode,
         displayName: data.displayName || null,
@@ -131,6 +154,7 @@ export async function createParameter(data: any) {
 
         ranges: {
             create: (data.ranges || []).map((r: any) => ({
+                organizationId: orgId, // 🚨 Tag range to lab
                 gender: r.gender || 'Both',
                 minAge: safeInt(r.minAge, 0),
                 maxAge: safeInt(r.maxAge, 100),
@@ -165,15 +189,26 @@ export async function createParameter(data: any) {
 // --- UPDATE ---
 export async function updateParameter(id: number, data: any) {
   try {
-    // 1. Duplicate Name Check (Exclude self)
+    const orgId = await getOrgId();
+
+    // 1. Verify Ownership
+    const existingParam = await prisma.parameter.findFirst({
+        where: { id: id, organizationId: orgId }
+    });
+    if (!existingParam) {
+        return { success: false, message: "Parameter not found." };
+    }
+
+    // 2. Duplicate Name Check (Exclude self)
     const existingName = await prisma.parameter.findFirst({
         where: { 
             name: { equals: data.name, mode: 'insensitive' },
+            organizationId: orgId,
             id: { not: id }
         }
     });
     if (existingName) {
-        return { success: false, message: "Parameter name already exists." };
+        return { success: false, message: "Parameter name already exists in your lab." };
     }
 
     const updated = await prisma.parameter.update({
@@ -210,8 +245,9 @@ export async function updateParameter(id: number, data: any) {
         billingOnly: data.billingOnly || false,
 
         ranges: {
-            deleteMany: {},
+            deleteMany: {}, // Deletes old ranges
             create: (data.ranges || []).map((r: any) => ({
+                organizationId: orgId, // 🚨 Tag range to lab
                 gender: r.gender || 'Both',
                 minAge: safeInt(r.minAge, 0),
                 maxAge: safeInt(r.maxAge, 100),
@@ -255,6 +291,11 @@ export async function saveParameter(data: any) {
 // --- UPDATE STATUS ONLY ---
 export async function updateParameterStatus(id: number, isActive: boolean) {
   try {
+    const orgId = await getOrgId();
+    // Security check
+    const existingParam = await prisma.parameter.findFirst({ where: { id: id, organizationId: orgId } });
+    if (!existingParam) return { success: false, message: "Parameter not found." };
+
     await prisma.parameter.update({
       where: { id },
       data: { isActive }
@@ -270,11 +311,15 @@ export async function updateParameterStatus(id: number, isActive: boolean) {
 // --- DELETE ---
 export async function deleteParameter(id: number) {
   try {
+    const orgId = await getOrgId();
+    // Security check
+    const existingParam = await prisma.parameter.findFirst({ where: { id: id, organizationId: orgId } });
+    if (!existingParam) return { success: false, message: "Parameter not found." };
+
     await prisma.parameter.delete({ where: { id } });
     revalidatePath('/parameters');
     return { success: true };
   } catch (error) {
-    return { success: false, message: "Failed to delete parameter." };
+    return { success: false, message: "Failed to delete parameter. It may be linked to existing tests." };
   }
 }
-// BLOCK app/actions/parameters.ts CLOSE

@@ -1,22 +1,30 @@
-// --- BLOCK app/actions/result-entry.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 interface TestResultItem {
   billItemId: number;
-  parameterId?: number | null; // FIX: Allow null for culture results
+  parameterId?: number | null; 
   value: string;
   flag: string;
 }
 
+// 🚨 Helper function to get the current tenant's Organization ID
+async function getOrgId() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
+    return session.user.orgId;
+}
+
 export async function getSignatureUsers() {
     try {
-        // @ts-ignore
+        const orgId = await getOrgId();
         const users = await prisma.user.findMany({
-            // @ts-ignore
             where: { 
+                organizationId: orgId, // 🚨 Filter to current lab
                 isActive: true, 
                 signatureUrl: { not: null },
                 isBillingOnly: false 
@@ -31,10 +39,11 @@ export async function getSignatureUsers() {
 
 export async function getPendingWorklist(search?: string) {
   try {
+    const orgId = await getOrgId();
     const where: any = {
+      organizationId: orgId, // 🚨 Filter to current lab
       items: {
         some: {
-          // @ts-ignore
           status: { not: "Printed" } 
         }
       }
@@ -54,7 +63,6 @@ export async function getPendingWorklist(search?: string) {
         patient: true,
         items: {
           where: { 
-            // @ts-ignore: Status field exists in schema
             status: { not: "Printed" } 
           },
           include: {
@@ -68,23 +76,22 @@ export async function getPendingWorklist(search?: string) {
 
     return { success: true, data: bills };
   } catch (error) {
-    console.error("CRITICAL: Error fetching worklist. Is the database running?", error);
+    console.error("CRITICAL: Error fetching worklist.", error);
     return { success: false, data: [] };
   }
 }
 
 export async function getResultEntryData(billId: number) {
   try {
+    const orgId = await getOrgId();
     if (!billId) throw new Error("Missing Bill ID");
 
     const bill = await prisma.bill.findUnique({
-      where: { id: billId },
+      where: { id: billId, organizationId: orgId }, // 🚨 Security check
       include: {
         patient: true,
         doctor: true,
-        // @ts-ignore
         approvedBy1: true,
-        // @ts-ignore
         approvedBy2: true,
         items: {
           include: {
@@ -95,7 +102,6 @@ export async function getResultEntryData(billId: number) {
                   include: { parameter: { include: { ranges: true } } },
                   orderBy: { order: 'asc' }
                 },
-                // @ts-ignore
                 packageTests: {
                   include: {
                     test: {
@@ -112,7 +118,6 @@ export async function getResultEntryData(billId: number) {
                 }
               }
             },
-            // @ts-ignore: Relation exists in schema
             results: {
                 include: { parameter: { include: { ranges: true } } }
             }
@@ -128,27 +133,27 @@ export async function getResultEntryData(billId: number) {
 
     return { success: true, data: bill };
   } catch (error) {
-    console.error("CRITICAL: Error loading bill data. Check database connection:", error);
+    console.error("CRITICAL: Error loading bill data.", error);
     return { success: false, error: "Failed to load bill" };
   }
 }
 
 export async function saveTestResults(billId: number, results: TestResultItem[], status: string = 'Entered', sig1Id?: number | null, sig2Id?: number | null) {
   try {
+    const orgId = await getOrgId();
+
     for (const res of results) {
-      // FIX: Explicitly handle null so Prisma doesn't overwrite the first record it finds
       const paramIdToUse = res.parameterId === undefined ? null : res.parameterId;
 
-      // @ts-ignore: TestResult model exists in schema
       const existing = await prisma.testResult.findFirst({
         where: {
+          organizationId: orgId, // 🚨 Scope to current lab
           billItemId: res.billItemId,
           parameterId: paramIdToUse
         }
       });
 
       if (existing) {
-        // @ts-ignore: TestResult model exists in schema
         await prisma.testResult.update({
           where: { id: existing.id },
           data: {
@@ -158,9 +163,9 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
           }
         });
       } else {
-        // @ts-ignore: TestResult model exists in schema
         await prisma.testResult.create({
           data: {
+            organizationId: orgId, // 🚨 Critical for SaaS! Fixes Vercel build
             billItemId: res.billItemId,
             parameterId: paramIdToUse,
             resultValue: res.value,
@@ -175,17 +180,12 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
     for (const itemId of billItemIds) {
       await prisma.billItem.update({
         where: { id: itemId },
-        data: { 
-            // @ts-ignore: Status field exists in schema
-            status: status 
-        }
+        data: { status: status }
       });
     }
 
-    // @ts-ignore
     await prisma.bill.update({
         where: { id: billId },
-        // @ts-ignore
         data: {
             approvedBy1Id: sig1Id,
             approvedBy2Id: sig2Id
@@ -204,10 +204,7 @@ export async function saveTestNote(billItemId: number, note: string) {
   try {
     await prisma.billItem.update({
       where: { id: billItemId },
-      data: { 
-        // @ts-ignore: Notes field exists in schema
-        notes: note 
-      }
+      data: { notes: note }
     });
     
     revalidatePath('/results/entry');
@@ -220,7 +217,9 @@ export async function saveTestNote(billItemId: number, note: string) {
 
 export async function checkHistoryAvailability(patientId: number, parameterIds: number[], excludeBillId?: number) {
   try {
+    const orgId = await getOrgId();
     const whereClause: any = {
+        organizationId: orgId, // 🚨 Scope history to current lab
         parameterId: { in: parameterIds },
         billItem: {
           bill: {
@@ -233,7 +232,6 @@ export async function checkHistoryAvailability(patientId: number, parameterIds: 
         whereClause.billItem.bill.id = { not: excludeBillId };
     }
 
-    // @ts-ignore: TestResult model exists in schema
     const results = await prisma.testResult.groupBy({
       by: ['parameterId'],
       where: whereClause,
@@ -251,9 +249,10 @@ export async function checkHistoryAvailability(patientId: number, parameterIds: 
 
 export async function getParameterHistory(patientId: number, parameterId: number) {
   try {
-    // @ts-ignore: TestResult model exists in schema
+    const orgId = await getOrgId();
     const history = await prisma.testResult.findMany({
       where: {
+        organizationId: orgId, // 🚨 Scope history to current lab
         parameterId: parameterId,
         billItem: {
           bill: {
@@ -296,16 +295,17 @@ export async function getParameterHistory(patientId: number, parameterId: number
 
 export async function clearAllEntryData() {
   try {
+    const orgId = await getOrgId();
     await prisma.$transaction([
-      // @ts-ignore: TestResult exists
-      prisma.testResult.deleteMany({}), 
-      prisma.payment.deleteMany({}),
-      prisma.billItem.deleteMany({}),
-      prisma.bill.deleteMany({})
+      // 🚨 CRITICAL FIX: Only deletes records for THIS specific lab
+      prisma.testResult.deleteMany({ where: { organizationId: orgId } }), 
+      prisma.payment.deleteMany({ where: { organizationId: orgId } }),
+      prisma.billItem.deleteMany({ where: { bill: { organizationId: orgId } } }),
+      prisma.bill.deleteMany({ where: { organizationId: orgId } })
     ]);
 
     revalidatePath('/results/entry');
-    return { success: true, message: "All bills and results deleted permanently." };
+    return { success: true, message: "All bills and results deleted permanently for your lab." };
   } catch (error: any) {
     console.error("Error clearing data:", error);
     return { success: false, message: error.message };
@@ -314,10 +314,11 @@ export async function clearAllEntryData() {
 
 export async function getDeltaCheckData(billId: number, patientId: number) {
   try {
+    const orgId = await getOrgId();
+    
     // 1. Get current bill results
-    // @ts-ignore
     const currentResults = await prisma.testResult.findMany({
-      where: { billItem: { billId: billId } },
+      where: { organizationId: orgId, billItem: { billId: billId } },
       include: {
         parameter: true,
         billItem: { include: { bill: true, test: true } }
@@ -330,9 +331,9 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
     const parameterIds = currentResults.map((r: any) => r.parameterId);
 
     // 2. Get all previous results for these parameters for this patient
-    // @ts-ignore
     const previousResults = await prisma.testResult.findMany({
       where: {
+        organizationId: orgId, // 🚨 Limit history scope
         parameterId: { in: parameterIds },
         billItem: {
           bill: {
@@ -390,7 +391,6 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
          previousDate: prev ? prev.billItem.bill.date : null,
          previousFlag: prev ? prev.flag : null,
          
-         // NEW: Capture full history timeline
          history: history.map((h: any) => ({
              value: h.resultValue,
              date: h.billItem.bill.date,
@@ -409,4 +409,3 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
     return { success: false, data: [] };
   }
 }
-// --- BLOCK app/actions/result-entry.ts CLOSE ---

@@ -2,11 +2,22 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+// 🚨 Helper function to get the current tenant's Organization ID
+async function getOrgId() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
+    return session.user.orgId;
+}
 
 // --- GENERATOR: MAX + 1 LOGIC ---
 export async function generateDepartmentCode() {
   try {
+    const orgId = await getOrgId();
     const allDepts = await prisma.department.findMany({
+      where: { organizationId: orgId }, // 🚨 Filter to current lab
       select: { code: true }
     });
 
@@ -28,7 +39,9 @@ export async function generateDepartmentCode() {
 // --- GET ALL DEPARTMENTS ---
 export async function getDepartments() {
   try {
+    const orgId = await getOrgId();
     const data = await prisma.department.findMany({
+      where: { organizationId: orgId }, // 🚨 Filter to current lab
       orderBy: { name: 'asc' }
     });
     return { success: true, data };
@@ -41,35 +54,44 @@ export async function getDepartments() {
 // --- CREATE ---
 export async function createDepartment(data: any) {
   try {
-    // 1. Check for Duplicate Name (Case Insensitive)
+    const orgId = await getOrgId();
+
+    // 1. Check for Duplicate Name (Case Insensitive) within this lab
     const existingName = await prisma.department.findFirst({
       where: {
+        organizationId: orgId, // 🚨 Filter to current lab
         name: {
           equals: data.name,
-          mode: 'insensitive' // This ignores case (Hematology == hematology)
+          mode: 'insensitive' 
         }
       }
     });
 
     if (existingName) {
-      return { success: false, message: "Department name already exists." };
+      return { success: false, message: "Department name already exists in your lab." };
     }
 
     // 2. Generate Code
     let code = data.code || await generateDepartmentCode();
     
-    // 3. Collision Loop Check for Code
-    let exists = await prisma.department.findUnique({ where: { code } });
+    // 3. Collision Loop Check for Code (✅ FIXED FOR PRISMA MULTI-TENANT)
+    let exists = await prisma.department.findUnique({ 
+        where: { organizationId_code: { organizationId: orgId, code: code } } 
+    });
+    
     while(exists) {
         const match = code.match(/DEP-(\d+)/);
         let num = match ? parseInt(match[1], 10) + 1 : 1;
         code = `DEP-${num.toString().padStart(4, '0')}`;
-        exists = await prisma.department.findUnique({ where: { code } });
+        exists = await prisma.department.findUnique({ 
+            where: { organizationId_code: { organizationId: orgId, code: code } } 
+        });
     }
 
     // 4. Create
     const newDept = await prisma.department.create({
       data: {
+        organizationId: orgId, // 🚨 Attach to current lab
         name: data.name,
         code: code,
         description: data.description || '',
@@ -81,7 +103,6 @@ export async function createDepartment(data: any) {
     return { success: true, data: newDept };
   } catch (error: any) {
     console.error("Create Department Error:", error);
-    // Modified to return the exact database error message
     return { success: false, message: error?.message || "Failed to create department." };
   }
 }
@@ -89,21 +110,24 @@ export async function createDepartment(data: any) {
 // --- UPDATE ---
 export async function updateDepartment(id: number, data: any) {
   try {
+    const orgId = await getOrgId();
+
     // 1. Check for Duplicate Name (Case Insensitive), excluding current ID
     const existingName = await prisma.department.findFirst({
       where: {
+        organizationId: orgId, // 🚨 Filter to current lab
         name: {
           equals: data.name,
           mode: 'insensitive'
         },
         NOT: {
-          id: id // Don't block if saving the same name for the same ID
+          id: id 
         }
       }
     });
 
     if (existingName) {
-      return { success: false, message: "Department name already exists." };
+      return { success: false, message: "Department name already exists in your lab." };
     }
 
     // 2. Update
@@ -121,7 +145,6 @@ export async function updateDepartment(id: number, data: any) {
     return { success: true, data: updated };
   } catch (error: any) {
     console.error("Update Department Error:", error);
-    // Modified to return the exact database error message
     return { success: false, message: error?.message || "Failed to update department." };
   }
 }
