@@ -1,12 +1,22 @@
-// --- app/actions/authorizations.ts Block Open ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth'; // ✅ Fixed Import
+
+// 🚨 Helper function to get the current tenant's Organization ID
+async function getOrgId() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
+    return session.user.orgId;
+}
 
 export async function getRoles() {
     try {
+        const orgId = await getOrgId();
         const roles = await prisma.role.findMany({
+            where: { organizationId: orgId }, // 🚨 Filter by tenant
             orderBy: { name: 'asc' }
         });
         return { success: true, data: roles };
@@ -17,6 +27,7 @@ export async function getRoles() {
 
 export async function saveRole(data: { id?: number, name: string, description?: string }) {
     try {
+        const orgId = await getOrgId();
         if (data.id) {
             await prisma.role.update({
                 where: { id: data.id },
@@ -24,7 +35,8 @@ export async function saveRole(data: { id?: number, name: string, description?: 
             });
         } else {
             await prisma.role.create({
-                data: { name: data.name, description: data.description }
+                // 🚨 Must include organizationId for the Multi-Tenant schema!
+                data: { name: data.name, description: data.description, organizationId: orgId }
             });
         }
         revalidatePath('/authorizations');
@@ -36,7 +48,9 @@ export async function saveRole(data: { id?: number, name: string, description?: 
 
 export async function getUsers() {
     try {
+        const orgId = await getOrgId();
         const users = await prisma.user.findMany({
+            where: { organizationId: orgId }, // 🚨 Filter by tenant
             include: {
                 role: true,
                 doctor: true
@@ -51,22 +65,20 @@ export async function getUsers() {
 
 export async function saveUser(data: any) {
     try {
+        const orgId = await getOrgId();
         const payload = {
             name: data.name,
             username: data.username,
             password: data.password, 
-            
             email: data.email?.trim() ? data.email.trim() : null,
             phone: data.phone?.trim() ? data.phone.trim() : null,
-            
             degree: data.degree,
             roleId: data.roleId ? parseInt(data.roleId) : null,
             isActive: data.isActive,
             allowConcession: data.allowConcession,
             concessionLimit: data.concessionLimit ? parseFloat(data.concessionLimit) : 0,
-            
-            // NEW: Add billing only field
-            isBillingOnly: data.isBillingOnly || false
+            isBillingOnly: data.isBillingOnly || false,
+            organizationId: orgId // 🚨 Locks this user to the specific lab!
         };
 
         if (data.id) {
@@ -129,17 +141,24 @@ export async function deleteUser(id: number) {
 
 export async function saveUserSignatureDetails(data: any) {
     try {
+        const orgId = await getOrgId(); // Get current lab ID
+        
         if (data.isDefaultSignature) {
             await prisma.user.updateMany({
+                where: { organizationId: orgId }, // 🚨 Ensure we only reset defaults for THIS lab
                 data: { isDefaultSignature: false }
             });
 
-            const reportSettings = await prisma.reportSettings.findFirst();
+            const reportSettings = await prisma.reportSettings.findFirst({
+                where: { organizationId: orgId }
+            });
+            
             let formattedDesignation = data.designation || '';
             if (data.degree) formattedDesignation += formattedDesignation ? ` | ${data.degree}` : data.degree;
             if (data.regNumber) formattedDesignation += formattedDesignation ? ` | ${data.regNumber}` : data.regNumber;
 
             const reportDataToSync = {
+                organizationId: orgId, // 🚨 Required field
                 doc1Name: data.signName || data.name,
                 doc1Designation: formattedDesignation,
                 doc1SignUrl: data.signatureUrl
@@ -220,4 +239,3 @@ export async function saveUserPermissions(userId: number, permissionsToSave: {mo
         return { success: false, message: error.message };
     }
 }
-// --- app/actions/authorizations.ts Block Close ---
