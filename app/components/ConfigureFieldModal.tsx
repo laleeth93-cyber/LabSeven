@@ -1,13 +1,10 @@
 // FILE: app/components/ConfigureFieldModal.tsx
 "use client";
 
-// BLOCK IMPORTS OPEN
 import React, { useState, useEffect } from 'react';
 import { Settings, X, Type, ToggleLeft } from 'lucide-react';
-import { FieldData } from '../page';
-// BLOCK IMPORTS CLOSE
+import { FieldData } from '../DashboardClient'; // 🚨 FIXED IMPORT PATH
 
-// BLOCK COMPONENT DEFINITION OPEN
 interface ConfigureFieldModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -167,4 +164,3 @@ export default function ConfigureFieldModal({ isOpen, onClose, field, onSave }: 
     </div>
   );
 }
-// BLOCK COMPONENT DEFINITION CLOSE

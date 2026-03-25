@@ -1,25 +1,16 @@
 // FILE: app/components/CustomizeRegistrationModal.tsx
 "use client";
 
-// BLOCK IMPORTS OPEN
 import React, { useState } from 'react';
 import { SlidersHorizontal, X, Search, Settings } from 'lucide-react';
 import ConfigureFieldModal from './ConfigureFieldModal';
-import { FieldData } from '../page'; // Import types from page
-// BLOCK IMPORTS CLOSE
+import { FieldData } from '../DashboardClient'; // 🚨 FIXED IMPORT PATH
 
-// BLOCK TYPES OPEN
-// FieldData is now imported from ../page.tsx to ensure consistency
-// BLOCK TYPES CLOSE
-
-// BLOCK INITIAL DATA OPEN
 const categories = [
   "Basic Info", "Vitals", "Contact Info", "Identification", 
   "Patient Info", "Medical Info", "Billing", "Referral", "Collection"
 ];
-// BLOCK INITIAL DATA CLOSE
 
-// BLOCK COMPONENT DEFINITION OPEN
 interface CustomizeRegistrationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -237,4 +228,3 @@ export default function CustomizeRegistrationModal({ isOpen, onClose, fields, se
     </div>
   );
 }
-// BLOCK COMPONENT DEFINITION CLOSE
