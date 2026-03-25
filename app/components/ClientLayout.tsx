@@ -1,7 +1,6 @@
-// BLOCK app/components/ClientLayout.tsx OPEN
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -12,6 +11,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+
+  // 🚨 FULL SCREEN LOGIN CHECK 🚨
+  // If we are on the login page, skip drawing the Sidebar and Header!
+  if (pathname === "/login") {
+    return <main className="w-full min-h-screen bg-slate-50">{children}</main>;
+  }
 
   // 1. Determine which Sidebar item is active based on the URL
   let activeView = 'dashboard';
@@ -62,4 +67,3 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     </div>
   );
 }
-// BLOCK app/components/ClientLayout.tsx CLOSE

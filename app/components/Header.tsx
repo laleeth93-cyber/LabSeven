@@ -1,11 +1,11 @@
-// --- BLOCK app/components/Header.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Search, Bell, Building2, Loader2, User, Hash, X } from 'lucide-react';
+import { Menu, Search, Bell, Building2, Loader2, User, Hash, X, Power } from 'lucide-react';
 import { getLabProfile } from '@/app/actions/lab-profile';
 import { searchPatients } from '@/app/actions/patient';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -15,6 +15,9 @@ interface HeaderProps {
 export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps) {
   const [labProfile, setLabProfile] = useState<any>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  
+  // 🚨 LOGOUT STATE
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // --- GLOBAL SEARCH STATES ---
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,6 +90,13 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
     router.push(`/list?search=${patientId}`);
   };
 
+  // 🚨 LOGOUT HANDLER
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    await signOut({ callbackUrl: '/login', redirect: true });
+  };
+
   return (
     <header 
       className="h-16 flex items-center justify-between px-6 shadow-sm border-b shrink-0 z-[100] relative select-none"
@@ -110,8 +120,8 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
         </div>
       </div>
 
-      {/* CENTER: Global Search Bar (Original Size & Colors) */}
-      <div className="flex-1 max-w-xs relative" ref={searchContainerRef}>
+      {/* CENTER: Global Search Bar */}
+      <div className="flex-1 max-w-xs relative flex justify-center w-full mx-auto" ref={searchContainerRef}>
         <div className="relative flex items-center w-full">
             <input 
               type="text" 
@@ -138,7 +148,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
 
         {/* --- GLOBAL SEARCH DROPDOWN --- */}
         {showDropdown && (
-            <div className="absolute top-[calc(100%+8px)] left-0 w-[360px] bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-[200] animate-in slide-in-from-top-2 duration-200 -ml-4">
+            <div className="absolute top-[calc(100%+8px)] left-0 w-[360px] bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-[200] animate-in slide-in-from-top-2 duration-200">
                 {isSearching ? (
                     <div className="px-4 py-8 text-center flex flex-col items-center justify-center text-slate-400 gap-3">
                         <Loader2 size={28} className="animate-spin text-[#9575cd]" />
@@ -226,32 +236,27 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
                   style={{ background: '#f06292' }}>3</span>
           </div>
 
-          {/* SLIDE TO LOGOUT CONTAINER */}
-          <div className="group relative bg-white/90 rounded-full p-1 flex items-center shadow-sm border border-slate-200 w-48 overflow-hidden transition-all duration-300 hover:border-red-200 hover:bg-red-50/50">
+          {/* 🚨 ORIGINAL STYLED CLICKABLE LOGOUT PILL */}
+          <button 
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="group bg-white/90 rounded-full p-1 flex items-center shadow-sm border border-slate-200 transition-all duration-300 hover:border-red-200 hover:bg-red-50/50"
+          >
+            {/* Clickable Power Circle using exact inline style */}
             <div 
-              draggable="true"
-              onDragEnd={(e) => {
-                if (e.clientX > 1200) { 
-                    window.location.reload();
-                }
-              }}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs cursor-grab active:cursor-grabbing z-20 shadow-sm transition-transform group-hover:scale-105"
-              style={{ background: 'linear-gradient(to bottom right, #9575cd, #f062a4)' }}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs z-20 shadow-sm transition-transform group-hover:scale-105"
+              style={{ background: isLoggingOut ? '#ef4444' : 'linear-gradient(to bottom right, #9575cd, #f062a4)' }}
             >
-              JD
+              {isLoggingOut ? <Loader2 size={14} className="animate-spin" /> : <Power size={14} />}
             </div>
             
-            <span className="absolute left-11 text-xs font-bold text-slate-700 transition-all duration-300 opacity-100 group-hover:opacity-0 group-hover:translate-x-4">
-              Dr. John Doe
+            <span className="mx-3 text-xs font-bold text-slate-700 transition-all duration-300 group-hover:text-red-500">
+              {isLoggingOut ? "Wait..." : "Admin"}
             </span>
+          </button>
 
-            <span className="absolute left-11 text-[10px] font-black text-red-500 uppercase tracking-widest transition-all duration-300 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 drop-shadow-sm">
-              Slide to Logout →
-            </span>
-          </div>
         </div>
       </div>
     </header>
   );
 }
-// --- BLOCK app/components/Header.tsx CLOSE ---
