@@ -1,4 +1,4 @@
-import { NextResponse } from "next/dist/server/web/spec-extension/response";
+import { NextResponse } from "next/server"; // ✅ Correct import for Vercel
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth-utils";
 
@@ -27,18 +27,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Hash the password using your existing utility
+    // 3. Hash the password
     const hashedPassword = await hashPassword(password);
 
     // 4. DATABASE TRANSACTION: Create the Lab AND the User together
-    // We use a transaction so if one fails, they both fail (no orphaned users or labs)
     const result = await prisma.$transaction(async (tx) => {
       
       // A. Create the Organization (Tenant)
       const newOrg = await tx.organization.create({
         data: {
           name: labName,
-          plan: "Free", // Default plan
+          plan: "Free",
           isActive: true,
         }
       });
@@ -58,8 +57,8 @@ export async function POST(req: Request) {
         data: {
           username: username,
           password: hashedPassword,
-          name: "Admin", // Default name
-          organizationId: newOrg.id, // 🚨 CRITICAL: Links user to the new lab
+          name: "Admin", 
+          organizationId: newOrg.id, // Links user to the new lab
           isActive: true,
           isDefaultSignature: true,
         }
@@ -68,7 +67,7 @@ export async function POST(req: Request) {
       return { org: newOrg, user: newUser };
     });
 
-    // 5. Success! Return a 200 response
+    // 5. Success! Return a 201 response
     return NextResponse.json(
       { message: "Workspace created successfully!", orgId: result.org.id },
       { status: 201 }
