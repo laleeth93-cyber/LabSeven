@@ -45,10 +45,10 @@ export default function LoginPage() {
     setError("");
     setMessage("");
 
-    // Changed to send SMS instead of Email
+    // CHANGED HERE: Temporarily set to 'true' so you can create your account!
     const { error } = await supabase.auth.signInWithOtp({
       phone,
-      options: { shouldCreateUser: false }
+      options: { shouldCreateUser: true } 
     });
 
     if (error) {
@@ -98,8 +98,8 @@ export default function LoginPage() {
 
         {!otpSent && (
           <div className="flex bg-slate-100 p-1 rounded-lg mb-6">
-            <button onClick={() => { setLoginMethod("password"); setError(""); }} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${loginMethod === "password" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Password</button>
-            <button onClick={() => { setLoginMethod("otp"); setError(""); }} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${loginMethod === "otp" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>SMS OTP</button>
+            <button type="button" onClick={() => { setLoginMethod("password"); setError(""); }} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${loginMethod === "password" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>Password</button>
+            <button type="button" onClick={() => { setLoginMethod("otp"); setError(""); }} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${loginMethod === "otp" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>SMS OTP</button>
           </div>
         )}
 
