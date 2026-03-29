@@ -12,8 +12,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing data from Supabase" }, { status: 400 });
     }
 
-    // 2. Clean the phone number (Fast2SMS doesn't like the "+" symbol or country code if using local route)
-    // Supabase usually sends +919876543210, we just want 9876543210 for Fast2SMS
+    // 2. Clean the phone number (Fast2SMS doesn't like the "+" symbol)
     const cleanPhone = phone.replace("+91", ""); 
 
     // 3. Send the OTP using the Fast2SMS API
