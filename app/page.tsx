@@ -1,17 +1,20 @@
-import { getServerSession } from "next-auth/next";
+// FILE: app/page.tsx
 import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 import DashboardClient from "./DashboardClient";
 
 export default async function Page() {
-    // 🚨 GUARANTEED FAILSAFE: Server checks the login key
-    const session = await getServerSession(authOptions);
+    // 1. Create the secure server connection to Supabase
+    const supabase = createClient();
 
-    // If there is no key, physically force them to the login page
-    if (!session) {
+    // 2. Ask Supabase if there is a valid "VIP Pass" (logged-in user)
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    // 3. If there is no user, physically force them back to the login page
+    if (!user || error) {
         redirect("/login");
     }
 
-    // If they have the key, open the door and show the dashboard!
+    // 4. If they have the pass, open the door and show the dashboard!
     return <DashboardClient />;
 }
