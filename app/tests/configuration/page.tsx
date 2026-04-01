@@ -10,7 +10,7 @@ import { getTests } from '@/app/actions/tests';
 import { getMasterData } from '@/app/actions/masters';
 import { getDepartments } from '@/app/actions/department';
 import { updateTestConfiguration } from '@/app/actions/test-config';
-import { resetTestAndResultData } from '@/app/actions/reset'; 
+import { resetLabTransactionalData } from '@/app/actions/reset';
 
 interface TestData {
   id: number; name: string; code: string; department: any; type: string; isOutsourced: boolean; 
@@ -118,7 +118,7 @@ export default function TestConfigurationPage() {
   const initiateSystemReset = () => setShowResetConfirm(true);
   const confirmSystemReset = async () => {
       setShowResetConfirm(false); setIsLoading(true);
-      const res = await resetTestAndResultData();
+      const res = await resetLabTransactionalData();
       if(res.success) {
           setAllTests([]); setSelectedTestId(null); await loadData();
           setSuccessMessage("System Reset Complete!"); setShowSuccessPopup(true); setTimeout(() => setShowSuccessPopup(false), 2000);
