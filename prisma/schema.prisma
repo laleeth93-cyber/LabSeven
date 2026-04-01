@@ -838,4 +838,14 @@ model SusceptibilityInfo {
 
   @@unique([organizationId, code])
 }
+model OtpCode {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  purpose   String   // Will be 'REGISTER' or 'RESET_PASSWORD'
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, otp])
+}
 // --- BLOCK prisma/schema.prisma CLOSE ---

@@ -1,21 +1,14 @@
+// --- BLOCK app/actions/parameters.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-
-// 🚨 Helper function to get the current tenant's Organization ID
-async function getOrgId() {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
-    return session.user.orgId;
-}
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
 // --- HELPER: GENERATE NEXT CODE ---
 export async function generateNextParameterCode() {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const allParams = await prisma.parameter.findMany({
       where: { organizationId: orgId }, // 🚨 Filter to current lab
       select: { code: true }
@@ -41,7 +34,7 @@ export async function generateNextParameterCode() {
 // --- GET ALL ---
 export async function getParameters() {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const data = await prisma.parameter.findMany({
       where: { organizationId: orgId }, // 🚨 Filter to current lab
       orderBy: { updatedAt: 'desc' },
@@ -57,7 +50,7 @@ export async function getParameters() {
 // --- GET SINGLE ---
 export async function getParameter(id: number) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const data = await prisma.parameter.findFirst({
       where: { id: id, organizationId: orgId }, // 🚨 Ensure it belongs to lab
       include: { ranges: true }
@@ -86,7 +79,7 @@ function safeInt(val: any, defaultVal = 0): number {
 // --- CREATE ---
 export async function createParameter(data: any) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
 
     // 1. Duplicate Name Check
     const existingName = await prisma.parameter.findFirst({
@@ -189,7 +182,7 @@ export async function createParameter(data: any) {
 // --- UPDATE ---
 export async function updateParameter(id: number, data: any) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
 
     // 1. Verify Ownership
     const existingParam = await prisma.parameter.findFirst({
@@ -291,7 +284,8 @@ export async function saveParameter(data: any) {
 // --- UPDATE STATUS ONLY ---
 export async function updateParameterStatus(id: number, isActive: boolean) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    
     // Security check
     const existingParam = await prisma.parameter.findFirst({ where: { id: id, organizationId: orgId } });
     if (!existingParam) return { success: false, message: "Parameter not found." };
@@ -311,7 +305,8 @@ export async function updateParameterStatus(id: number, isActive: boolean) {
 // --- DELETE ---
 export async function deleteParameter(id: number) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    
     // Security check
     const existingParam = await prisma.parameter.findFirst({ where: { id: id, organizationId: orgId } });
     if (!existingParam) return { success: false, message: "Parameter not found." };
@@ -323,3 +318,4 @@ export async function deleteParameter(id: number) {
     return { success: false, message: "Failed to delete parameter. It may be linked to existing tests." };
   }
 }
+// --- BLOCK app/actions/parameters.ts CLOSE ---

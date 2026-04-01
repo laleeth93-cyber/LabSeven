@@ -1,21 +1,14 @@
+// --- BLOCK app/actions/referral.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-
-// 🚨 Helper function to get the current tenant's Organization ID
-async function getOrgId() {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
-    return session.user.orgId;
-}
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
 // Fetch referrals by type
 export async function getReferrals(type: string, searchQuery: string = '') {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
 
         // 🚨 Filter by the current lab's organizationId
         const whereClause: any = { type: type, organizationId: orgId }; 
@@ -46,7 +39,7 @@ export async function getReferrals(type: string, searchQuery: string = '') {
 // Create or Update Referral
 export async function saveReferral(data: any, type: string) {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         const commissionVal = data.commission ? parseFloat(data.commission) : 0;
 
         const payload = {
@@ -95,15 +88,15 @@ export async function saveReferral(data: any, type: string) {
 // Delete Referral
 export async function deleteReferral(id: number) {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         
-        // 🚨 Verify ownership before deleting
-        const existing = await prisma.doctor.findFirst({
-            where: { id: id, organizationId: orgId }
+        // 🚨 Use deleteMany with orgId for strict safety
+        const result = await prisma.doctor.deleteMany({ 
+            where: { id: id, organizationId: orgId } 
         });
-        if (!existing) return { success: false, message: "Referral not found." };
+        
+        if (result.count === 0) return { success: false, message: "Referral not found or unauthorized." };
 
-        await prisma.doctor.delete({ where: { id } });
         revalidatePath('/referrals');
         return { success: true, message: "Deleted successfully!" };
     } catch (error: any) {
@@ -111,24 +104,23 @@ export async function deleteReferral(id: number) {
     }
 }
 
-// Toggle Status - FIXED
+// Toggle Status 
 export async function toggleReferralStatus(id: number, newStatus: boolean) {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
 
-        // 🚨 Verify ownership
-        const existing = await prisma.doctor.findFirst({
-            where: { id: id, organizationId: orgId }
-        });
-        if (!existing) return { success: false, message: "Referral not found." };
-
-        await prisma.doctor.update({
-            where: { id },
+        // 🚨 Use updateMany with orgId for strict safety
+        const result = await prisma.doctor.updateMany({
+            where: { id: id, organizationId: orgId },
             data: { isActive: newStatus } 
         });
+        
+        if (result.count === 0) return { success: false, message: "Referral not found or unauthorized." };
+
         revalidatePath('/referrals');
         return { success: true };
     } catch (error: any) {
         return { success: false, message: "Failed to update status." };
     }
 }
+// --- BLOCK app/actions/referral.ts CLOSE ---

@@ -1,20 +1,13 @@
+// --- BLOCK app/actions/tests.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-
-// 🚨 Helper function to get the current tenant's Organization ID
-async function getOrgId() {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
-    return session.user.orgId;
-}
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
 export async function generateTestCode(type: string = 'Test') {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const prefix = type === 'Package' ? 'PKG' : 'TST';
     
     const allTests = await prisma.test.findMany({ 
@@ -41,9 +34,9 @@ export async function generateTestCode(type: string = 'Test') {
 
 export async function getOutsourceLabs() {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const data = await prisma.doctor.findMany({ 
-        where: { type: 'Outsource', isActive: true, organizationId: orgId } 
+        where: { type: 'Outsource', isActive: true, organizationId: orgId } // 🚨 Filter to current lab
     });
     return { success: true, data };
   } catch (error) {
@@ -53,7 +46,7 @@ export async function getOutsourceLabs() {
 
 export async function getTests() {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const data = await prisma.test.findMany({
       where: { organizationId: orgId }, // 🚨 Scope to current lab
       orderBy: { updatedAt: 'desc' },
@@ -76,7 +69,7 @@ export async function getTests() {
 
 export async function getTestById(id: number) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const data = await prisma.test.findFirst({
       where: { id: id, organizationId: orgId }, // 🚨 Security Check
       include: {
@@ -100,7 +93,7 @@ export async function getTestById(id: number) {
 
 export async function createTest(data: any) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const actualType = data.testType || data.type || 'Test';
     let code = data.code || await generateTestCode(actualType);
     const prefix = actualType === 'Package' ? 'PKG' : 'TST';
@@ -173,7 +166,7 @@ export async function createTest(data: any) {
 
 export async function updateTest(id: number, data: any) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     
     // 🚨 Verify Ownership
     const existing = await prisma.test.findFirst({ where: { id: id, organizationId: orgId } });
@@ -243,7 +236,7 @@ export async function saveTest(data: any) {
 
 export async function deleteTest(id: number) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     // 🚨 Verify Ownership
     const existing = await prisma.test.findFirst({ where: { id: id, organizationId: orgId } });
     if (!existing) return { success: false, message: "Test not found." };
@@ -258,7 +251,7 @@ export async function deleteTest(id: number) {
 
 export async function toggleTestStatus(id: number, currentStatus: boolean) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     // 🚨 Verify Ownership
     const existing = await prisma.test.findFirst({ where: { id: id, organizationId: orgId } });
     if (!existing) return { success: false, message: "Test not found." };
@@ -273,3 +266,4 @@ export async function toggleTestStatus(id: number, currentStatus: boolean) {
     return { success: false, message: "Failed to toggle status." };
   }
 }
+// --- BLOCK app/actions/tests.ts CLOSE ---

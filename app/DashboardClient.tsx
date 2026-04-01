@@ -3,10 +3,10 @@
 import React, { useState, useEffect, Suspense } from 'react'; 
 import { useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react'; 
-import DashboardOverview from './components/DashboardOverview';
-import NewRegistration from './components/NewRegistration';
-import CustomizeRegistrationModal from './components/CustomizeRegistrationModal';
-import QuotationModal from './components/QuotationModal';
+import DashboardOverview from '@/app/components/DashboardOverview';
+import NewRegistration from '@/app/registration/NewRegistration';
+import CustomizeRegistrationModal from '@/app/registration/CustomizeRegistrationModal';
+import QuotationModal from '@/app/components/QuotationModal';
 
 export interface FieldData {
   id: number;

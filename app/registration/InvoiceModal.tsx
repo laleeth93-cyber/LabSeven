@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Printer, Download, CheckCircle, ScanBarcode, ArrowRight, FileText, Send, Loader2 } from 'lucide-react';
-import { generateTRFHtml, TRFData } from './TRFDocument';
-import BarcodeModal from './BarcodeModal'; 
+import { generateTRFHtml, TRFData } from '@/app/components/TRFDocument';
+import BarcodeModal from '@/app/components/BarcodeModal'; 
 import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
 import { QRCodeSVG } from 'qrcode.react';

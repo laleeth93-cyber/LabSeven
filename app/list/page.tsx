@@ -17,7 +17,7 @@ import SmartReportModal from './components/SmartReportModal';
 import AuditLogModal from './components/AuditLogModal'; 
 import RefundModal from './components/RefundModal'; 
 import ClearDueModal from './components/ClearDueModal'; 
-import InvoiceModal from '@/app/components/InvoiceModal';
+import InvoiceModal from '@/app/registration/InvoiceModal';
 import EditPatientModal from './components/EditPatientModal';
 
 // --- API ACTIONS ---

@@ -1,22 +1,23 @@
-import NextAuth, { DefaultSession } from "next-auth";
+// --- BLOCK types/next-auth.d.ts OPEN ---
+import "next-auth";
 
 declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      orgId: number;
-    } & DefaultSession["user"];
-  }
-
   interface User {
     id: string;
-    orgId: number;
+    name?: string | null;
+    email?: string | null;
+    orgId: number; // Added our SaaS Organization ID
+  }
+
+  interface Session {
+    user: User;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
-    orgId: number;
+    orgId: number; // Added our SaaS Organization ID
   }
 }
+// --- BLOCK types/next-auth.d.ts CLOSE ---

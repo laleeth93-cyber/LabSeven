@@ -1,20 +1,13 @@
+// --- BLOCK app/actions/authorizations.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth'; // ✅ Fixed Import
-
-// 🚨 Helper function to get the current tenant's Organization ID
-async function getOrgId() {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
-    return session.user.orgId;
-}
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
 export async function getRoles() {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         const roles = await prisma.role.findMany({
             where: { organizationId: orgId }, // 🚨 Filter by tenant
             orderBy: { name: 'asc' }
@@ -27,15 +20,15 @@ export async function getRoles() {
 
 export async function saveRole(data: { id?: number, name: string, description?: string }) {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         if (data.id) {
-            await prisma.role.update({
-                where: { id: data.id },
+            // 🚨 SECURITY FIX: Ensure the role belongs to this lab
+            await prisma.role.updateMany({
+                where: { id: data.id, organizationId: orgId },
                 data: { name: data.name, description: data.description }
             });
         } else {
             await prisma.role.create({
-                // 🚨 Must include organizationId for the Multi-Tenant schema!
                 data: { name: data.name, description: data.description, organizationId: orgId }
             });
         }
@@ -48,7 +41,7 @@ export async function saveRole(data: { id?: number, name: string, description?: 
 
 export async function getUsers() {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         const users = await prisma.user.findMany({
             where: { organizationId: orgId }, // 🚨 Filter by tenant
             include: {
@@ -65,7 +58,7 @@ export async function getUsers() {
 
 export async function saveUser(data: any) {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         const payload = {
             name: data.name,
             username: data.username,
@@ -82,8 +75,9 @@ export async function saveUser(data: any) {
         };
 
         if (data.id) {
-            await prisma.user.update({
-                where: { id: data.id },
+            // 🚨 SECURITY FIX: Verify the user being updated belongs to this lab!
+            await prisma.user.updateMany({
+                where: { id: data.id, organizationId: orgId },
                 data: payload
             });
         } else {
@@ -103,8 +97,10 @@ export async function saveUser(data: any) {
 
 export async function toggleUserStatus(id: number, isActive: boolean) {
     try {
-        await prisma.user.update({
-            where: { id },
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        // 🚨 SECURITY FIX: Prevent toggling users from other labs
+        await prisma.user.updateMany({
+            where: { id: id, organizationId: orgId },
             data: { isActive }
         });
         revalidatePath('/authorizations');
@@ -116,8 +112,10 @@ export async function toggleUserStatus(id: number, isActive: boolean) {
 
 export async function resetUserPassword(id: number, newPassword: string) {
     try {
-        await prisma.user.update({
-            where: { id },
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        // 🚨 SECURITY FIX: Prevent resetting passwords for users in other labs
+        await prisma.user.updateMany({
+            where: { id: id, organizationId: orgId },
             data: { password: newPassword }
         });
         revalidatePath('/authorizations');
@@ -129,8 +127,10 @@ export async function resetUserPassword(id: number, newPassword: string) {
 
 export async function deleteUser(id: number) {
     try {
-        await prisma.user.delete({
-            where: { id }
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        // 🚨 SECURITY FIX: Prevent deleting users from other labs!
+        await prisma.user.deleteMany({
+            where: { id: id, organizationId: orgId }
         });
         revalidatePath('/authorizations');
         return { success: true, message: "User deleted successfully" };
@@ -141,11 +141,11 @@ export async function deleteUser(id: number) {
 
 export async function saveUserSignatureDetails(data: any) {
     try {
-        const orgId = await getOrgId(); // Get current lab ID
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         
         if (data.isDefaultSignature) {
             await prisma.user.updateMany({
-                where: { organizationId: orgId }, // 🚨 Ensure we only reset defaults for THIS lab
+                where: { organizationId: orgId }, 
                 data: { isDefaultSignature: false }
             });
 
@@ -158,7 +158,7 @@ export async function saveUserSignatureDetails(data: any) {
             if (data.regNumber) formattedDesignation += formattedDesignation ? ` | ${data.regNumber}` : data.regNumber;
 
             const reportDataToSync = {
-                organizationId: orgId, // 🚨 Required field
+                organizationId: orgId, 
                 doc1Name: data.signName || data.name,
                 doc1Designation: formattedDesignation,
                 doc1SignUrl: data.signatureUrl
@@ -176,8 +176,9 @@ export async function saveUserSignatureDetails(data: any) {
             }
         }
 
-        await prisma.user.update({
-            where: { id: data.id },
+        // 🚨 SECURITY FIX: Ensure we only update signature of a user in THIS lab
+        await prisma.user.updateMany({
+            where: { id: data.id, organizationId: orgId },
             data: { 
                 signatureUrl: data.signatureUrl,
                 signName: data.signName,
@@ -199,6 +200,7 @@ export async function saveUserSignatureDetails(data: any) {
     }
 }
 
+// Keeping user permissions generic for now, but usually they are scoped tightly by the User ID already restricted above.
 export async function getUserPermissions(userId: number) {
     try {
         const userPerms = await prisma.userPermission.findMany({
@@ -239,3 +241,4 @@ export async function saveUserPermissions(userId: number, permissionsToSave: {mo
         return { success: false, message: error.message };
     }
 }
+// --- BLOCK app/actions/authorizations.ts CLOSE ---

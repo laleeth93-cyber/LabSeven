@@ -1,9 +1,9 @@
+// --- BLOCK app/actions/result-entry.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
 interface TestResultItem {
   billItemId: number;
@@ -12,16 +12,9 @@ interface TestResultItem {
   flag: string;
 }
 
-// 🚨 Helper function to get the current tenant's Organization ID
-async function getOrgId() {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
-    return session.user.orgId;
-}
-
 export async function getSignatureUsers() {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         const users = await prisma.user.findMany({
             where: { 
                 organizationId: orgId, // 🚨 Filter to current lab
@@ -39,7 +32,7 @@ export async function getSignatureUsers() {
 
 export async function getPendingWorklist(search?: string) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const where: any = {
       organizationId: orgId, // 🚨 Filter to current lab
       items: {
@@ -83,7 +76,7 @@ export async function getPendingWorklist(search?: string) {
 
 export async function getResultEntryData(billId: number) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     if (!billId) throw new Error("Missing Bill ID");
 
     const bill = await prisma.bill.findUnique({
@@ -140,7 +133,7 @@ export async function getResultEntryData(billId: number) {
 
 export async function saveTestResults(billId: number, results: TestResultItem[], status: string = 'Entered', sig1Id?: number | null, sig2Id?: number | null) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
 
     for (const res of results) {
       const paramIdToUse = res.parameterId === undefined ? null : res.parameterId;
@@ -217,7 +210,7 @@ export async function saveTestNote(billItemId: number, note: string) {
 
 export async function checkHistoryAvailability(patientId: number, parameterIds: number[], excludeBillId?: number) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const whereClause: any = {
         organizationId: orgId, // 🚨 Scope history to current lab
         parameterId: { in: parameterIds },
@@ -249,7 +242,7 @@ export async function checkHistoryAvailability(patientId: number, parameterIds: 
 
 export async function getParameterHistory(patientId: number, parameterId: number) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const history = await prisma.testResult.findMany({
       where: {
         organizationId: orgId, // 🚨 Scope history to current lab
@@ -295,9 +288,8 @@ export async function getParameterHistory(patientId: number, parameterId: number
 
 export async function clearAllEntryData() {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     await prisma.$transaction([
-      // 🚨 CRITICAL FIX: Only deletes records for THIS specific lab
       prisma.testResult.deleteMany({ where: { organizationId: orgId } }), 
       prisma.payment.deleteMany({ where: { organizationId: orgId } }),
       prisma.billItem.deleteMany({ where: { bill: { organizationId: orgId } } }),
@@ -314,7 +306,7 @@ export async function clearAllEntryData() {
 
 export async function getDeltaCheckData(billId: number, patientId: number) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     
     // 1. Get current bill results
     const currentResults = await prisma.testResult.findMany({
@@ -409,3 +401,4 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
     return { success: false, data: [] };
   }
 }
+// --- BLOCK app/actions/result-entry.ts CLOSE ---

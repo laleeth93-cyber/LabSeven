@@ -1,23 +1,16 @@
+// --- BLOCK app/actions/patient.ts OPEN ---
 'use server'
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-
-// 🚨 Helper function to get the current tenant's Organization ID
-async function getOrgId() {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
-    return session.user.orgId;
-}
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
 // 1. SEARCH EXISTING PATIENTS
 export async function searchPatients(query: string) {
   if (!query || query.length < 2) return [];
 
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 USING THE GATEKEEPER
     const patients = await prisma.patient.findMany({
       where: {
         organizationId: orgId, // 🚨 Filter to current lab
@@ -40,7 +33,7 @@ export async function searchPatients(query: string) {
 // 2. REGISTER / UPDATE PATIENT
 export async function registerPatient(data: any) {
   try {
-    const orgId = await getOrgId();
+    const { orgId } = await requireAuth(); // 🚨 USING THE GATEKEEPER
 
     // 🚨 Check if patient with this ID already exists FOR THIS LAB
     const existing = await prisma.patient.findUnique({
@@ -110,3 +103,4 @@ export async function registerPatient(data: any) {
     return { success: false, message: "Failed to save. Check inputs." };
   }
 }
+// --- BLOCK app/actions/patient.ts CLOSE ---

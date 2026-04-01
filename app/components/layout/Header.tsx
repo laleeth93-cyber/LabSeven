@@ -1,11 +1,17 @@
+// --- BLOCK app/components/layout/Header.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Search, Bell, Building2, Loader2, User, Hash, X, Power } from 'lucide-react';
+import { Menu, Search, Bell, Building2, Loader2, User, Hash, X, Power, Cloud, CloudOff, CloudUpload } from 'lucide-react';
 import { getLabProfile } from '@/app/actions/lab-profile';
 import { searchPatients } from '@/app/actions/patient';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+
+// --- OFFLINE SYNC IMPORTS ---
+import { useLiveQuery } from 'dexie-react-hooks';
+import { localDB } from '@/lib/local-db/db'; 
+import { useNetworkStatus } from '@/lib/hooks/useNetworkStatus'; 
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -27,6 +33,15 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // --- NETWORK & SYNC STATES ---
+  const isOnline = useNetworkStatus();
+  
+  // Live query to count pending offline registrations
+  const pendingCount = useLiveQuery(
+    () => localDB.registrations.where('sync_status').equals('pending').count(),
+    [] 
+  ) || 0;
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -96,6 +111,9 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
     setIsLoggingOut(true);
     await signOut({ callbackUrl: '/login', redirect: true });
   };
+
+  // Helper to safely get the Lab/Organization ID
+  const displayLabId = labProfile?.organizationId || labProfile?.id || '001';
 
   return (
     <header 
@@ -199,12 +217,12 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
       {/* RIGHT SIDE: Lab Details & User Account */}
       <div className="flex items-center gap-5 min-w-fit">
         
-        {/* LAB NAME */}
+        {/* LAB NAME & STACKED LAB ID BADGE */}
         <div className="hidden lg:flex items-center gap-3 transition-all duration-300 cursor-default group">
            {isProfileLoading && !labProfile ? (
              <div className="flex items-center gap-3 animate-pulse">
                <div className="h-9 w-9 rounded-full bg-white/50"></div>
-               <div className="h-5 w-40 bg-white/50 rounded"></div>
+               <div className="h-8 w-32 bg-white/50 rounded flex flex-col gap-1"></div>
              </div>
            ) : (
              <>
@@ -217,10 +235,21 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
                      <Building2 size={16} />
                  </div>
                )}
-               <div className="flex items-center">
-                   <span className="font-extrabold text-[17px] text-[#5e35b1] truncate max-w-[280px] tracking-tight">
+               
+               {/* --- VERTICAL STACK WITH REFINED BADGE UI --- */}
+               <div className="flex flex-col justify-center">
+                   <span className="font-extrabold text-[15px] text-[#5e35b1] truncate max-w-[200px] tracking-tight leading-tight">
                      {labProfile?.name || 'Lab Seven'}
                    </span>
+                   
+                   <div className="flex items-center mt-0.5">
+                       <div className="flex items-center gap-1.5 px-2 py-[2px] rounded-md bg-purple-50 border border-purple-100/80 shadow-[0_1px_2px_rgba(149,117,205,0.05)] transition-colors group-hover:bg-white">
+                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_#10b981] animate-pulse"></div>
+                           <span className="text-[9px] font-bold text-[#7e57c2] uppercase tracking-widest">
+                             LAB ID: <span className="font-black text-[#5e35b1] ml-0.5">{displayLabId}</span>
+                           </span>
+                       </div>
+                   </div>
                </div>
              </>
            )}
@@ -230,6 +259,26 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
         <div className="h-8 w-[1px] bg-slate-400/30 hidden lg:block mx-1"></div>
         
         <div className="flex items-center gap-4">
+          
+          {/* ================= CLOUD SYNC INDICATOR ================= */}
+          <div className="hidden sm:flex items-center">
+            {!isOnline ? (
+              <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-100 text-rose-600 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm" title="You are offline">
+                <CloudOff size={14} className="animate-pulse" /> Offline
+                {pendingCount > 0 && <span className="ml-1 bg-rose-500 text-white px-1.5 py-0.5 rounded-full text-[9px]">{pendingCount}</span>}
+              </div>
+            ) : pendingCount > 0 ? (
+              <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-100 text-amber-600 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm" title="Syncing data to server...">
+                <CloudUpload size={14} className="animate-bounce" /> Syncing ({pendingCount})
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 text-emerald-600 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm" title="All data is synced">
+                <Cloud size={14} /> Synced
+              </div>
+            )}
+          </div>
+          {/* ======================================================== */}
+
           <div className="relative p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer" style={{ color: '#9575cd' }}>
             <Bell size={20} />
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white font-bold shadow-sm"
@@ -242,7 +291,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
             disabled={isLoggingOut}
             className="group bg-white/90 rounded-full p-1 flex items-center shadow-sm border border-slate-200 transition-all duration-300 hover:border-red-200 hover:bg-red-50/50"
           >
-            {/* Clickable Power Circle using exact inline style */}
             <div 
               className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs z-20 shadow-sm transition-transform group-hover:scale-105"
               style={{ background: isLoggingOut ? '#ef4444' : 'linear-gradient(to bottom right, #9575cd, #f062a4)' }}
@@ -260,3 +308,4 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
     </header>
   );
 }
+// --- BLOCK app/components/layout/Header.tsx CLOSE ---

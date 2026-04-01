@@ -3,11 +3,23 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
 export async function updateTestConfiguration(testId: number, data: any) {
   try {
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+
     if (!testId) {
         return { success: false, message: "Invalid Test ID" };
+    }
+
+    // 🚨 Security Check: Ensure the test belongs to the logged-in lab!
+    const testBelongsToLab = await prisma.test.findFirst({
+        where: { id: testId, organizationId: orgId }
+    });
+
+    if (!testBelongsToLab) {
+        return { success: false, message: "Unauthorized: Test not found in your laboratory." };
     }
 
     const payload: any = {};
@@ -45,12 +57,13 @@ export async function updateTestConfiguration(testId: number, data: any) {
     if (data.isInterpretationNeeded !== undefined) payload.isInterpretationNeeded = data.isInterpretationNeeded;
     if (data.interpretation !== undefined) payload.interpretation = data.interpretation || ''; 
 
-    // NEW CULUTURE COLUMNS DATA
+    // NEW CULTURE COLUMNS DATA
     if (data.cultureColumns !== undefined) payload.cultureColumns = data.cultureColumns;
 
     payload.isConfigured = true;
 
     await prisma.$transaction(async (tx) => {
+        // We verified ownership above, so we can safely update it by ID
         await tx.test.update({
             where: { id: testId },
             data: payload

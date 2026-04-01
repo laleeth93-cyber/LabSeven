@@ -1,18 +1,11 @@
+// --- BLOCK app/actions/microbiology.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
 type MicroType = 'organism' | 'antibiotic' | 'antibioticClass' | 'interpretation' | 'susceptibilityInfo';
-
-// 🚨 Helper function to get the current tenant's Organization ID
-async function getOrgId() {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.orgId) throw new Error("Unauthorized: No Organization ID found.");
-    return session.user.orgId;
-}
 
 function revalidateMicrobiology() {
     revalidatePath('/organisms');
@@ -25,7 +18,7 @@ function revalidateMicrobiology() {
 
 export async function getOrganismsPaginated(page: number = 1, limit: number = 20, search: string = '') {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         const skip = (page - 1) * limit;
         const where: any = { organizationId: orgId };
         
@@ -51,7 +44,7 @@ export async function getOrganismsPaginated(page: number = 1, limit: number = 20
 
 export async function getAntibioticsPaginated(page: number = 1, limit: number = 20, search: string = '') {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         const skip = (page - 1) * limit;
         const where: any = { organizationId: orgId };
 
@@ -74,7 +67,7 @@ export async function getAntibioticsPaginated(page: number = 1, limit: number = 
 
 export async function getAntibioticClassesPaginated(page: number = 1, limit: number = 20, search: string = '') {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         const skip = (page - 1) * limit;
         const where: any = { organizationId: orgId };
 
@@ -96,7 +89,7 @@ export async function getAntibioticClassesPaginated(page: number = 1, limit: num
 
 export async function getInterpretationsPaginated(page: number = 1, limit: number = 20, search: string = '') {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         const skip = (page - 1) * limit;
         const where: any = { organizationId: orgId };
 
@@ -118,7 +111,7 @@ export async function getInterpretationsPaginated(page: number = 1, limit: numbe
 
 export async function getSusceptibilityInfoPaginated(page: number = 1, limit: number = 20, search: string = '') {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         const skip = (page - 1) * limit;
         const where: any = { organizationId: orgId };
 
@@ -140,7 +133,7 @@ export async function getSusceptibilityInfoPaginated(page: number = 1, limit: nu
 
 export async function getMicrobiologyMaster(type: MicroType) {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         let data: any = [];
         
         if (type === 'organism') {
@@ -159,22 +152,22 @@ export async function getMicrobiologyMaster(type: MicroType) {
 
 export async function saveMicrobiologyMaster(type: MicroType, data: any) {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         
         if (type === 'organism') {
-            if (data.id) await (prisma.organism as any).update({ where: { id: data.id }, data: { code: data.code, name: data.name, isActive: data.isActive } });
+            if (data.id) await (prisma.organism as any).updateMany({ where: { id: data.id, organizationId: orgId }, data: { code: data.code, name: data.name, isActive: data.isActive } });
             else await (prisma.organism as any).create({ data: { organizationId: orgId, code: data.code, name: data.name, isActive: data.isActive } });
         } else if (type === 'antibiotic') {
-            if (data.id) await prisma.antibiotic.update({ where: { id: data.id }, data: { code: data.code, name: data.name, group: data.group, isActive: data.isActive } });
+            if (data.id) await prisma.antibiotic.updateMany({ where: { id: data.id, organizationId: orgId }, data: { code: data.code, name: data.name, group: data.group, isActive: data.isActive } });
             else await prisma.antibiotic.create({ data: { organizationId: orgId, code: data.code, name: data.name, group: data.group, isActive: data.isActive } });
         } else if (type === 'interpretation') {
-            if (data.id) await prisma.antibioticInterpretation.update({ where: { id: data.id }, data: { code: data.code, name: data.name, isActive: data.isActive } });
+            if (data.id) await prisma.antibioticInterpretation.updateMany({ where: { id: data.id, organizationId: orgId }, data: { code: data.code, name: data.name, isActive: data.isActive } });
             else await prisma.antibioticInterpretation.create({ data: { organizationId: orgId, code: data.code, name: data.name, isActive: data.isActive } });
         } else if (type === 'susceptibilityInfo') {
-            if (data.id) await prisma.susceptibilityInfo.update({ where: { id: data.id }, data: { code: data.code, name: data.name, details: data.details, isActive: data.isActive } });
+            if (data.id) await prisma.susceptibilityInfo.updateMany({ where: { id: data.id, organizationId: orgId }, data: { code: data.code, name: data.name, details: data.details, isActive: data.isActive } });
             else await prisma.susceptibilityInfo.create({ data: { organizationId: orgId, code: data.code, name: data.name, details: data.details, isActive: data.isActive } });
         } else {
-            if (data.id) await prisma.antibioticClass.update({ where: { id: data.id }, data: { code: data.code, name: data.name, isActive: data.isActive } });
+            if (data.id) await prisma.antibioticClass.updateMany({ where: { id: data.id, organizationId: orgId }, data: { code: data.code, name: data.name, isActive: data.isActive } });
             else await prisma.antibioticClass.create({ data: { organizationId: orgId, code: data.code, name: data.name, isActive: data.isActive } });
         }
         revalidateMicrobiology();
@@ -187,7 +180,13 @@ export async function saveMicrobiologyMaster(type: MicroType, data: any) {
 
 export async function mapOrganismAntibiotics(organismId: number, antibioticIds: number[]) {
     try {
-        // We only use the ID to update here, safe since it's an internal relational link
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        // 🚨 SECURITY FIX: Ensure the organism belongs to this lab before mapping
+        const organism = await (prisma.organism as any).findFirst({
+            where: { id: organismId, organizationId: orgId }
+        });
+        if (!organism) return { success: false, message: "Organism not found." };
+
         await (prisma.organism as any).update({
             where: { id: organismId },
             data: { antibiotics: { set: antibioticIds.map(id => ({ id })) } }
@@ -199,7 +198,7 @@ export async function mapOrganismAntibiotics(organismId: number, antibioticIds: 
 
 export async function importMicrobiologyMaster(type: MicroType, dataArray: any[]) {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         if (!dataArray || dataArray.length === 0) return { success: false, message: "No data found to import." };
         
         if (type === 'organism') {
@@ -220,11 +219,14 @@ export async function importMicrobiologyMaster(type: MicroType, dataArray: any[]
 
 export async function deleteMicrobiologyMaster(type: MicroType, id: number) {
     try {
-        if (type === 'organism') await (prisma.organism as any).delete({ where: { id } });
-        else if (type === 'antibiotic') await prisma.antibiotic.delete({ where: { id } });
-        else if (type === 'interpretation') await prisma.antibioticInterpretation.delete({ where: { id } });
-        else if (type === 'susceptibilityInfo') await prisma.susceptibilityInfo.delete({ where: { id } });
-        else await prisma.antibioticClass.delete({ where: { id } });
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        // 🚨 SECURITY FIX: DeleteMany with organizationId check
+        if (type === 'organism') await (prisma.organism as any).deleteMany({ where: { id: id, organizationId: orgId } });
+        else if (type === 'antibiotic') await prisma.antibiotic.deleteMany({ where: { id: id, organizationId: orgId } });
+        else if (type === 'interpretation') await prisma.antibioticInterpretation.deleteMany({ where: { id: id, organizationId: orgId } });
+        else if (type === 'susceptibilityInfo') await prisma.susceptibilityInfo.deleteMany({ where: { id: id, organizationId: orgId } });
+        else await prisma.antibioticClass.deleteMany({ where: { id: id, organizationId: orgId } });
+        
         revalidateMicrobiology();
         return { success: true };
     } catch (error: any) {
@@ -234,9 +236,8 @@ export async function deleteMicrobiologyMaster(type: MicroType, id: number) {
 
 export async function deleteAllMicrobiologyMaster(type: MicroType) {
     try {
-        const orgId = await getOrgId();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
         
-        // 🚨 CRITICAL FIX: deleteMany now filters by orgId so a user doesn't delete the entire SaaS database!
         if (type === 'organism') await (prisma.organism as any).deleteMany({ where: { organizationId: orgId } });
         else if (type === 'antibiotic') await prisma.antibiotic.deleteMany({ where: { organizationId: orgId } });
         else if (type === 'interpretation') await prisma.antibioticInterpretation.deleteMany({ where: { organizationId: orgId } });
@@ -249,3 +250,4 @@ export async function deleteAllMicrobiologyMaster(type: MicroType) {
         return { success: false, message: 'Cannot delete all items. Some may be linked to existing records.' };
     }
 }
+// --- BLOCK app/actions/microbiology.ts CLOSE ---

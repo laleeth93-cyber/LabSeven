@@ -1,3 +1,4 @@
+// --- BLOCK lib/auth.ts OPEN ---
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
@@ -9,29 +10,42 @@ export const authOptions: NextAuthOptions = {
       name: "Lab Credentials",
       credentials: {
         username: { label: "Username / Email", type: "text" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
+        labId: { label: "Workspace ID", type: "text" } // 🚨 NEW: Accepts Lab ID
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
           throw new Error("Missing credentials");
         }
 
-        // Find user by either Username or Email
-        const user = await prisma.user.findFirst({
-          where: {
-            OR: [
+        let whereClause: any = { isActive: true };
+
+        // 🚨 If a Lab ID is provided (Staff User), strictly require it
+        if (credentials.labId) {
+            const parsedLabId = parseInt(credentials.labId);
+            if (isNaN(parsedLabId)) {
+                throw new Error("Invalid Workspace ID.");
+            }
+            whereClause.username = credentials.username;
+            whereClause.organizationId = parsedLabId;
+        } else {
+            // Otherwise (Admin Login), fall back to email or username lookup globally
+            whereClause.OR = [
               { email: credentials.username },
               { username: credentials.username }
-            ],
-            isActive: true
-          }
+            ];
+        }
+
+        // Find user 
+        const user = await prisma.user.findFirst({
+          where: whereClause
         });
 
         if (!user) {
           throw new Error("User not found or inactive.");
         }
 
-        // Check password using your existing auth-utils
+        // Check password
         const isValid = await comparePassword(credentials.password, user.password);
         if (!isValid) {
           throw new Error("Invalid password.");
@@ -71,3 +85,4 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
+// --- BLOCK lib/auth.ts CLOSE ---

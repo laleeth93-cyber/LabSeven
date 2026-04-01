@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { SlidersHorizontal, X, Search, Settings } from 'lucide-react';
-import ConfigureFieldModal from './ConfigureFieldModal';
+import ConfigureFieldModal from '@/app/components/ConfigureFieldModal';
 import { FieldData } from '../DashboardClient'; // 🚨 FIXED IMPORT PATH
 
 const categories = [

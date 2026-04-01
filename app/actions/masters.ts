@@ -1,8 +1,9 @@
-// BLOCK actions/masters.ts OPEN
+// --- BLOCK app/actions/masters.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
 // --- HELPER: MAP TAB NAME TO PRISMA MODEL ---
 const getModelDelegate = (tab: string) => {
@@ -20,6 +21,7 @@ const getModelDelegate = (tab: string) => {
 // --- GENERATE CODE (MAX + 1 LOGIC) ---
 export async function generateMasterCode(tab: string) {
   try {
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const model: any = getModelDelegate(tab);
     if (!model) return '';
 
@@ -33,11 +35,13 @@ export async function generateMasterCode(tab: string) {
       case 'multivalue': prefix = 'LST'; break;
     }
 
-    // Fetch all codes to find the gap-proof max
-    const allRecords = await model.findMany({ select: { code: true } });
-    let maxNum = 0;
+    // 🚨 Fetch codes ONLY for the current lab
+    const allRecords = await model.findMany({ 
+        where: { organizationId: orgId },
+        select: { code: true } 
+    });
     
-    // Regex matches PREFIX-NUMBER (e.g., SPC-0003)
+    let maxNum = 0;
     const regex = new RegExp(`${prefix}-(\\d+)`);
 
     allRecords.forEach((r: any) => {
@@ -57,10 +61,12 @@ export async function generateMasterCode(tab: string) {
 // --- GET ALL RECORDS ---
 export async function getMasterData(tab: string) {
   try {
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const model: any = getModelDelegate(tab);
     if (!model) return { success: false, data: [] };
 
     const data = await model.findMany({
+      where: { organizationId: orgId }, // 🚨 Filter to current lab
       orderBy: { id: 'desc' }
     });
     return { success: true, data };
@@ -73,12 +79,13 @@ export async function getMasterData(tab: string) {
 // --- SAVE (CREATE OR UPDATE) ---
 export async function saveMasterData(tab: string, data: any) {
   try {
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const model: any = getModelDelegate(tab);
     if (!model) return { success: false, message: "Invalid Master Type" };
 
-    // 1. Check for Duplicate Name (Case Insensitive)
-    // We exclude the current ID if we are updating
+    // 1. Check for Duplicate Name (Case Insensitive) within this Lab
     const duplicateCheckWhere: any = {
+      organizationId: orgId, // 🚨 Scope to lab
       name: {
         equals: data.name,
         mode: 'insensitive'
@@ -105,6 +112,7 @@ export async function saveMasterData(tab: string, data: any) {
 
     // 3. Prepare Payload
     const payload: any = {
+      organizationId: orgId, // 🚨 Tag to lab
       name: data.name,
       code: finalCode,
       isActive: data.isActive
@@ -122,22 +130,22 @@ export async function saveMasterData(tab: string, data: any) {
     }
 
     if (data.id) {
-      // --- UPDATE ---
-      await model.update({
-        where: { id: data.id },
+      // --- UPDATE (Ensure ownership using updateMany) ---
+      await model.updateMany({
+        where: { id: data.id, organizationId: orgId },
         data: payload
       });
     } else {
       // --- CREATE ---
-      // Collision Loop Check
-      let existing = await model.findUnique({ where: { code: finalCode } });
+      // Collision Loop Check scoped to Lab
+      let existing = await model.findFirst({ where: { code: finalCode, organizationId: orgId } });
       while (existing) {
         const match = finalCode.match(/([A-Z]+)-(\d+)/);
         if (match) {
            const prefix = match[1];
            const num = parseInt(match[2]) + 1;
            finalCode = `${prefix}-${num.toString().padStart(4, '0')}`;
-           existing = await model.findUnique({ where: { code: finalCode } });
+           existing = await model.findFirst({ where: { code: finalCode, organizationId: orgId } });
         } else {
            break; 
         }
@@ -158,25 +166,29 @@ export async function saveMasterData(tab: string, data: any) {
 // --- DELETE ---
 export async function deleteMasterData(tab: string, id: number) {
   try {
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const model: any = getModelDelegate(tab);
     if (!model) return { success: false };
 
-    await model.delete({ where: { id } });
+    // 🚨 Ensure we only delete if it belongs to this lab
+    await model.deleteMany({ where: { id: id, organizationId: orgId } });
     revalidatePath('/masters');
     return { success: true };
   } catch (error) {
-    return { success: false, message: "Failed to delete" };
+    return { success: false, message: "Failed to delete. It may be linked to existing tests." };
   }
 }
 
 // --- TOGGLE STATUS ---
 export async function toggleMasterStatus(tab: string, id: number, currentStatus: boolean) {
   try {
+    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
     const model: any = getModelDelegate(tab);
     if (!model) return { success: false };
 
-    await model.update({
-      where: { id },
+    // 🚨 Ensure we only update if it belongs to this lab
+    await model.updateMany({
+      where: { id: id, organizationId: orgId },
       data: { isActive: !currentStatus }
     });
     revalidatePath('/masters');
@@ -185,4 +197,4 @@ export async function toggleMasterStatus(tab: string, id: number, currentStatus:
     return { success: false };
   }
 }
-// BLOCK actions/masters.ts CLOSE
+// --- BLOCK app/actions/masters.ts CLOSE ---
