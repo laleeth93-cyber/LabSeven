@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Search, Bell, Building2, Loader2, User, Hash, X, Power, Cloud, CloudOff, CloudUpload } from 'lucide-react';
+import { Menu, Search, Bell, Settings, Building2, Loader2, User, Hash, X, Power, Cloud, CloudOff, CloudUpload } from 'lucide-react'; // 🚨 ADDED SETTINGS ICON
 import { getLabProfile } from '@/app/actions/lab-profile';
 import { searchPatients } from '@/app/actions/patient';
 import { useRouter } from 'next/navigation';
@@ -258,10 +258,10 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
         {/* DIVIDER */}
         <div className="h-8 w-[1px] bg-slate-400/30 hidden lg:block mx-1"></div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           
           {/* ================= CLOUD SYNC INDICATOR ================= */}
-          <div className="hidden sm:flex items-center">
+          <div className="hidden sm:flex items-center mr-1">
             {!isOnline ? (
               <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-100 text-rose-600 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm" title="You are offline">
                 <CloudOff size={14} className="animate-pulse" /> Offline
@@ -279,17 +279,28 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
           </div>
           {/* ======================================================== */}
 
-          <div className="relative p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer" style={{ color: '#9575cd' }}>
+          {/* 🚨 THE NEW SETTINGS ICON BUTTON */}
+          <button 
+            onClick={() => router.push('/settings')}
+            className="p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer" 
+            style={{ color: '#9575cd' }}
+            title="Account Settings"
+          >
+            <Settings size={20} />
+          </button>
+
+          {/* NOTIFICATION BELL */}
+          <div className="relative p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer" style={{ color: '#9575cd' }} title="Notifications">
             <Bell size={20} />
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white font-bold shadow-sm"
                   style={{ background: '#f06292' }}>3</span>
           </div>
 
-          {/* 🚨 ORIGINAL STYLED CLICKABLE LOGOUT PILL */}
+          {/* 🚨 LOGOUT PILL */}
           <button 
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="group bg-white/90 rounded-full p-1 flex items-center shadow-sm border border-slate-200 transition-all duration-300 hover:border-red-200 hover:bg-red-50/50"
+            className="group bg-white/90 rounded-full p-1 flex items-center shadow-sm border border-slate-200 transition-all duration-300 hover:border-red-200 hover:bg-red-50/50 ml-1"
           >
             <div 
               className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs z-20 shadow-sm transition-transform group-hover:scale-105"

@@ -2,6 +2,7 @@
 "use server";
 
 import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs'; // 🚨 FIX: Imported bcryptjs for secure hashing
 
 // The ID of your Super Admin / Master Template Lab
 const TEMPLATE_ORG_ID = 1; 
@@ -56,13 +57,16 @@ export async function registerNewSaaSLab(data: {
         const newOrgId = newOrg.id;
         const adminRoleId = newOrg.roles[0].id;
 
+        // 🚨 FIX: Securely hash the password before saving!
+        const hashedPassword = await bcrypt.hash(data.adminPassword, 10);
+
         // Create the Admin User
         await prisma.user.create({
             data: {
                 organizationId: newOrgId,
                 name: data.adminName,
                 username: data.adminUsername,
-                password: data.adminPassword, // Note: In production, wrap this in bcrypt.hash()
+                password: hashedPassword, // 🚨 Now properly hashed!
                 email: data.email,
                 phone: data.phone,
                 roleId: adminRoleId,
@@ -75,9 +79,6 @@ export async function registerNewSaaSLab(data: {
         // ==========================================
         // 2. DICTIONARIES FOR RELATIONAL MAPPING
         // ==========================================
-        // When we copy a Department from ID 5, it might become ID 102 in the new Org.
-        // We must remember this mapping so when we copy Tests, they attach to Dept 102, not 5!
-        
         const deptMap = new Map<number, number>();
         const methodMap = new Map<number, number>();
         const specimenMap = new Map<number, number>();
@@ -145,7 +146,6 @@ export async function registerNewSaaSLab(data: {
                     reportTitle: p.reportTitle, colCaption1: p.colCaption1, colCaption2: p.colCaption2, colCaption3: p.colCaption3, colCaption4: p.colCaption4, colCaption5: p.colCaption5,
                     isFormula: p.isFormula, billingOnly: p.billingOnly, interpretation: p.interpretation,
                     
-                    // Copy ranges directly inside the create call
                     ranges: {
                         create: p.ranges.map(r => ({
                             organizationId: newOrgId,
@@ -170,7 +170,6 @@ export async function registerNewSaaSLab(data: {
         });
 
         for (const t of templateTests) {
-            // Re-map the relational IDs to the newly created masters
             const newDeptId = t.departmentId ? deptMap.get(t.departmentId) : null;
             const newMethodId = t.methodId ? methodMap.get(t.methodId) : null;
             const newSpecimenId = t.specimenId ? specimenMap.get(t.specimenId) : null;
@@ -191,7 +190,6 @@ export async function registerNewSaaSLab(data: {
                     isCulture: t.isCulture, cultureColumns: t.cultureColumns,
                     isConfigured: t.isConfigured, isActive: t.isActive,
 
-                    // Re-map Test-Parameter links
                     parameters: {
                         create: t.parameters.map(tp => ({
                             organizationId: newOrgId,

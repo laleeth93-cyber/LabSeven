@@ -3,8 +3,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { sendOtpEmail } from '@/lib/email';
-// We use basic bcrypt logic to hash passwords. If your auth-utils uses a different method, let me know!
-import { hash } from 'crypto'; 
+import bcrypt from 'bcryptjs'; // 🚨 FIX: Added secure hashing library
 
 // Helper to generate a 6-digit number
 function generateOTP() {
@@ -66,14 +65,12 @@ export async function resetPasswordWithVerifiedEmail(email: string, newPassword:
         const user = await prisma.user.findFirst({ where: { email: email.toLowerCase() } });
         if (!user) return { success: false, message: "User not found." };
 
-        // Note: You should import your specific hash function from @/lib/auth-utils here if you have a custom salt logic. 
-        // For standard implementations, bcrypt is typically used here.
-        // Assuming your system uses standard hashing, you would update the password field.
-        // Replace this with your project's hashing logic.
+        // 🚨 FIX: Hash the password securely before saving it to the database!
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
         
         await prisma.user.update({
             where: { id: user.id },
-            data: { password: newPassword } // 🚨 Ensure this matches your hashing logic
+            data: { password: hashedPassword } 
         });
 
         return { success: true };

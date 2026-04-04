@@ -11,38 +11,63 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         username: { label: "Username / Email", type: "text" },
         password: { label: "Password", type: "password" },
-        labId: { label: "Workspace ID", type: "text" } // 🚨 NEW: Accepts Lab ID
+        labId: { label: "Workspace ID", type: "text" } 
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
           throw new Error("Missing credentials");
         }
 
+        // Clean inputs to prevent copy-paste space errors
+        const cleanUsername = credentials.username.trim().toLowerCase();
+
         let whereClause: any = { isActive: true };
 
-        // 🚨 If a Lab ID is provided (Staff User), strictly require it
-        if (credentials.labId) {
+        // Staff User Login
+        if (credentials.labId && credentials.labId.trim() !== "") {
             const parsedLabId = parseInt(credentials.labId);
             if (isNaN(parsedLabId)) {
                 throw new Error("Invalid Workspace ID.");
             }
-            whereClause.username = credentials.username;
+            whereClause.username = cleanUsername;
             whereClause.organizationId = parsedLabId;
         } else {
-            // Otherwise (Admin Login), fall back to email or username lookup globally
+            // Admin Login
             whereClause.OR = [
-              { email: credentials.username },
-              { username: credentials.username }
+              { email: cleanUsername },
+              { username: cleanUsername }
             ];
         }
 
-        // Find user 
+        // 🚨 THE FIX: Include the organization data in the query
         const user = await prisma.user.findFirst({
-          where: whereClause
+          where: whereClause,
+          include: { organization: true } 
         });
 
         if (!user) {
           throw new Error("User not found or inactive.");
+        }
+
+        // ==========================================
+        // ✨ SMART SUBSCRIPTION BLOCKER ✨
+        // ==========================================
+        if (user.organizationId !== 1) { // Master HQ (ID: 1) never expires
+            
+            // 1. Check if Super Admin manually disabled them
+            if (!user.organization.isActive) {
+                throw new Error("Account suspended. Please contact support.");
+            }
+
+            // 2. Check if the subscription date has passed
+            if (user.organization.subscriptionEndsAt) {
+                const now = new Date();
+                const expDate = new Date(user.organization.subscriptionEndsAt);
+                
+                if (expDate < now) {
+                    throw new Error("Subscription expired. Please renew to access your laboratory.");
+                }
+            }
         }
 
         // Check password
@@ -51,7 +76,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid password.");
         }
 
-        // Return user data including their specific organizationId
+        // Return user data
         return {
           id: user.id.toString(),
           name: user.name,

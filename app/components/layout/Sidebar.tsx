@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createClient } from "@/utils/supabase/client";
+import { useSession } from "next-auth/react"; 
 import { LayoutDashboard, Home, UserPlus, Users, FileEdit, FileText, List, ClipboardList, TestTube, TestTubes, Server, Database, Layout, LayoutTemplate, Shield, ShieldCheck, Stethoscope, HeartPulse, Building2, Hospital, Microscope, Bug, Pill, FlaskConical, Crown } from 'lucide-react';
 
 interface SidebarProps {
@@ -17,9 +18,11 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
   const pathname = usePathname();
   const supabase = createClient();
   
+  const { data: session } = useSession();
+  const orgId = (session?.user as any)?.orgId; 
+
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // --- NEW SYNC LOGIC: Ensure sidebar color matches the URL when returning from other pages ---
   useEffect(() => {
     if (typeof window !== 'undefined' && pathname === '/') {
       const params = new URLSearchParams(window.location.search);
@@ -71,8 +74,6 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
     if (viewId === 'lab-profile') { router.push('/lab-profile'); return; } 
     if (viewId === 'sensitivity') { router.push('/sensitivity'); return; } 
     
-    // --- CHANGED HERE: Always push to URL and set state simultaneously. ---
-    // This ensures DashboardClient detects the URL change and Sidebar highlights correctly.
     router.push(`/?view=${viewId}`);
     setActiveView(viewId);
   };
@@ -263,7 +264,7 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
 
           </ul>
 
-          {userEmail === 'laleeth93@gmail.com' && (
+          {orgId === 1 && (
             <div className="mt-auto pt-4 pb-2 border-t border-[#d1c4e9]/50 w-full">
               <li onClick={() => handleNavigation('super-admin')} className={getResponsiveLiClass(currentView === 'super-admin', false)}>
                 {currentView === 'super-admin' ? (

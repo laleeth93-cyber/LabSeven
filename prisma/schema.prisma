@@ -18,9 +18,11 @@ model Organization {
   email       String?  @unique
   phone       String?
   address     String?
-  plan        String   @default("Free")
+  plan        String   @default("Free Trial")
+  subscriptionEndsAt DateTime? 
   isActive    Boolean  @default(true)
   
+  // 🚨 Make sure these two lines are here!
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 
@@ -52,7 +54,6 @@ model Organization {
   antibioticInterpretations AntibioticInterpretation[]
   susceptibilityInfos       SusceptibilityInfo[]
 }
-
 // ==========================================
 // 1. PATIENT & BILLING MODELS
 // ==========================================

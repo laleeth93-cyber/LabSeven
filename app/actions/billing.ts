@@ -3,18 +3,18 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
+import { requireAuth } from '@/lib/server-auth';
 
-// 1. SEARCH TESTS (Multi-Tenant Upgraded)
+// 1. SEARCH TESTS
 export async function searchTests(query: string) {
   if (!query || query.length < 2) return [];
 
   try {
-    const { orgId } = await requireAuth(); // 🚨 USING THE GATEKEEPER
+    const { orgId } = await requireAuth();
 
     const tests = await prisma.test.findMany({
       where: {
-        organizationId: orgId, // 🚨 Filter tests by this specific lab
+        organizationId: orgId, 
         OR: [
           { name: { contains: query, mode: 'insensitive' } }, 
           { code: { contains: query, mode: 'insensitive' } }  
@@ -33,14 +33,15 @@ export async function searchTests(query: string) {
   }
 }
 
-// 2. CREATE BILL (Multi-Tenant Upgraded & TypeScript Fixed)
+// 2. CREATE BILL
 export async function createBill(data: any) {
   try {
-    const { orgId } = await requireAuth(); // 🚨 USING THE GATEKEEPER
+    const { orgId } = await requireAuth();
     const billNumber = data.billNumber || `INV-${Date.now()}`;
     
-    // 🚨 Safely resolve the patient ID
-    let patientDbId = parseInt(data.patientId);
+    // 🚨 THE FIX: Use Number() instead of parseInt() so hyphenated strings correctly trigger the lookup!
+    let patientDbId = Number(data.patientId); 
+    
     if (isNaN(patientDbId)) {
         const pt = await prisma.patient.findUnique({
            where: { organizationId_patientId: { organizationId: orgId, patientId: data.patientId } }
@@ -53,7 +54,7 @@ export async function createBill(data: any) {
     
     const itemIds = data.items.map((i: any) => i.testId);
     const dbTests = await prisma.test.findMany({
-        where: { id: { in: itemIds }, organizationId: orgId }, // 🚨 Ensure tests belong to this lab
+        where: { id: { in: itemIds }, organizationId: orgId }, 
         include: { packageTests: true } 
     });
 
@@ -64,7 +65,7 @@ export async function createBill(data: any) {
              if (dbTest.packageTests && dbTest.packageTests.length > 0) {
                  dbTest.packageTests.forEach((pkgTest, index) => {
                      finalItemsToSave.push({
-                         organizationId: orgId, // 🚨 Tag item to lab
+                         organizationId: orgId, 
                          testId: pkgTest.testId,
                          price: index === 0 ? submittedItem.price : 0, 
                          isUrgent: false
@@ -82,14 +83,14 @@ export async function createBill(data: any) {
     let doctorId: number | undefined = undefined;
     if (data.referredBy && data.referredBy !== 'Self') {
         const doc = await prisma.doctor.findFirst({
-            where: { name: data.referredBy, organizationId: orgId } // 🚨 Ensure doctor belongs to this lab
+            where: { name: data.referredBy, organizationId: orgId } 
         });
         if (doc) doctorId = doc.id;
     }
 
     const newBill = await prisma.bill.create({
       data: {
-        organizationId: orgId, // 🚨 Tag Bill to lab
+        organizationId: orgId, 
         billNumber: billNumber,
         patientId: patientDbId, 
         doctorId: doctorId || null, 
@@ -107,14 +108,17 @@ export async function createBill(data: any) {
           create: finalItemsToSave 
         },
         
-        payments: {
-          create: {
-            organizationId: orgId, // 🚨 Tag Payment to lab
-            amount: data.paidAmount,
-            mode: data.paymentMode || 'Cash',
-            date: new Date()
-          }
-        }
+        // Only create a payment record if they actually paid something
+        ...(data.paidAmount > 0 && {
+            payments: {
+              create: {
+                organizationId: orgId,
+                amount: data.paidAmount,
+                mode: data.paymentMode || 'Cash',
+                date: new Date()
+              }
+            }
+        })
       }
     });
 

@@ -1,15 +1,7 @@
 // --- BLOCK lib/email.ts OPEN ---
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '465'),
-  secure: process.env.SMTP_PORT === '465', 
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const resend = new Resend(process.env.SMTP_PASS);
 
 export async function sendOtpEmail(to: string, otp: string, purpose: 'REGISTER' | 'RESET') {
   const subject = purpose === 'REGISTER' 
@@ -28,20 +20,25 @@ export async function sendOtpEmail(to: string, otp: string, purpose: 'REGISTER' 
   `;
 
   try {
-    console.log(`⏳ Attempting to send email to ${to}...`);
+    console.log(`⏳ Using Resend SDK to email: [${to}]...`);
     
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM,
-      to,
-      subject,
-      html,
+    const { data, error } = await resend.emails.send({
+      from: 'Lab Seven <noreply@labseven.in>',
+      to: [to],
+      subject: subject,
+      html: html,
     });
     
-    console.log(`✅ Email successfully sent! Message ID: ${info.messageId}`);
+    // 🚨 THIS IS THE CRITICAL FIX: Trap the hidden Resend error
+    if (error) {
+      console.error("❌ RESEND REJECTED THE EMAIL:", error);
+      throw new Error(error.message);
+    }
+    
+    console.log(`✅ Email successfully sent via Resend API! ID:`, data?.id);
     return true;
   } catch (error) {
-    console.error("❌ NODEMAILER ERROR:");
-    console.error(error); // This will print the EXACT reason it failed!
+    console.error("❌ FATAL EMAIL ERROR:", error);
     throw error;
   }
 }
