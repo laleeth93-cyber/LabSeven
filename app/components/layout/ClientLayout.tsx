@@ -15,10 +15,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   // Activate the Global Sync Listener
   useNetworkStatus(); 
 
-  // 🚨 FIXED: Added '/register' to the list of pages that shouldn't show the Header/Sidebar
+  // 🚨 FIXED: Added '/reset' to the list of pages that shouldn't show the Header/Sidebar
   const isAuthPage = 
     pathname === '/login' || 
     pathname === '/register' || 
+    pathname === '/reset' || 
     pathname.startsWith('/reports/print');
 
   if (isAuthPage) {

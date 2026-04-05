@@ -1,71 +1,63 @@
 // --- BLOCK app/super-admin/page.tsx OPEN ---
 import React from "react";
 import { prisma } from "@/lib/prisma";
-import { Database, Building2, Activity, Receipt } from "lucide-react";
 import SuperAdminTable from "./components/SuperAdminTable";
-import GlobalSyncWidget from "./components/GlobalSyncWidget"; // 🚨 IMPORT THE NEW WIDGET
 
-// Force Next.js to fetch fresh data every time you load the page
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default async function SuperAdminPage() {
-  // 1. Fetch all laboratories and accurately count their total bills
   const labs = await prisma.organization.findMany({
     orderBy: { id: 'asc' },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      plan: true,
+      isActive: true,
+      hasSensitivity: true,
+      createdAt: true,
+      subscriptionEndsAt: true,
       _count: {
         select: { bills: true }
       }
     }
   });
 
-  // 2. Calculate Dashboard Metrics
-  const totalLabs = labs.length;
-  const activeLabs = labs.filter(lab => lab.isActive).length;
-  const totalSystemBills = labs.reduce((sum, lab) => sum + lab._count.bills, 0);
-
   return (
-    // FULL WIDTH BODY CONTAINER
-    <div className="w-full max-w-[100vw] min-h-screen bg-slate-50 p-4 md:p-6 font-sans overflow-x-hidden flex flex-col gap-6">
+    <div className="flex flex-col h-full w-full bg-slate-50/50 p-4 sm:p-6 overflow-y-auto custom-scrollbar">
       
-      {/* HEADER, METRICS, AND SYNC WIDGET */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-stretch gap-4">
-        
-        <div className="flex flex-col justify-center">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <Database className="text-[#a07be1]" size={24} />
-            System Command Center
+            Master HQ <span className="px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 text-[10px] uppercase rounded-full border border-fuchsia-200">System Control</span>
           </h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Super Admin Excel Spreadsheet View</p>
+          <p className="text-sm font-medium text-slate-500 mt-1">Manage tenant lifecycle, subscriptions, and system security.</p>
         </div>
-        
-        <div className="flex flex-wrap xl:flex-nowrap gap-3 w-full xl:w-auto">
-          {/* STAT CARDS */}
-          <div className="flex flex-col justify-center gap-3">
-              <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex-1 min-w-[150px]">
-                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center"><Building2 size={16} className="text-blue-600" /></div>
-                <div><p className="text-[10px] font-bold text-slate-400 uppercase">Total Labs</p><p className="text-lg font-black text-slate-800 leading-none mt-0.5">{totalLabs}</p></div>
-              </div>
-              <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex-1 min-w-[150px]">
-                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center"><Activity size={16} className="text-emerald-600" /></div>
-                <div><p className="text-[10px] font-bold text-slate-400 uppercase">Active Labs</p><p className="text-lg font-black text-slate-800 leading-none mt-0.5">{activeLabs}</p></div>
-              </div>
-          </div>
-          
-          <div className="flex items-center gap-3 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex-1 xl:flex-none min-w-[150px]">
-            <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center"><Receipt size={18} className="text-purple-600" /></div>
-            <div><p className="text-[11px] font-bold text-slate-400 uppercase">Total Bills Generated</p><p className="text-2xl font-black text-slate-800 leading-none mt-1">{totalSystemBills}</p></div>
-          </div>
+      </div>
 
-          {/* 🚨 THE SYNC WIDGET */}
-          <div className="w-full xl:w-[280px] shrink-0">
-             <GlobalSyncWidget />
+      <div className="flex flex-col xl:flex-row gap-6 mb-6">
+        <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-center">
+            <p className="text-xs font-bold text-slate-500 uppercase">Total Labs</p>
+            <p className="text-2xl font-black text-[#a07be1] mt-1">{labs.length}</p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-center">
+            <p className="text-xs font-bold text-slate-500 uppercase">Active Subs</p>
+            <p className="text-2xl font-black text-emerald-600 mt-1">
+              {labs.filter(l => l.isActive && l.id !== 1).length}
+            </p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-center">
+            <p className="text-xs font-bold text-slate-500 uppercase">Total Bills Generated</p>
+            <p className="text-2xl font-black text-slate-800 mt-1">
+              {labs.reduce((acc, lab) => acc + lab._count.bills, 0)}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* RENDER THE CLIENT-SIDE SPREADSHEET TABLE */}
-      <div className="flex-1 w-full border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+      <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[500px]">
         <SuperAdminTable labs={labs} />
       </div>
 

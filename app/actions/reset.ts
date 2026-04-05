@@ -1,44 +1,35 @@
 // --- BLOCK app/actions/reset.ts OPEN ---
 "use server";
 
-import { prisma } from '@/lib/prisma';
-import { revalidatePath } from 'next/cache';
-import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
+import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/server-auth";
 
 export async function resetLabTransactionalData() {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth();
 
-        // 🚨 SECURITY: We ONLY delete transactional data (Patients, Bills, Results)
-        // AND we strictly enforce that it only deletes data for the currently logged-in Organization.
-        // We DO NOT delete Master Data (Tests, Parameters, Departments) or Users.
-
-        await prisma.$transaction([
-            // 1. Delete all Test Results for this lab
-            prisma.testResult.deleteMany({ where: { organizationId: orgId } }),
-            
-            // 2. Delete all Bill Items for this lab
-            prisma.billItem.deleteMany({ where: { organizationId: orgId } }),
-            
-            // 3. Delete all Payments for this lab
-            prisma.payment.deleteMany({ where: { organizationId: orgId } }),
-            
-            // 4. Delete all Bills for this lab
-            prisma.bill.deleteMany({ where: { organizationId: orgId } }),
-            
-            // 5. Delete all Patients for this lab
-            prisma.patient.deleteMany({ where: { organizationId: orgId } }),
-        ]);
-
-        // Refresh all main dashboard routes
-        revalidatePath('/');
-        revalidatePath('/list');
-        revalidatePath('/results/entry');
+        // 🚨 IMPORTANT: We must delete in a specific order to respect database relationships.
+        // E.g., You cannot delete a Bill if Payments or BillItems are still attached to it.
         
-        return { success: true, message: "Your lab's patient and billing data has been successfully reset." };
+        // 1. Delete all test results
+        await prisma.testResult.deleteMany({ where: { organizationId: orgId } });
+        
+        // 2. Delete all payments
+        await prisma.payment.deleteMany({ where: { organizationId: orgId } });
+        
+        // 3. Delete all bill items
+        await prisma.billItem.deleteMany({ where: { organizationId: orgId } });
+        
+        // 4. Delete the bills themselves
+        await prisma.bill.deleteMany({ where: { organizationId: orgId } });
+        
+        // 5. Finally, delete the patients
+        await prisma.patient.deleteMany({ where: { organizationId: orgId } });
+
+        return { success: true, message: "All test patients and billing records have been successfully cleared." };
     } catch (error: any) {
-        console.error("Reset Error:", error);
-        return { success: false, message: "Failed to reset lab data." };
+        console.error("Data Reset Error:", error);
+        return { success: false, message: error.message || "Failed to reset laboratory data. Please try again." };
     }
 }
 // --- BLOCK app/actions/reset.ts CLOSE ---

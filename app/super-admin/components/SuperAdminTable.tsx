@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { Trash2, RefreshCw, Power, ShieldAlert, CalendarPlus, X, CheckCircle2, Filter } from "lucide-react";
 import toast from "react-hot-toast";
-import { toggleLabStatus, deleteLabPermanently, renewLabSubscription } from "@/app/actions/super-admin";
+import { toggleLabStatus, deleteLabPermanently, renewLabSubscription, toggleSensitivityModule } from "@/app/actions/super-admin";
 
 type LabData = {
   id: number;
@@ -13,6 +13,7 @@ type LabData = {
   phone: string | null;
   plan: string;
   isActive: boolean;
+  hasSensitivity: boolean; 
   createdAt: Date;
   subscriptionEndsAt?: Date | null; 
   _count: { bills: number };
@@ -20,61 +21,56 @@ type LabData = {
 
 export default function SuperAdminTable({ labs }: { labs: LabData[] }) {
   const [loadingId, setLoadingId] = useState<number | null>(null);
+  const [sensitivityLoading, setSensitivityLoading] = useState<number | null>(null);
   
-  // 🚨 THE FIX: Strict 3-Phase Lifecycle Filters
-  const [filterMode, setFilterMode] = useState<"ALL" | "TRIAL" | "SUBSCRIBED" | "EXPIRED">("ALL");
-  
-  const [sensitivityState, setSensitivityState] = useState<Record<number, boolean>>({});
+  const [filterMode, setFilterMode] = useState<"ALL" | "TRIAL" | "SUBSCRIBED" | "NEAR_EXPIRY" | "EXPIRED">("ALL");
   const [renewalModalOpen, setRenewalModalOpen] = useState(false);
   const [selectedLab, setSelectedLab] = useState<LabData | null>(null);
   const [renewPlan, setRenewPlan] = useState("Professional");
-  const [renewDuration, setRenewDuration] = useState(1); // Default to 1 Month
+  const [renewDuration, setRenewDuration] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // =========================================================================
-  // ✨ THE CORE LIFECYCLE ENGINE ✨
-  // Calculates exactly where the lab is in their journey based purely on dates
-  // =========================================================================
   const getLabLifecycle = (lab: LabData) => {
       if (lab.id === 1) return { status: "HQ", label: "System Master" };
 
       const now = new Date();
       const startDate = new Date(lab.createdAt);
-      
-      // Calculate strict 5-Day Trial End
       const trialEndDate = new Date(startDate);
       trialEndDate.setDate(trialEndDate.getDate() + 5);
 
-      // Determine absolute expiration
       const expDate = lab.subscriptionEndsAt ? new Date(lab.subscriptionEndsAt) : trialEndDate;
 
-      // 1. Are they completely expired?
       if (now > expDate) {
           return { status: "EXPIRED", label: "Expired", startDate, expDate };
       }
 
-      // 2. Are they currently inside their 5-Day Trial Window?
       if (now <= trialEndDate) {
-          // Did they already buy a plan during the trial?
           if (lab.plan !== "Free Trial" && lab.plan !== "Free") {
               return { status: "TRIAL_UPGRADED", label: "Free Trial", upcomingPlan: lab.plan, startDate, expDate };
           }
           return { status: "TRIAL", label: "Free Trial", startDate, expDate: trialEndDate };
       }
 
-      // 3. The 5 Days are over, and they haven't expired -> Active Paid!
       return { status: "PAID", label: lab.plan, startDate, expDate };
   };
 
-  // -------------------------------------------------------------------------
-  // Filtering Logic based on the Engine
-  // -------------------------------------------------------------------------
   const filteredLabs = labs.filter(lab => {
-      const { status } = getLabLifecycle(lab);
+      const { status, expDate } = getLabLifecycle(lab);
+      
       if (filterMode === "TRIAL") return status === "TRIAL" || status === "TRIAL_UPGRADED";
       if (filterMode === "SUBSCRIBED") return status === "PAID";
       if (filterMode === "EXPIRED") return status === "EXPIRED";
-      return true; // "ALL"
+      
+      if (filterMode === "NEAR_EXPIRY") {
+          if (status === "HQ" || status === "EXPIRED") return false;
+          if (expDate) {
+              const daysLeft = (expDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24);
+              return daysLeft >= 0 && daysLeft <= 5; 
+          }
+          return false;
+      }
+      
+      return true;
   });
 
   const handleToggleStatus = async (id: number, currentStatus: boolean) => {
@@ -108,33 +104,30 @@ export default function SuperAdminTable({ labs }: { labs: LabData[] }) {
     setIsProcessing(false);
   };
 
-  const toggleSensitivity = (id: number) => {
-    setSensitivityState(prev => ({ ...prev, [id]: !prev[id] }));
-    toast.success("Sensitivity Module preference updated.");
+  const handleToggleSensitivity = async (id: number, currentStatus: boolean) => {
+    setSensitivityLoading(id);
+    const res = await toggleSensitivityModule(id, currentStatus);
+    if (res.success) toast.success(res.message); else toast.error(res.message);
+    setSensitivityLoading(null);
   };
 
   return (
-    <div className="w-full flex flex-col gap-4">
-      
-      {/* TOOLBAR */}
-      <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-300 shadow-sm overflow-x-auto">
+    <div className="w-full flex flex-col gap-4 h-full">
+      <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-300 shadow-sm overflow-x-auto shrink-0">
         <div className="flex items-center gap-2 min-w-max">
             <Filter size={16} className="text-slate-400" />
             <span className="text-sm font-bold text-slate-600 mr-2">Lifecycle Views:</span>
             <div className="flex bg-slate-100 p-1 rounded-md gap-1">
                 <button onClick={() => setFilterMode("ALL")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "ALL" ? "bg-white shadow-sm text-[#a07be1]" : "text-slate-500 hover:text-slate-700"}`}>All Accounts</button>
-                
-                <button onClick={() => setFilterMode("TRIAL")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "TRIAL" ? "bg-white shadow-sm text-amber-600" : "text-slate-500 hover:text-slate-700"}`}>Free Trials (5 Days)</button>
-                
-                <button onClick={() => setFilterMode("SUBSCRIBED")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "SUBSCRIBED" ? "bg-white shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"}`}>Active Paid Subscribers</button>
-                
-                <button onClick={() => setFilterMode("EXPIRED")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "EXPIRED" ? "bg-white shadow-sm text-red-600" : "text-slate-500 hover:text-slate-700"}`}>Expired Accounts</button>
+                <button onClick={() => setFilterMode("TRIAL")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "TRIAL" ? "bg-white shadow-sm text-amber-600" : "text-slate-500 hover:text-slate-700"}`}>Free Trials</button>
+                <button onClick={() => setFilterMode("SUBSCRIBED")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "SUBSCRIBED" ? "bg-white shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"}`}>Subscribers</button>
+                <button onClick={() => setFilterMode("NEAR_EXPIRY")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "NEAR_EXPIRY" ? "bg-white shadow-sm text-orange-500" : "text-slate-500 hover:text-slate-700"}`}>Near Expiry (5 Days)</button>
+                <button onClick={() => setFilterMode("EXPIRED")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "EXPIRED" ? "bg-white shadow-sm text-red-600" : "text-slate-500 hover:text-slate-700"}`}>Expired</button>
             </div>
         </div>
       </div>
 
-      {/* DATA GRID */}
-      <div className="w-full bg-white border border-slate-300 shadow-sm overflow-x-auto h-[calc(100vh-220px)] custom-scrollbar relative rounded-b-lg">
+      <div className="w-full bg-white border border-slate-300 shadow-sm overflow-x-auto h-full min-h-[400px] custom-scrollbar relative rounded-b-lg">
         <table className="w-full border-collapse text-[12px] text-left whitespace-nowrap min-w-max">
           <thead className="sticky top-0 z-20 shadow-md outline outline-1 outline-[#a07be1]">
             <tr className="bg-[#a07be1] text-white">
@@ -157,57 +150,50 @@ export default function SuperAdminTable({ labs }: { labs: LabData[] }) {
             {filteredLabs.map((lab, index) => {
               const lifecycle = getLabLifecycle(lab);
               const isExpired = lifecycle.status === "EXPIRED";
+              const isNearExpiry = lifecycle.expDate && (lifecycle.expDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24) <= 5 && !isExpired && lifecycle.status !== "HQ";
 
               return (
-                <tr key={lab.id} className={`hover:bg-purple-50/40 transition-colors group border-b border-slate-200 ${isExpired ? 'bg-red-50/30' : ''}`}>
+                <tr key={lab.id} className={`transition-colors group border-b border-slate-200 ${isExpired ? 'bg-red-50/30 hover:bg-red-50/50' : isNearExpiry ? 'bg-orange-50/30 hover:bg-orange-50/50' : 'hover:bg-purple-50/40 bg-white'}`}>
                   <td className="border-r border-slate-200 px-2 py-2 text-center bg-slate-50/50 text-slate-500 font-bold group-hover:bg-purple-50/50">{index + 1}</td>
-                  
                   <td className="border-r border-slate-200 px-3 py-2 font-mono text-slate-600 font-medium">
                     {lifecycle.status === "HQ" ? "HQ-0001" : `ORG-${lab.id.toString().padStart(4, '0')}`}
                   </td>
-                  
                   <td className={`border-r border-slate-200 px-3 py-2 font-bold ${lifecycle.status === "HQ" ? 'text-red-600' : 'text-[#a07be1]'}`}>
                     {lab.name} {lifecycle.status === "HQ" && <ShieldAlert size={12} className="inline ml-1" />}
                   </td>
-                  
                   <td className="border-r border-slate-200 px-3 py-2 text-slate-600">{lab.email || "N/A"}</td>
                   <td className="border-r border-slate-200 px-3 py-2 text-slate-600 font-mono">{lab.phone || "N/A"}</td>
                   
-                  {/* ✨ SMART SAAS PLAN COLUMN ✨ */}
                   <td className="border-r border-slate-200 px-3 py-2 text-slate-700 font-semibold align-middle">
-                    {lifecycle.status === "TRIAL" && (
-                        <span className="bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded text-[11px]">Free Trial</span>
-                    )}
+                    {lifecycle.status === "TRIAL" && <span className="bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded text-[11px]">Free Trial</span>}
                     {lifecycle.status === "TRIAL_UPGRADED" && (
                         <div className="flex flex-col gap-1 items-start">
                             <span className="bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded text-[10px]">Free Trial Active</span>
                             <span className="bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[9px] uppercase tracking-wider font-black">Renewed: {lifecycle.upcomingPlan}</span>
                         </div>
                     )}
-                    {lifecycle.status === "PAID" && (
-                        <span className="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-1 rounded text-[11px]">{lifecycle.label}</span>
-                    )}
-                    {lifecycle.status === "EXPIRED" && (
-                        <span className="bg-red-100 text-red-700 border border-red-200 px-2 py-1 rounded text-[11px]">Expired ({lab.plan})</span>
-                    )}
-                    {lifecycle.status === "HQ" && (
-                        <span className="bg-slate-800 text-white border border-slate-900 px-2 py-1 rounded text-[11px]">Master HQ</span>
-                    )}
+                    {lifecycle.status === "PAID" && <span className="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-1 rounded text-[11px]">{lifecycle.label}</span>}
+                    {lifecycle.status === "EXPIRED" && <span className="bg-red-100 text-red-700 border border-red-200 px-2 py-1 rounded text-[11px]">Expired ({lab.plan})</span>}
+                    {lifecycle.status === "HQ" && <span className="bg-slate-800 text-white border border-slate-900 px-2 py-1 rounded text-[11px]">Master HQ</span>}
                   </td>
                   
                   <td className="border-r border-slate-200 px-3 py-2 text-center font-bold text-slate-700 bg-slate-50/50">{lab._count.bills}</td>
-                  
-                  <td className="border-r border-slate-200 px-3 py-2 text-slate-600">
-                    {lifecycle.startDate?.toLocaleDateString('en-GB') || "-"}
-                  </td>
-                  
-                  <td className={`border-r border-slate-200 px-3 py-2 font-bold ${isExpired ? 'text-red-600' : 'text-slate-600'}`}>
+                  <td className="border-r border-slate-200 px-3 py-2 text-slate-600">{lifecycle.startDate?.toLocaleDateString('en-GB') || "-"}</td>
+                  <td className={`border-r border-slate-200 px-3 py-2 font-bold ${isExpired ? 'text-red-600' : isNearExpiry ? 'text-orange-500' : 'text-slate-600'}`}>
                     {lifecycle.status === "HQ" ? "Lifetime" : lifecycle.expDate?.toLocaleDateString('en-GB')}
                   </td>
                   
                   <td className="border-r border-slate-200 px-3 py-2 text-center">
-                    <button onClick={() => toggleSensitivity(lab.id)} className={`w-10 h-5 rounded-full relative transition-colors ${sensitivityState[lab.id] ? 'bg-[#a07be1]' : 'bg-slate-300'}`}>
-                      <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-[3px] transition-all shadow-sm ${sensitivityState[lab.id] ? 'left-[22px]' : 'left-[3px]'}`} />
+                    <button 
+                      disabled={lifecycle.status === "HQ" || sensitivityLoading === lab.id} 
+                      onClick={() => handleToggleSensitivity(lab.id, lab.hasSensitivity)} 
+                      className={`w-10 h-5 rounded-full relative transition-colors disabled:opacity-50 ${lab.hasSensitivity ? 'bg-[#a07be1]' : 'bg-slate-300'}`}
+                    >
+                      {sensitivityLoading === lab.id ? (
+                        <RefreshCw size={10} className="animate-spin text-white absolute left-[14px] top-[5px]" />
+                      ) : (
+                        <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-[3px] transition-all shadow-sm ${lab.hasSensitivity ? 'left-[22px]' : 'left-[3px]'}`} />
+                      )}
                     </button>
                   </td>
 

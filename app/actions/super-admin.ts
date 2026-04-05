@@ -77,4 +77,21 @@ export async function renewLabSubscription(orgId: number, planName: string, mont
         return { success: false, message: "Failed to process renewal." };
     }
 }
+
+// 4. Toggle Sensitivity Module Access
+export async function toggleSensitivityModule(orgId: number, currentStatus: boolean) {
+    try {
+        if (orgId === 1) return { success: true, message: "Master HQ always has full access." };
+
+        await prisma.organization.update({
+            where: { id: orgId },
+            data: { hasSensitivity: !currentStatus }
+        });
+
+        revalidatePath("/super-admin");
+        return { success: true, message: `Sensitivity module ${!currentStatus ? 'enabled' : 'disabled'} for this lab.` };
+    } catch (error: any) {
+        return { success: false, message: "Failed to update module settings." };
+    }
+}
 // --- BLOCK app/actions/super-admin.ts CLOSE ---

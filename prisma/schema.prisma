@@ -19,10 +19,12 @@ model Organization {
   phone       String?
   address     String?
   plan        String   @default("Free Trial")
-  subscriptionEndsAt DateTime? 
+  subscriptionEndsAt DateTime?
   isActive    Boolean  @default(true)
   
-  // 🚨 Make sure these two lines are here!
+  // 🚨 NEW SENSITIVITY TOGGLE FLAG
+  hasSensitivity Boolean @default(false) 
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
 
@@ -54,6 +56,7 @@ model Organization {
   antibioticInterpretations AntibioticInterpretation[]
   susceptibilityInfos       SusceptibilityInfo[]
 }
+
 // ==========================================
 // 1. PATIENT & BILLING MODELS
 // ==========================================
@@ -134,7 +137,7 @@ model Bill {
 }
 
 model BillItem {
-  id              Int     @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id])
@@ -414,7 +417,7 @@ model ParameterRange {
   minAgeUnit    String   @default("Years")
   maxAgeUnit    String   @default("Years")
   
-  normalOperator String  @default("Between")
+  normalOperator  String  @default("Between")
   lowRange      Float?
   highRange     Float?
   normalRange   String?
@@ -518,7 +521,7 @@ model UOM {
 }
 
 model Operator {
-  id              Int     @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id])
@@ -677,7 +680,6 @@ model User {
   name            String
   email           String?  @unique
   phone           String?
-
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id])
 
@@ -749,7 +751,7 @@ model RolePermission {
 }
 
 model UserPermission {
-  id             Int        @id @default(autoincrement())
+  id              Int        @id @default(autoincrement())
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   permissionId Int
@@ -762,7 +764,7 @@ model UserPermission {
 // ==========================================
 
 model Organism {
-  id              Int          @id @default(autoincrement())
+  id              Int         @id @default(autoincrement())
   
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id])
@@ -839,6 +841,7 @@ model SusceptibilityInfo {
 
   @@unique([organizationId, code])
 }
+
 model OtpCode {
   id        Int      @id @default(autoincrement())
   email     String

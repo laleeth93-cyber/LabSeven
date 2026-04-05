@@ -2,11 +2,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Search, Bell, Settings, Building2, Loader2, User, Hash, X, Power, Cloud, CloudOff, CloudUpload } from 'lucide-react'; // 🚨 ADDED SETTINGS ICON
+import { Menu, Search, Bell, Settings, Building2, Loader2, User, Hash, X, Power, Cloud, CloudOff, CloudUpload, Zap } from 'lucide-react';
 import { getLabProfile } from '@/app/actions/lab-profile';
 import { searchPatients } from '@/app/actions/patient';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import toast from 'react-hot-toast'; 
 
 // --- OFFLINE SYNC IMPORTS ---
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -22,8 +23,8 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
   const [labProfile, setLabProfile] = useState<any>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   
-  // 🚨 LOGOUT STATE
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isPreloading, setIsPreloading] = useState(false); 
 
   // --- GLOBAL SEARCH STATES ---
   const [searchQuery, setSearchQuery] = useState('');
@@ -105,11 +106,42 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
     router.push(`/list?search=${patientId}`);
   };
 
-  // 🚨 LOGOUT HANDLER
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     await signOut({ callbackUrl: '/login', redirect: true });
+  };
+
+  // 🚨 UPGRADED: BACKGROUND PRELOADER (SPEED BOOST)
+  const handleSpeedBoost = async () => {
+    if (isPreloading) return;
+    setIsPreloading(true);
+    
+    toast.loading("Warming up system engines...", { id: "speed-boost" });
+
+    const coreRoutes = [
+      '/list', '/results/entry', '/tests', 
+      '/masters', '/referrals', '/lab-profile', 
+      '/reports', '/authorizations', '/super-admin'
+    ];
+
+    // 1. Standard prefetch for Production speed
+    coreRoutes.forEach(route => router.prefetch(route));
+
+    // 2. 🚨 THE DEV HACK: Force Webpack to compile the pages invisibly
+    if (process.env.NODE_ENV === 'development') {
+        for (const route of coreRoutes) {
+            try {
+                // Ping each page sequentially so we don't crash your computer's RAM
+                await fetch(route, { method: 'GET', cache: 'no-store' });
+            } catch (error) {
+                // Ignore background fetch errors
+            }
+        }
+    }
+
+    setIsPreloading(false);
+    toast.success("System Optimized! Pages are compiled and ready.", { id: "speed-boost" });
   };
 
   // Helper to safely get the Lab/Organization ID
@@ -215,7 +247,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
       </div>
 
       {/* RIGHT SIDE: Lab Details & User Account */}
-      <div className="flex items-center gap-5 min-w-fit">
+      <div className="flex items-center gap-3 sm:gap-5 min-w-fit">
         
         {/* LAB NAME & STACKED LAB ID BADGE */}
         <div className="hidden lg:flex items-center gap-3 transition-all duration-300 cursor-default group">
@@ -236,7 +268,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
                  </div>
                )}
                
-               {/* --- VERTICAL STACK WITH REFINED BADGE UI --- */}
                <div className="flex flex-col justify-center">
                    <span className="font-extrabold text-[15px] text-[#5e35b1] truncate max-w-[200px] tracking-tight leading-tight">
                      {labProfile?.name || 'Lab Seven'}
@@ -258,10 +289,10 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
         {/* DIVIDER */}
         <div className="h-8 w-[1px] bg-slate-400/30 hidden lg:block mx-1"></div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           
           {/* ================= CLOUD SYNC INDICATOR ================= */}
-          <div className="hidden sm:flex items-center mr-1">
+          <div className="hidden sm:flex items-center">
             {!isOnline ? (
               <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-100 text-rose-600 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm" title="You are offline">
                 <CloudOff size={14} className="animate-pulse" /> Offline
@@ -279,10 +310,21 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
           </div>
           {/* ======================================================== */}
 
-          {/* 🚨 THE NEW SETTINGS ICON BUTTON */}
+          {/* 🚨 THE SPEED BOOST BUTTON */}
+          <button 
+            onClick={handleSpeedBoost}
+            disabled={isPreloading}
+            className="p-2 rounded-lg bg-amber-100/50 hover:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50" 
+            style={{ color: '#d97706' }}
+            title="Speed Boost (Cache App Pages)"
+          >
+            {isPreloading ? <Loader2 size={20} className="animate-spin" /> : <Zap size={20} />}
+          </button>
+
+          {/* SETTINGS */}
           <button 
             onClick={() => router.push('/settings')}
-            className="p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer" 
+            className="p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer hidden sm:block" 
             style={{ color: '#9575cd' }}
             title="Account Settings"
           >
@@ -290,13 +332,13 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
           </button>
 
           {/* NOTIFICATION BELL */}
-          <div className="relative p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer" style={{ color: '#9575cd' }} title="Notifications">
+          <div className="relative p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer hidden sm:block" style={{ color: '#9575cd' }} title="Notifications">
             <Bell size={20} />
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white font-bold shadow-sm"
                   style={{ background: '#f06292' }}>3</span>
           </div>
 
-          {/* 🚨 LOGOUT PILL */}
+          {/* LOGOUT PILL */}
           <button 
             onClick={handleLogout}
             disabled={isLoggingOut}
@@ -309,7 +351,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
               {isLoggingOut ? <Loader2 size={14} className="animate-spin" /> : <Power size={14} />}
             </div>
             
-            <span className="mx-3 text-xs font-bold text-slate-700 transition-all duration-300 group-hover:text-red-500">
+            <span className="mx-3 text-xs font-bold text-slate-700 transition-all duration-300 group-hover:text-red-500 hidden sm:block">
               {isLoggingOut ? "Wait..." : "Admin"}
             </span>
           </button>
