@@ -377,7 +377,9 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             if (letterheadStyle === 'custom3') activeImageBase64 = reportSettings?.customHeader3 || '';
             if (letterheadStyle === 'custom4') activeImageBase64 = reportSettings?.customHeader4 || '';
 
-            const qrDataUrl = await QRCode.toDataURL(`SmartLab | ${filteredRealData?.billNumber || ''} | ${filteredRealData?.patient?.firstName || ''}`, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
+            // 🚨 THE FIX: Create a real web link URL for the QR code!
+            const qrUrl = `${window.location.origin}/verify/${filteredRealData?.id || billId}`;
+            const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
             
             const baseDate = overrideCollectionDate ? new Date(overrideCollectionDate) : (filteredRealData?.date ? new Date(filteredRealData.date) : new Date());
             const collectedDateStr = baseDate.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).replace(',', '');
