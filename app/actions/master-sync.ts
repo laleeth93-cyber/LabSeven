@@ -6,6 +6,7 @@ import { requireAuth } from '@/lib/server-auth';
 
 const MASTER_ORG_ID = 1;
 
+// Helper function to safely sync lookup tables (Masters) based on unique 'code'
 async function syncLookupTable(modelDelegate: any, targetOrgId: number) {
     const masterItems = await modelDelegate.findMany({ where: { organizationId: MASTER_ORG_ID } });
     const targetItems = await modelDelegate.findMany({ where: { organizationId: targetOrgId } });
@@ -18,10 +19,18 @@ async function syncLookupTable(modelDelegate: any, targetOrgId: number) {
     const idMap = new Map<number, number>();
 
     for (const item of masterItems) {
+        const { id, organizationId, createdAt, updatedAt, ...data } = item;
+
         if (item.code && targetCodeMap.has(item.code)) {
-            idMap.set(item.id, targetCodeMap.get(item.code) as number);
+            const existingId = targetCodeMap.get(item.code) as number;
+            idMap.set(item.id, existingId);
+            
+            // 🚨 FORCE UPDATE existing lookup records to ensure names/flags perfectly match Master
+            await modelDelegate.update({
+                where: { id: existingId },
+                data: { ...data }
+            });
         } else {
-            const { id, organizationId, createdAt, updatedAt, ...data } = item;
             const created = await modelDelegate.create({ data: { ...data, organizationId: targetOrgId } });
             idMap.set(item.id, created.id);
         }
@@ -33,30 +42,58 @@ export async function syncMasterLibraryToLab(targetOrgId: number) {
     try {
         if (targetOrgId === MASTER_ORG_ID) return { success: true, skipped: true };
 
+        // 1. SYNC CORE MASTERS (Will create missing or update existing)
         const deptMap = await syncLookupTable(prisma.department, targetOrgId);
         const specMap = await syncLookupTable(prisma.specimen, targetOrgId);
         const methMap = await syncLookupTable(prisma.method, targetOrgId);
         const vacuMap = await syncLookupTable(prisma.vacutainer, targetOrgId);
+        await syncLookupTable(prisma.uOM, targetOrgId);
+        await syncLookupTable(prisma.operator, targetOrgId);
+        await syncLookupTable(prisma.labList, targetOrgId);
 
+        // 2. SYNC MICROBIOLOGY & SENSITIVITY MASTERS
+        await syncLookupTable(prisma.organism, targetOrgId);
+        await syncLookupTable(prisma.antibiotic, targetOrgId);
+        await syncLookupTable(prisma.antibioticClass, targetOrgId);
+        await syncLookupTable(prisma.antibioticInterpretation, targetOrgId);
+        await syncLookupTable(prisma.susceptibilityInfo, targetOrgId);
+
+        // 3. SYNC PARAMETERS AND RANGES
         const masterParams = await prisma.parameter.findMany({ 
             where: { organizationId: MASTER_ORG_ID },
             include: { ranges: true }
         });
         const targetParams = await prisma.parameter.findMany({ where: { organizationId: targetOrgId } });
         
-        // 🚨 FIX: Filter out null codes and cast to string explicitly
         const targetParamCodeMap = new Map<string, number>(
-            targetParams
-                .filter(p => p.code !== null)
-                .map(p => [p.code as string, p.id])
+            targetParams.filter(p => p.code !== null).map(p => [p.code as string, p.id])
         );
         const paramMap = new Map<number, number>();
 
         for (const mp of masterParams) {
+            const { id, organizationId, createdAt, updatedAt, ranges, ...pData } = mp;
+
             if (mp.code && targetParamCodeMap.has(mp.code)) {
-                paramMap.set(mp.id, targetParamCodeMap.get(mp.code) as number);
+                const existingParamId = targetParamCodeMap.get(mp.code) as number;
+                paramMap.set(mp.id, existingParamId);
+
+                // 🚨 Update existing parameter fields to match Master
+                await prisma.parameter.update({
+                    where: { id: existingParamId },
+                    data: { ...pData }
+                });
+
+                // Completely replace ranges so they match Master perfectly
+                await prisma.parameterRange.deleteMany({ where: { parameterId: existingParamId } });
+                if (ranges && ranges.length > 0) {
+                    await prisma.parameterRange.createMany({
+                        data: ranges.map(r => {
+                            const { id, parameterId, organizationId, createdAt, updatedAt, ...rData } = r;
+                            return { ...rData, parameterId: existingParamId, organizationId: targetOrgId };
+                        })
+                    });
+                }
             } else {
-                const { id, organizationId, createdAt, updatedAt, ranges, ...pData } = mp;
                 const newParam = await prisma.parameter.create({
                     data: {
                         ...pData,
@@ -73,23 +110,44 @@ export async function syncMasterLibraryToLab(targetOrgId: number) {
             }
         }
 
+        // 4. SYNC TESTS AND THEIR CONFIGURATIONS (FORMATS/LAYOUTS)
         const masterTests = await prisma.test.findMany({ 
             where: { organizationId: MASTER_ORG_ID },
-            include: { parameters: true }
+            include: { parameters: true, packageTests: true }
         });
         const targetTests = await prisma.test.findMany({ where: { organizationId: targetOrgId } });
         
         const targetTestCodeMap = new Map<string, number>(
-            targetTests
-                .filter(t => t.code !== null)
-                .map(t => [t.code as string, t.id])
+            targetTests.filter(t => t.code !== null).map(t => [t.code as string, t.id])
         );
 
+        const testIdMap = new Map<number, number>();
+
         for (const mt of masterTests) {
-            if (!targetTestCodeMap.has(mt.code)) {
-                const { id, organizationId, createdAt, updatedAt, parameters, departmentId, specimenId, methodId, vacutainerId, outsourceLabId, ...tData } = mt;
+            const { id, organizationId, createdAt, updatedAt, parameters, packageTests, departmentId, specimenId, methodId, vacutainerId, outsourceLabId, ...tData } = mt;
+            
+            let targetTestId;
+
+            if (mt.code && targetTestCodeMap.has(mt.code)) {
+                targetTestId = targetTestCodeMap.get(mt.code) as number;
                 
-                await prisma.test.create({
+                // 🚨 UPDATE existing Test layout/format properties (isConfigured, template, colCaptions, etc.)
+                await prisma.test.update({
+                    where: { id: targetTestId },
+                    data: {
+                        ...tData,
+                        departmentId: departmentId ? deptMap.get(departmentId) : null,
+                        specimenId: specimenId ? specMap.get(specimenId) : null,
+                        methodId: methodId ? methMap.get(methodId) : null,
+                        vacutainerId: vacutainerId ? vacuMap.get(vacutainerId) : null,
+                    }
+                });
+
+                // Clear old configuration formats to make way for the Master's format
+                await prisma.testParameter.deleteMany({ where: { testId: targetTestId } });
+
+            } else {
+                const newTest = await prisma.test.create({
                     data: {
                         ...tData,
                         organizationId: targetOrgId,
@@ -97,22 +155,47 @@ export async function syncMasterLibraryToLab(targetOrgId: number) {
                         specimenId: specimenId ? specMap.get(specimenId) : null,
                         methodId: methodId ? methMap.get(methodId) : null,
                         vacutainerId: vacutainerId ? vacuMap.get(vacutainerId) : null,
-                        parameters: {
-                            create: parameters.map(tp => {
-                                return {
-                                    organizationId: targetOrgId,
-                                    parameterId: tp.parameterId ? paramMap.get(tp.parameterId) : null,
-                                    order: tp.order,
-                                    isHeading: tp.isHeading,
-                                    headingText: tp.headingText,
-                                    isCultureField: tp.isCultureField,
-                                    isActive: tp.isActive,
-                                    formula: tp.formula,
-                                    isCountDependent: tp.isCountDependent
-                                };
-                            })
-                        }
                     }
+                });
+                targetTestId = newTest.id;
+            }
+
+            testIdMap.set(mt.id, targetTestId);
+
+            // 🚨 Insert the exact Master Formats/Headings/Formulas into the Test Config
+            if (parameters && parameters.length > 0) {
+                await prisma.testParameter.createMany({
+                    data: parameters.map(tp => ({
+                        organizationId: targetOrgId,
+                        testId: targetTestId,
+                        parameterId: tp.parameterId ? paramMap.get(tp.parameterId) : null,
+                        order: tp.order,
+                        isHeading: tp.isHeading,
+                        headingText: tp.headingText,
+                        isCultureField: tp.isCultureField,
+                        isActive: tp.isActive,
+                        formula: tp.formula,
+                        isCountDependent: tp.isCountDependent
+                    }))
+                });
+            }
+        }
+
+        // 5. SYNC PACKAGE CONFIGURATIONS
+        for (const mt of masterTests) {
+            if (mt.type === 'Package' && mt.packageTests && mt.packageTests.length > 0) {
+                const targetPackageId = testIdMap.get(mt.id);
+                if (!targetPackageId) continue;
+                
+                // Replace package links
+                await prisma.packageTest.deleteMany({ where: { packageId: targetPackageId } });
+                await prisma.packageTest.createMany({
+                    data: mt.packageTests
+                        .map(pt => ({
+                            packageId: targetPackageId,
+                            testId: testIdMap.get(pt.testId) as number
+                        }))
+                        .filter(pt => pt.testId !== undefined)
                 });
             }
         }
@@ -139,7 +222,7 @@ export async function pushMasterDataToAllLabs() {
             if (res?.success && !res?.skipped) successCount++;
         }
 
-        return { success: true, message: `Successfully pushed library updates to ${successCount} laboratories.` };
+        return { success: true, message: `Successfully pushed formats and configs to ${successCount} active laboratories.` };
     } catch (error) {
         console.error("Global Push Error:", error);
         return { success: false, message: "An error occurred during global sync." };

@@ -2,6 +2,7 @@
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import SuperAdminTable from "./components/SuperAdminTable";
+import GlobalSyncWidget from "./components/GlobalSyncWidget"; // 🚨 ADDED IMPORT
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,11 @@ export default async function SuperAdminPage() {
             Master HQ <span className="px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 text-[10px] uppercase rounded-full border border-fuchsia-200">System Control</span>
           </h1>
           <p className="text-sm font-medium text-slate-500 mt-1">Manage tenant lifecycle, subscriptions, and system security.</p>
+        </div>
+        
+        {/* 🚨 ADDED THE GLOBAL SYNC WIDGET HERE */}
+        <div className="flex items-center">
+            <GlobalSyncWidget />
         </div>
       </div>
 
