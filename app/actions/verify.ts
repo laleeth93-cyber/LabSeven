@@ -9,21 +9,42 @@ export async function getPublicDocumentData(billId: number) {
             return { success: false, message: "Invalid verification link." };
         }
 
-        // Fetch everything required to build the PDF report
+        // Fetch everything required to build the PDF report exactly like the internal app does
         const bill = await prisma.bill.findUnique({
             where: { id: billId },
             include: {
                 organization: true,
                 patient: true,
                 doctor: true,
-                payments: true,
+                approvedBy1: true,
+                approvedBy2: true,
                 items: {
                     include: {
                         test: {
-                            include: { department: true }
+                            include: {
+                                department: true,
+                                parameters: {
+                                    include: { parameter: { include: { ranges: true } } },
+                                    orderBy: { order: 'asc' }
+                                },
+                                packageTests: {
+                                    include: {
+                                        test: {
+                                            include: {
+                                                department: true,
+                                                parameters: {
+                                                    include: { parameter: { include: { ranges: true } } },
+                                                    orderBy: { order: 'asc' }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    orderBy: { id: 'asc' }
+                                }
+                            }
                         },
                         results: {
-                            include: { parameter: true }
+                            include: { parameter: { include: { ranges: true } } }
                         }
                     }
                 }
@@ -33,14 +54,17 @@ export async function getPublicDocumentData(billId: number) {
         if (!bill) return { success: false, message: "Document not found." };
         if (bill.isDeleted) return { success: false, message: "This document has been revoked by the laboratory." };
 
-        // Fetch the lab's PDF formatting settings
         const reportSettings = await prisma.reportSettings.findFirst({
+            where: { organizationId: bill.organizationId }
+        });
+
+        const labProfile = await prisma.labProfile.findFirst({
             where: { organizationId: bill.organizationId }
         });
 
         return { 
             success: true, 
-            data: { bill, reportSettings } 
+            data: { bill, reportSettings, labProfile } 
         };
     } catch (error) {
         console.error("Verification Error:", error);
