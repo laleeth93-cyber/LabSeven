@@ -15,11 +15,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   // Activate the Global Sync Listener
   useNetworkStatus(); 
 
-  // 🚨 FIXED: Added '/reset' to the list of pages that shouldn't show the Header/Sidebar
+  // 🚨 THE FIX: We must tell the layout to treat /verify as a public auth page
   const isAuthPage = 
     pathname === '/login' || 
     pathname === '/register' || 
     pathname === '/reset' || 
+    pathname.startsWith('/verify') ||  // <-- This stops the Sidebar from loading and kicking you out!
     pathname.startsWith('/reports/print');
 
   if (isAuthPage) {
