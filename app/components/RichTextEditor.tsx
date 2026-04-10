@@ -46,14 +46,15 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     <div className="w-full border border-slate-300 rounded-md overflow-hidden shadow-sm">
        <Editor
          tinymceScriptSrc="/tinymce/tinymce.min.js"
-         
-         // 🚨 FIXED: The license key is now passed as a direct prop!
          licenseKey="gpl" 
-         
          onInit={(_evt: any, editor: any) => editorRef.current = editor}
          value={value}
          onEditorChange={(newValue: string) => onChange(newValue)}
          init={{
+           // 🚨 ADDED THESE TWO LINES TO HIDE ALL ADS & BRANDING:
+           promotion: false, 
+           branding: false,  
+           
            height: 500,
            menubar: 'file edit view insert format tools table help',
            plugins: [
