@@ -45,8 +45,10 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   return (
     <div className="w-full border border-slate-300 rounded-md overflow-hidden shadow-sm">
        <Editor
-         // 🚨 REMOVED API KEY, ADDED LOCAL SCRIPT SOURCE:
          tinymceScriptSrc="/tinymce/tinymce.min.js"
+         
+         // 🚨 FIXED: The license key is now passed as a direct prop!
+         licenseKey="gpl" 
          
          onInit={(_evt: any, editor: any) => editorRef.current = editor}
          value={value}
@@ -63,7 +65,6 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
            // We define a broad range of formats to ensure TinyMCE recognizes them valid
            font_size_formats: '1px 2px 3px 4px 5px 6px 7px 8px 9px 10px 11px 12px 14px 16px 18px 24px 36px 48px',
            
-           // FIXED: Added underscores to the property name so TinyMCE recognizes our custom list!
            line_height_formats: '0 0.5 0.8 1 1.1 1.2 1.3 1.4 1.5 2',
 
            setup: (editor: any) => {
