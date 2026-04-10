@@ -9,44 +9,27 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Lab Credentials",
       credentials: {
-        username: { label: "Username / Email", type: "text" },
-        password: { label: "Password", type: "password" },
-        labId: { label: "Workspace ID", type: "text" } 
+        username: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
           throw new Error("Missing credentials");
         }
 
-        // Clean inputs to prevent copy-paste space errors
-        const cleanUsername = credentials.username.trim().toLowerCase();
+        const cleanEmail = credentials.username.trim().toLowerCase();
 
-        let whereClause: any = { isActive: true };
-
-        // Staff User Login
-        if (credentials.labId && credentials.labId.trim() !== "") {
-            const parsedLabId = parseInt(credentials.labId);
-            if (isNaN(parsedLabId)) {
-                throw new Error("Invalid Workspace ID.");
-            }
-            whereClause.username = cleanUsername;
-            whereClause.organizationId = parsedLabId;
-        } else {
-            // Admin Login
-            whereClause.OR = [
-              { email: cleanUsername },
-              { username: cleanUsername }
-            ];
-        }
-
-        // 🚨 THE FIX: Include the organization data in the query
+        // 🚨 THE FIX: We now strictly enforce login via Email address ONLY.
         const user = await prisma.user.findFirst({
-          where: whereClause,
+          where: { 
+              isActive: true,
+              email: cleanEmail
+          },
           include: { organization: true } 
         });
 
         if (!user) {
-          throw new Error("User not found or inactive.");
+          throw new Error("Invalid email or password.");
         }
 
         // ==========================================
@@ -73,7 +56,7 @@ export const authOptions: NextAuthOptions = {
         // Check password
         const isValid = await comparePassword(credentials.password, user.password);
         if (!isValid) {
-          throw new Error("Invalid password.");
+          throw new Error("Invalid email or password.");
         }
 
         // Return user data

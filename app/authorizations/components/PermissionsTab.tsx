@@ -1,41 +1,74 @@
-// --- app/authorizations/components/PermissionsTab.tsx Block Open ---
+// --- BLOCK app/authorizations/components/PermissionsTab.tsx OPEN ---
 import React, { useState } from 'react';
 import { Key, Save, Loader2, LayoutGrid, ChevronDown, ChevronRight, CheckSquare } from 'lucide-react';
 import { getUserPermissions, saveUserPermissions } from '@/app/actions/authorizations';
 
-// --- EXPANDED HIERARCHY WITH ALL MODULES AS TOP-LEVEL ---
+const ALL_ACTIONS = ['View', 'Add', 'Edit', 'Delete', 'Approve', 'Print'];
+
+// 🚨 THE FIX: A highly specific matrix mapping exact logical actions to specific screens
 const MODULE_HIERARCHY = [
     { 
         module: 'Front Desk', 
-        screens: ['Dashboard', 'Registration', 'Patient List'] 
+        screens: [
+            { name: 'Dashboard', actions: ['View'] },
+            { name: 'Registration', actions: ['View', 'Add', 'Edit', 'Delete', 'Print'] },
+            { name: 'Patient List', actions: ['View', 'Edit', 'Delete', 'Print'] }
+        ] 
     },
     { 
         module: 'Laboratory', 
-        screens: ['Result Entry'] 
+        screens: [
+            { name: 'Result Entry', actions: ['View', 'Edit', 'Approve', 'Print'] }
+        ] 
     },
     { 
         module: 'Test Configuration', 
-        screens: ['Tests', 'Parameters', 'Test Formats', 'Packages'] 
+        screens: [
+            { name: 'Tests', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Parameters', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Test Formats', actions: ['View', 'Edit'] },
+            { name: 'Packages', actions: ['View', 'Add', 'Edit', 'Delete'] }
+        ] 
     },
     { 
         module: 'Masters', 
-        screens: ['Departments', 'Specimens', 'Vacutainers', 'Methods', 'UOM', 'Operators', 'Lab Lists'] 
+        screens: [
+            { name: 'Departments', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Specimens', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Vacutainers', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Methods', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'UOM', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Operators', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Lab Lists', actions: ['View', 'Add', 'Edit', 'Delete'] }
+        ] 
     },
     { 
         module: 'Reporting Formatting', 
-        screens: ['Header Setup', 'Body Settings', 'Footer Layout', 'Page Formatting'] 
+        screens: [
+            { name: 'Header Setup', actions: ['View', 'Edit'] },
+            { name: 'Body Settings', actions: ['View', 'Edit'] },
+            { name: 'Footer Layout', actions: ['View', 'Edit'] },
+            { name: 'Page Formatting', actions: ['View', 'Edit'] }
+        ] 
     },
     { 
         module: 'Authorizations', 
-        screens: ['User Setup', 'Roles', 'Permissions', 'Doctor Signatures'] 
+        screens: [
+            { name: 'User Setup', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Roles', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Permissions', actions: ['View', 'Edit'] },
+            { name: 'Doctor Signatures', actions: ['View', 'Edit'] }
+        ] 
     },
     { 
         module: 'Setup', 
-        screens: ['General Settings', 'Multivalues', 'Referrals'] 
+        screens: [
+            { name: 'General Settings', actions: ['View', 'Edit'] },
+            { name: 'Multivalues', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Referrals', actions: ['View', 'Add', 'Edit', 'Delete'] }
+        ] 
     }
 ];
-
-const ACTIONS = ['View', 'Add', 'Edit', 'Delete', 'Approve', 'Print'];
 
 export default function PermissionsTab({ users }: any) {
     const [selectedUserForPerms, setSelectedUserForPerms] = useState<number | ''>('');
@@ -68,9 +101,10 @@ export default function PermissionsTab({ users }: any) {
         if (!hasModuleAccess) return false;
         
         return moduleGroup.screens.every(screen => {
-            const screenPerms = permMatrix[screen] || [];
+            const screenPerms = permMatrix[screen.name] || [];
             if (!screenPerms.includes('Access')) return false;
-            return ACTIONS.every(action => screenPerms.includes(action));
+            // Only verify the actions that actually belong to this screen
+            return screen.actions.every(action => screenPerms.includes(action));
         });
     });
 
@@ -84,13 +118,13 @@ export default function PermissionsTab({ users }: any) {
         MODULE_HIERARCHY.forEach(moduleGroup => {
             newMatrix[moduleGroup.module] = ['Access'];
             moduleGroup.screens.forEach(screen => {
-                newMatrix[screen] = ['Access', ...ACTIONS];
+                // Grant access and ONLY the valid actions for this screen
+                newMatrix[screen.name] = ['Access', ...screen.actions];
             });
         });
         setPermMatrix(newMatrix);
     };
 
-    // Grants or Revokes access to an entire Module
     const toggleModuleAccess = (moduleName: string) => {
         setPermMatrix(prev => {
             const newMatrix = { ...prev };
@@ -104,7 +138,6 @@ export default function PermissionsTab({ users }: any) {
         });
     };
 
-    // Grants or Revokes access to a specific Screen
     const toggleScreenAccess = (screenName: string) => {
         setPermMatrix(prev => {
             const newMatrix = { ...prev };
@@ -115,7 +148,6 @@ export default function PermissionsTab({ users }: any) {
         });
     };
 
-    // Grants or Revokes specific Actions within a screen
     const toggleAction = (screenName: string, action: string) => {
         setPermMatrix(prev => {
             const currentScreenPerms = prev[screenName] || [];
@@ -182,17 +214,15 @@ export default function PermissionsTab({ users }: any) {
                             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
                                 <tr>
                                     <th className="py-3 px-4 font-bold border-r border-slate-200 w-[28%]">System Hierarchy</th>
-                                    {ACTIONS.map(action => <th key={action} className="py-3 px-4 font-bold text-center w-[12%]">{action}</th>)}
+                                    {ALL_ACTIONS.map(action => <th key={action} className="py-3 px-4 font-bold text-center w-[12%]">{action}</th>)}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {MODULE_HIERARCHY.map(moduleGroup => {
-                                    // Check if the Module itself has the "Access" permission
                                     const hasModuleAccess = (permMatrix[moduleGroup.module] || []).includes('Access');
                                     
                                     return (
                                         <React.Fragment key={moduleGroup.module}>
-                                            {/* MODULE ROW: Checkbox applies only to Module Permission */}
                                             <tr className={`border-y border-slate-200 transition-colors ${hasModuleAccess ? 'bg-[#f8f5ff]' : 'bg-slate-50/50 hover:bg-slate-100'}`}>
                                                 <td className="py-3 px-4 font-extrabold text-slate-700 uppercase tracking-wider text-xs border-r border-slate-200">
                                                     <label className="flex items-center gap-3 cursor-pointer">
@@ -207,41 +237,44 @@ export default function PermissionsTab({ users }: any) {
                                                         <span className={hasModuleAccess ? "text-[#5e35b1]" : "text-slate-500"}>{moduleGroup.module}</span>
                                                     </label>
                                                 </td>
-                                                {/* Module row does not have action checkboxes */}
-                                                <td colSpan={ACTIONS.length} className={hasModuleAccess ? "bg-[#f8f5ff]" : "bg-slate-50/50"}>
+                                                <td colSpan={ALL_ACTIONS.length} className={hasModuleAccess ? "bg-[#f8f5ff]" : "bg-slate-50/50"}>
                                                     {!hasModuleAccess && (
                                                         <span className="text-[10px] text-slate-400 px-4 italic">Check module to view screens...</span>
                                                     )}
                                                 </td>
                                             </tr>
 
-                                            {/* SCREEN ROWS: Only show if Module is checked! */}
                                             {hasModuleAccess && moduleGroup.screens.map(screen => {
-                                                const screenPerms = permMatrix[screen] || [];
+                                                const screenPerms = permMatrix[screen.name] || [];
                                                 const hasScreenAccess = screenPerms.includes('Access');
                                                 
                                                 return (
-                                                    <tr key={screen} className="hover:bg-slate-50 transition-colors">
+                                                    <tr key={screen.name} className="hover:bg-slate-50 transition-colors">
                                                         <td className="py-3 px-4 font-bold text-slate-600 border-r border-slate-200 pl-10">
                                                             <label className="flex items-center gap-3 cursor-pointer">
                                                                 <input 
                                                                     type="checkbox" 
                                                                     checked={hasScreenAccess}
-                                                                    onChange={() => toggleScreenAccess(screen)}
+                                                                    onChange={() => toggleScreenAccess(screen.name)}
                                                                     className="w-4 h-4 text-[#9575cd] rounded border-slate-300 focus:ring-[#9575cd] cursor-pointer"
                                                                 />
-                                                                <span className={hasScreenAccess ? "text-slate-800" : "text-slate-500"}>{screen}</span>
+                                                                <span className={hasScreenAccess ? "text-slate-800" : "text-slate-500"}>{screen.name}</span>
                                                             </label>
                                                         </td>
-                                                        {ACTIONS.map(action => (
+                                                        {ALL_ACTIONS.map(action => (
                                                             <td key={action} className="py-3 px-4 text-center">
-                                                                <input 
-                                                                    type="checkbox" 
-                                                                    checked={screenPerms.includes(action)} 
-                                                                    onChange={() => toggleAction(screen, action)} 
-                                                                    disabled={!hasScreenAccess}
-                                                                    className={`w-4 h-4 rounded focus:ring-[#9575cd] cursor-pointer ${hasScreenAccess ? 'text-[#9575cd] border-slate-300' : 'text-slate-300 border-slate-200 cursor-not-allowed opacity-50'}`}
-                                                                />
+                                                                {/* 🚨 THE LOGIC: If the action belongs to the screen, show a checkbox. Otherwise, show a dash. */}
+                                                                {screen.actions.includes(action) ? (
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={screenPerms.includes(action)} 
+                                                                        onChange={() => toggleAction(screen.name, action)} 
+                                                                        disabled={!hasScreenAccess}
+                                                                        className={`w-4 h-4 rounded focus:ring-[#9575cd] cursor-pointer ${hasScreenAccess ? 'text-[#9575cd] border-slate-300' : 'text-slate-300 border-slate-200 cursor-not-allowed opacity-50'}`}
+                                                                    />
+                                                                ) : (
+                                                                    <span className="text-slate-300 font-medium select-none">-</span>
+                                                                )}
                                                             </td>
                                                         ))}
                                                     </tr>
@@ -264,4 +297,4 @@ export default function PermissionsTab({ users }: any) {
         </div>
     );
 }
-// --- app/authorizations/components/PermissionsTab.tsx Block Close ---
+// --- BLOCK app/authorizations/components/PermissionsTab.tsx CLOSE ---

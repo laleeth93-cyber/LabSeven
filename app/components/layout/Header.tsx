@@ -6,7 +6,8 @@ import { Menu, Search, Bell, Settings, Building2, Loader2, User, Hash, X, Power,
 import { getLabProfile } from '@/app/actions/lab-profile';
 import { searchPatients } from '@/app/actions/patient';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+// 🚨 ADDED: useSession to grab the logged-in user's details
+import { signOut, useSession } from 'next-auth/react';
 import toast from 'react-hot-toast'; 
 
 // --- OFFLINE SYNC IMPORTS ---
@@ -20,6 +21,9 @@ interface HeaderProps {
 }
 
 export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps) {
+  // 🚨 GRAB SESSION DATA
+  const { data: session } = useSession();
+  
   const [labProfile, setLabProfile] = useState<any>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   
@@ -112,7 +116,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
     await signOut({ callbackUrl: '/login', redirect: true });
   };
 
-  // 🚨 UPGRADED: BACKGROUND PRELOADER (SPEED BOOST)
   const handleSpeedBoost = async () => {
     if (isPreloading) return;
     setIsPreloading(true);
@@ -125,14 +128,11 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
       '/reports', '/authorizations', '/super-admin'
     ];
 
-    // 1. Standard prefetch for Production speed
     coreRoutes.forEach(route => router.prefetch(route));
 
-    // 2. 🚨 THE DEV HACK: Force Webpack to compile the pages invisibly
     if (process.env.NODE_ENV === 'development') {
         for (const route of coreRoutes) {
             try {
-                // Ping each page sequentially so we don't crash your computer's RAM
                 await fetch(route, { method: 'GET', cache: 'no-store' });
             } catch (error) {
                 // Ignore background fetch errors
@@ -146,6 +146,9 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
 
   // Helper to safely get the Lab/Organization ID
   const displayLabId = labProfile?.organizationId || labProfile?.id || '001';
+  
+  // 🚨 Determine the display name (Name -> Email prefix -> Default)
+  const displayName = session?.user?.name || session?.user?.email?.split('@')[0] || "User";
 
   return (
     <header 
@@ -183,7 +186,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
               style={{ borderColor: 'rgba(77,208,225,0.4)', color: '#455a64' }} 
             />
             
-            {/* Search Icons / Clear Button */}
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                 {searchQuery && (
                     <button onClick={() => {setSearchQuery(''); setShowDropdown(false);}} className="p-0.5 rounded-full hover:bg-slate-200 text-slate-400 transition-colors">
@@ -291,7 +293,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
         
         <div className="flex items-center gap-2 sm:gap-3">
           
-          {/* ================= CLOUD SYNC INDICATOR ================= */}
           <div className="hidden sm:flex items-center">
             {!isOnline ? (
               <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-100 text-rose-600 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm" title="You are offline">
@@ -308,9 +309,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
               </div>
             )}
           </div>
-          {/* ======================================================== */}
 
-          {/* 🚨 THE SPEED BOOST BUTTON */}
           <button 
             onClick={handleSpeedBoost}
             disabled={isPreloading}
@@ -321,7 +320,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
             {isPreloading ? <Loader2 size={20} className="animate-spin" /> : <Zap size={20} />}
           </button>
 
-          {/* SETTINGS */}
           <button 
             onClick={() => router.push('/settings')}
             className="p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer hidden sm:block" 
@@ -331,28 +329,27 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
             <Settings size={20} />
           </button>
 
-          {/* NOTIFICATION BELL */}
           <div className="relative p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer hidden sm:block" style={{ color: '#9575cd' }} title="Notifications">
             <Bell size={20} />
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white font-bold shadow-sm"
                   style={{ background: '#f06292' }}>3</span>
           </div>
 
-          {/* LOGOUT PILL */}
+          {/* 🚨 THE FIX: Displaying the actual Username dynamically */}
           <button 
             onClick={handleLogout}
             disabled={isLoggingOut}
             className="group bg-white/90 rounded-full p-1 flex items-center shadow-sm border border-slate-200 transition-all duration-300 hover:border-red-200 hover:bg-red-50/50 ml-1"
           >
             <div 
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs z-20 shadow-sm transition-transform group-hover:scale-105"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs z-20 shadow-sm transition-transform group-hover:scale-105 shrink-0"
               style={{ background: isLoggingOut ? '#ef4444' : 'linear-gradient(to bottom right, #9575cd, #f062a4)' }}
             >
               {isLoggingOut ? <Loader2 size={14} className="animate-spin" /> : <Power size={14} />}
             </div>
             
-            <span className="mx-3 text-xs font-bold text-slate-700 transition-all duration-300 group-hover:text-red-500 hidden sm:block">
-              {isLoggingOut ? "Wait..." : "Admin"}
+            <span className="mx-3 text-xs font-bold text-slate-700 transition-all duration-300 group-hover:text-red-500 hidden sm:block truncate max-w-[120px]">
+              {isLoggingOut ? "Wait..." : displayName}
             </span>
           </button>
 

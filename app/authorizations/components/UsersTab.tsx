@@ -1,9 +1,10 @@
-// --- app/authorizations/components/UsersTab.tsx Block Open ---
+// --- BLOCK app/authorizations/components/UsersTab.tsx OPEN ---
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, CheckCircle2, UserCog, Key, Power, Percent, FileSignature } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, CheckCircle2, UserCog, Key, Power, Percent, FileSignature, Mail, Lock } from 'lucide-react';
 import { saveUser, toggleUserStatus, deleteUser, resetUserPassword } from '@/app/actions/authorizations';
 
-export default function UsersTab({ users, roles, loadData }: any) {
+// 🚨 ACCEPTING canPerform from parent
+export default function UsersTab({ users, roles, loadData, canPerform = () => true }: any) {
     const [isUserModalOpen, setIsUserModalOpen] = useState(false);
     const [userForm, setUserForm] = useState({ 
         id: 0, name: '', username: '', password: '', email: '', phone: '', degree: '', roleId: '', isActive: true,
@@ -59,16 +60,19 @@ export default function UsersTab({ users, roles, loadData }: any) {
                     <h2 className="font-bold text-slate-800">User Setup</h2>
                     <p className="text-xs text-slate-500">Manage internal staff logins, qualifications, roles, and billing privileges.</p>
                 </div>
-                <button onClick={() => { setUserForm({ id: 0, name: '', username: '', password: '', email: '', phone: '', degree: '', roleId: '', isActive: true, allowConcession: false, concessionLimit: '', isBillingOnly: false }); setIsUserModalOpen(true); }} className="bg-[#9575cd] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#7e57c2] flex items-center gap-2 transition-all">
-                    <Plus size={16} /> New User
-                </button>
+                {/* 🚨 SECURED: ADD NEW USER */}
+                {canPerform('Add') && (
+                    <button onClick={() => { setUserForm({ id: 0, name: '', username: '', password: '', email: '', phone: '', degree: '', roleId: '', isActive: true, allowConcession: false, concessionLimit: '', isBillingOnly: false }); setIsUserModalOpen(true); }} className="bg-[#9575cd] text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#7e57c2] flex items-center gap-2 transition-all">
+                        <Plus size={16} /> New User
+                    </button>
+                )}
             </div>
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <table className="w-full text-left text-sm">
                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
                         <tr>
                             <th className="py-3 px-4 font-bold">Name & Qualification</th>
-                            <th className="py-3 px-4 font-bold">Username</th>
+                            <th className="py-3 px-4 font-bold">Account Info</th>
                             <th className="py-3 px-4 font-bold">Role</th>
                             <th className="py-3 px-4 font-bold text-center">Concession Auth</th>
                             <th className="py-3 px-4 font-bold text-center">Settings</th>
@@ -84,7 +88,10 @@ export default function UsersTab({ users, roles, loadData }: any) {
                                     <div className="flex items-center gap-2"><UserCog size={16} className="text-[#9575cd]"/> {u.name}</div>
                                     {u.degree && <span className="text-[10px] text-slate-500 font-medium ml-6">{u.degree}</span>}
                                 </td>
-                                <td className="py-3 px-4 text-slate-600">{u.username}</td>
+                                <td className="py-3 px-4">
+                                    <div className="font-bold text-slate-700">{u.username}</div>
+                                    {u.email && <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5"><Mail size={10} /> {u.email}</div>}
+                                </td>
                                 <td className="py-3 px-4"><span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-100">{u.role?.name || 'No Role'}</span></td>
                                 <td className="py-3 px-4 text-center">
                                     {u.allowConcession ? (
@@ -99,20 +106,32 @@ export default function UsersTab({ users, roles, loadData }: any) {
                                     {u.isActive ? <span className="text-green-600 text-[10px] font-bold flex items-center gap-1"><CheckCircle2 size={10}/> Active</span> : <span className="text-red-500 text-[10px] font-bold flex items-center gap-1"><Power size={10}/> Disabled</span>}
                                     {u.isBillingOnly && <span className="text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 border border-purple-100"><FileSignature size={10}/> Billing Only</span>}
                                 </td>
+                                
+                                {/* 🚨 SECURED: TOGGLE STATUS */}
                                 <td className="py-3 px-4 text-center border-l border-slate-100">
-                                    <button onClick={() => handleToggleStatus(u.id, u.isActive)} title={u.isActive ? "Disable User" : "Enable User"} className={`p-1.5 rounded-md transition-colors ${u.isActive ? 'text-amber-500 hover:bg-amber-50' : 'text-green-500 hover:bg-green-50'}`}>
-                                        <Power size={18} className="mx-auto"/>
-                                    </button>
+                                    {canPerform('Edit') ? (
+                                        <button onClick={() => handleToggleStatus(u.id, u.isActive)} title={u.isActive ? "Disable User" : "Enable User"} className={`p-1.5 rounded-md transition-colors ${u.isActive ? 'text-amber-500 hover:bg-amber-50' : 'text-green-500 hover:bg-green-50'}`}>
+                                            <Power size={18} className="mx-auto"/>
+                                        </button>
+                                    ) : <Lock size={14} className="text-slate-200 mx-auto" />}
                                 </td>
+                                
+                                {/* 🚨 SECURED: RESET PASSWORD */}
                                 <td className="py-3 px-4 text-center">
-                                    <button onClick={() => { setPasswordForm({ id: u.id, newPassword: '', confirmPassword: '' }); setIsPasswordModalOpen(true); }} title="Reset Password" className="text-slate-400 hover:text-[#9575cd] hover:bg-purple-50 p-1.5 rounded-md transition-colors">
-                                        <Key size={18} className="mx-auto"/>
-                                    </button>
+                                    {canPerform('Edit') ? (
+                                        <button onClick={() => { setPasswordForm({ id: u.id, newPassword: '', confirmPassword: '' }); setIsPasswordModalOpen(true); }} title="Reset Password" className="text-slate-400 hover:text-[#9575cd] hover:bg-purple-50 p-1.5 rounded-md transition-colors">
+                                            <Key size={18} className="mx-auto"/>
+                                        </button>
+                                    ) : <Lock size={14} className="text-slate-200 mx-auto" />}
                                 </td>
+                                
+                                {/* 🚨 SECURED: EDIT DETAILS */}
                                 <td className="py-3 px-4 text-center">
-                                    <button onClick={() => { setUserForm({ ...u, password: '', roleId: u.roleId || '', degree: u.degree || '', concessionLimit: u.concessionLimit || '', isBillingOnly: u.isBillingOnly || false }); setIsUserModalOpen(true); }} title="Edit Details" className="text-slate-400 hover:text-blue-500 hover:bg-blue-50 p-1.5 rounded-md transition-colors">
-                                        <Edit size={18} className="mx-auto"/>
-                                    </button>
+                                    {canPerform('Edit') ? (
+                                        <button onClick={() => { setUserForm({ ...u, password: '', email: u.email || '', roleId: u.roleId || '', degree: u.degree || '', concessionLimit: u.concessionLimit || '', isBillingOnly: u.isBillingOnly || false }); setIsUserModalOpen(true); }} title="Edit Details" className="text-slate-400 hover:text-blue-500 hover:bg-blue-50 p-1.5 rounded-md transition-colors">
+                                            <Edit size={18} className="mx-auto"/>
+                                        </button>
+                                    ) : <Lock size={14} className="text-slate-200 mx-auto" />}
                                 </td>
                             </tr>
                         ))}
@@ -134,20 +153,29 @@ export default function UsersTab({ users, roles, loadData }: any) {
                                 <label className="block text-xs font-bold text-slate-600 mb-1">Full Name *</label>
                                 <input type="text" value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none"/>
                             </div>
+                            
                             <div>
-                                <label className="block text-xs font-bold text-slate-600 mb-1">Degree / Qualification</label>
-                                <input type="text" value={userForm.degree} onChange={e => setUserForm({...userForm, degree: e.target.value})} placeholder="e.g., MBBS, MD Path" className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none"/>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">Email ID</label>
+                                <input type="email" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} placeholder="staff@laboratory.com" className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none"/>
                             </div>
+
                             <div>
                                 <label className="block text-xs font-bold text-slate-600 mb-1">Username *</label>
                                 <input type="text" value={userForm.username} onChange={e => setUserForm({...userForm, username: e.target.value})} className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none"/>
                             </div>
+                            
                             {!userForm.id && (
                                 <div>
                                     <label className="block text-xs font-bold text-slate-600 mb-1">Password *</label>
                                     <input type="password" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none"/>
                                 </div>
                             )}
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-600 mb-1">Degree / Qualification</label>
+                                <input type="text" value={userForm.degree} onChange={e => setUserForm({...userForm, degree: e.target.value})} placeholder="e.g., MBBS, MD Path" className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none"/>
+                            </div>
+
                             <div className={userForm.id ? "col-span-2" : ""}>
                                 <label className="block text-xs font-bold text-slate-600 mb-1">Role</label>
                                 <select value={userForm.roleId} onChange={e => setUserForm({...userForm, roleId: e.target.value})} className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none bg-white">
@@ -219,4 +247,4 @@ export default function UsersTab({ users, roles, loadData }: any) {
         </div>
     );
 }
-// --- app/authorizations/components/UsersTab.tsx Block Close ---
+// --- BLOCK app/authorizations/components/UsersTab.tsx CLOSE ---

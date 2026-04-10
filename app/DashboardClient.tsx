@@ -1,12 +1,15 @@
+// --- BLOCK app/DashboardClient.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect, Suspense } from 'react'; 
-import { useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react'; 
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Loader2, Lock } from 'lucide-react'; 
 import DashboardOverview from '@/app/components/DashboardOverview';
 import NewRegistration from '@/app/registration/NewRegistration';
 import CustomizeRegistrationModal from '@/app/registration/CustomizeRegistrationModal';
 import QuotationModal from '@/app/components/QuotationModal';
+import { useSession } from "next-auth/react"; 
+import { getUserPermissions } from '@/app/actions/authorizations';
 
 export interface FieldData {
   id: number;
@@ -47,21 +50,85 @@ const initialFieldsData: FieldData[] = [
 ];
 
 function DashboardContent() {
-  const [activeView, setActiveView] = useState('dashboard');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  
+  const orgId = (session?.user as any)?.orgId;
+  const [permissions, setPermissions] = useState<any[]>([]);
+  const [userRole, setUserRole] = useState<string>('');
+  const [permsLoaded, setPermsLoaded] = useState(false);
+
+  const [activeView, setActiveView] = useState('loading');
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
   const [registrationFields, setRegistrationFields] = useState<FieldData[]>(initialFieldsData);
-  const searchParams = useSearchParams();
 
+  // 🚨 1. Fetch User Permissions Securely on Mount
   useEffect(() => {
-    const viewParam = searchParams.get('view');
-    if (viewParam) {
-      setActiveView(viewParam);
-    } else {
-      setActiveView('dashboard');
-    }
-  }, [searchParams]);
+    const fetchPerms = async () => {
+        if (session?.user) {
+            const userId = (session.user as any).id;
+            if (userId) {
+                const res = await getUserPermissions(parseInt(userId));
+                if (res.success) {
+                    setPermissions(res.data || []);
+                    setUserRole(res.roleName || '');
+                }
+            }
+        }
+        setPermsLoaded(true);
+    };
+    fetchPerms();
+  }, [session]);
 
+  const canSee = (screenNames: string[]) => {
+      if (orgId === 1) return true; // Super Admins bypass
+      if (!permsLoaded) return false;
+
+      // Unmapped User Logic
+      if (permissions.length === 0) {
+          const authScreens = ['User Setup', 'Roles', 'Permissions', 'Doctor Signatures'];
+          const isAuthModule = screenNames.every(name => authScreens.includes(name));
+          if (userRole.toLowerCase().includes('admin')) return true;
+          return !isAuthModule;
+      }
+
+      // Mapped User RBAC Logic
+      return permissions.some(p => screenNames.includes(p.module) && p.action === 'Access');
+  };
+
+  // 🚨 2. The Smart Traffic Director (Redirects unauthorized users automatically)
+  useEffect(() => {
+    if (!permsLoaded) return;
+
+    const viewParam = searchParams.get('view') || 'dashboard';
+
+    // If they asked for Dashboard and are allowed, show it
+    if (viewParam === 'dashboard' && canSee(['Dashboard'])) {
+        setActiveView('dashboard');
+    } 
+    // If they asked for Registration and are allowed, show it
+    else if (viewParam === 'registration' && canSee(['Registration'])) {
+        setActiveView('registration');
+    } 
+    // If they are NOT allowed, search for the first module they CAN see and force redirect!
+    else {
+        if (canSee(['Dashboard'])) router.replace('/?view=dashboard');
+        else if (canSee(['Registration'])) router.replace('/?view=registration');
+        else if (canSee(['Result Entry'])) router.replace('/results/entry');
+        else if (canSee(['Patient List'])) router.replace('/list');
+        else if (canSee(['Tests', 'Parameters', 'Test Formats', 'Packages'])) router.replace('/tests');
+        else if (canSee(['Departments', 'Specimens', 'Vacutainers', 'Methods', 'UOM', 'Operators', 'Lab Lists'])) router.replace('/masters');
+        else if (canSee(['Referrals'])) router.replace('/referrals');
+        else if (canSee(['General Settings'])) router.replace('/lab-profile');
+        else if (canSee(['Header Setup', 'Body Settings', 'Footer Layout', 'Page Formatting'])) router.replace('/reports');
+        else setActiveView('restricted'); // Total Lockout
+    }
+  }, [searchParams, permsLoaded, permissions, userRole]);
+
+
+  // --- Local Storage Management for Registration Fields ---
   useEffect(() => {
     if (typeof window !== 'undefined') {
         const savedSettings = localStorage.getItem('lab_registration_fields');
@@ -71,15 +138,11 @@ function DashboardContent() {
             if (Array.isArray(parsed) && parsed.length > 5) {
               const mergedFields = [...parsed];
               initialFieldsData.forEach(initialField => {
-                if (!mergedFields.find(f => f.id === initialField.id)) {
-                  mergedFields.push(initialField);
-                }
+                if (!mergedFields.find(f => f.id === initialField.id)) mergedFields.push(initialField);
               });
               setRegistrationFields(mergedFields);
             }
-          } catch (e) { 
-            console.error("Error loading settings", e); 
-          }
+          } catch (e) {}
         }
     }
   }, []); 
@@ -89,6 +152,23 @@ function DashboardContent() {
         localStorage.setItem('lab_registration_fields', JSON.stringify(registrationFields));
     }
   }, [registrationFields]);
+
+
+  // --- RENDER STATES ---
+  
+  if (!permsLoaded || activeView === 'loading') {
+      return <div className="flex h-full w-full items-center justify-center"><Loader2 className="animate-spin text-[#9575cd]" size={32} /></div>;
+  }
+
+  if (activeView === 'restricted') {
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-[#f8fafc] p-6 text-center">
+            <Lock className="text-slate-300 mb-4" size={48} />
+            <h2 className="text-xl font-bold text-slate-700">Access Restricted</h2>
+            <p className="text-slate-500 mt-2 text-sm max-w-sm">You do not have permission to view any modules. Please contact your Lab Administrator.</p>
+        </div>
+      );
+  }
 
   return (
     <div className="w-full h-full flex flex-col p-6 overflow-hidden">
@@ -103,16 +183,16 @@ function DashboardContent() {
         )}
         {isCustomizeModalOpen && (
             <CustomizeRegistrationModal 
-            isOpen={isCustomizeModalOpen} 
-            onClose={() => setIsCustomizeModalOpen(false)} 
-            fields={registrationFields}
-            setFields={setRegistrationFields}
+              isOpen={isCustomizeModalOpen} 
+              onClose={() => setIsCustomizeModalOpen(false)} 
+              fields={registrationFields}
+              setFields={setRegistrationFields}
             />
         )}
         {isQuotationModalOpen && (
             <QuotationModal 
-            isOpen={isQuotationModalOpen}
-            onClose={() => setIsQuotationModalOpen(false)}
+              isOpen={isQuotationModalOpen}
+              onClose={() => setIsQuotationModalOpen(false)}
             />
         )}
       </div>
@@ -132,3 +212,4 @@ export default function DashboardClient() {
         </Suspense>
     );
 }
+// --- BLOCK app/DashboardClient.tsx CLOSE ---

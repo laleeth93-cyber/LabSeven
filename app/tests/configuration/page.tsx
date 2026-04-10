@@ -4,13 +4,12 @@
 import React, { useState, useEffect, useTransition, useMemo } from 'react';
 import { 
   Save, Loader2, Search, FlaskConical, Clock, Beaker, Tag, 
-  CheckCircle2, AlertCircle, ArrowRight, Filter, LayoutDashboard, Trash2, CheckCircle, AlertTriangle 
+  CheckCircle2, AlertCircle, ArrowRight, Filter, LayoutDashboard, CheckCircle 
 } from 'lucide-react';
 import { getTests } from '@/app/actions/tests';
 import { getMasterData } from '@/app/actions/masters';
 import { getDepartments } from '@/app/actions/department';
 import { updateTestConfiguration } from '@/app/actions/test-config';
-import { resetLabTransactionalData } from '@/app/actions/reset';
 
 interface TestData {
   id: number; name: string; code: string; department: any; type: string; isOutsourced: boolean; 
@@ -45,7 +44,6 @@ export default function TestConfigurationPage() {
 
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -115,17 +113,6 @@ export default function TestConfigurationPage() {
     });
   };
 
-  const initiateSystemReset = () => setShowResetConfirm(true);
-  const confirmSystemReset = async () => {
-      setShowResetConfirm(false); setIsLoading(true);
-      const res = await resetLabTransactionalData();
-      if(res.success) {
-          setAllTests([]); setSelectedTestId(null); await loadData();
-          setSuccessMessage("System Reset Complete!"); setShowSuccessPopup(true); setTimeout(() => setShowSuccessPopup(false), 2000);
-      } else alert(res.message);
-      setIsLoading(false);
-  };
-
   const labelClass = "text-[9px] font-bold text-slate-500 uppercase mb-1 block tracking-tight";
   const inputClass = "w-full text-[11px] font-medium border border-slate-300 rounded px-2 h-8 bg-white focus:ring-1 focus:ring-[#9575cd] focus:border-[#9575cd] outline-none transition-all placeholder:text-slate-400";
   const selectClass = "w-full text-[11px] font-medium border border-slate-300 rounded px-2 h-8 bg-white focus:ring-1 focus:ring-[#9575cd] focus:border-[#9575cd] outline-none transition-all cursor-pointer appearance-none";
@@ -135,22 +122,6 @@ export default function TestConfigurationPage() {
 
   return (
     <div className="h-full w-full bg-[#f1f5f9] p-4 md:p-6 flex flex-col font-sans text-slate-600 overflow-hidden relative">
-      
-      {showResetConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border-[4px] border-red-100">
-              <AlertTriangle className="text-red-500" size={32} strokeWidth={2.5} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-800 mb-2">CRITICAL WARNING</h3>
-            <p className="text-sm text-slate-500 mb-6">This will delete ALL Tests, Bills, Results, and Configuration Data. Are you absolutely sure?</p>
-            <div className="flex gap-3">
-               <button onClick={() => setShowResetConfirm(false)} className="flex-1 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
-               <button onClick={confirmSystemReset} className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2">Reset System</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showSuccessPopup && (
         <div className="absolute inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
@@ -174,7 +145,7 @@ export default function TestConfigurationPage() {
                   </div>
               </div>
               <div className="flex items-center gap-3">
-                  <button onClick={initiateSystemReset} className="p-1.5 bg-red-50 text-red-600 rounded-md hover:bg-red-100 border border-red-200 transition-colors mr-2" title="Reset Database (Delete All Test & Result Data)"><Trash2 size={14} /></button>
+                  {/* 🚨 THE RESET BUTTON HAS BEEN PERMANENTLY REMOVED FROM HERE */}
                   <div className="flex items-center gap-2 text-[10px] font-bold">
                       <div className="px-3 py-1 bg-amber-50 text-amber-700 rounded-md flex items-center gap-1.5 border border-amber-200"><AlertCircle size={12}/> <span>Pending: {pendingList.length}</span></div>
                       <div className="px-3 py-1 bg-green-50 text-green-700 rounded-md flex items-center gap-1.5 border border-green-200"><CheckCircle2 size={12}/> <span>Done: {completedList.length}</span></div>

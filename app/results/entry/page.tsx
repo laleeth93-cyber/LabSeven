@@ -2,12 +2,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { getPendingWorklist, getResultEntryData, clearAllEntryData } from '@/app/actions/result-entry';
+import { getPendingWorklist, getResultEntryData } from '@/app/actions/result-entry';
 import WorklistPanel from './components/WorklistPanel';
 import ResultEntryForm from './components/ResultEntryForm';
 import DateRangeFilter from './components/DateRangeFilter';
 import EntryDateTimePicker from './components/EntryDateTimePicker'; 
-import { Loader2, Printer, Search, Trash2, Users, FileEdit } from 'lucide-react';
+import { Loader2, Printer, Search, Users, FileEdit } from 'lucide-react';
 
 export default function ResultEntryPage() {
   // ==========================================
@@ -22,7 +22,6 @@ export default function ResultEntryPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isBillLoading, setIsBillLoading] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
 
   const [activeTab, setActiveTab] = useState('Pending'); 
   const [searchTerm, setSearchTerm] = useState('');
@@ -129,25 +128,6 @@ export default function ResultEntryPage() {
       setActiveMobileTab('form');
   };
 
-  const handleClearData = async () => {
-    if (confirm("⚠️ WARNING: This will PERMANENTLY DELETE all entered test results for ALL patients.\n\nAre you sure you want to reset everything?")) {
-        setIsClearing(true);
-        const res = await clearAllEntryData();
-        if (res.success) {
-            setSelectedBillId(null);
-            setSelectedBillData(null);
-            setSelectedTestIds([]);
-            setSearchTerm('');
-            await loadWorklist();
-            alert("All data cleared successfully.");
-            setActiveMobileTab('worklist'); // Reset back to worklist on mobile
-        } else {
-            alert("Failed to clear data: " + res.message);
-        }
-        setIsClearing(false);
-    }
-  };
-
   const filteredBills = useMemo(() => {
     let filtered = bills;
 
@@ -214,13 +194,12 @@ export default function ResultEntryPage() {
     <div className="h-full w-full flex flex-col font-sans bg-[#f1f5f9] overflow-hidden">
       <header className="bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm">
         
-        {/* ROW 1: TITLE & SEARCH (Responsive Wrap) */}
+        {/* ROW 1: TITLE & SEARCH */}
         <div className="px-4 md:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h1 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
                 Result Entry
             </h1>
             
-            {/* Search Bar - Expands to full width on mobile */}
             <div className="relative group w-full sm:w-auto">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#9575cd] transition-colors"/>
                 <input 
@@ -233,10 +212,9 @@ export default function ResultEntryPage() {
             </div>
         </div>
 
-        {/* ROW 2: TABS & CONTROLS (Responsive Wrap) */}
+        {/* ROW 2: TABS & CONTROLS */}
         <div className="px-4 md:px-6 pb-0 flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-t border-slate-50 pt-2 md:pt-3">
             
-            {/* Worklist Filter Tabs */}
             <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar w-full xl:w-auto pb-1">
                 {tabs.map(tab => (
                     <button 
@@ -254,22 +232,7 @@ export default function ResultEntryPage() {
                 ))}
             </div>
 
-            {/* Date Time & Action Controls */}
             <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto pb-2 md:pb-0">
-                
-                {/* FIX: Changed from 'flex' to 'hidden sm:flex' 
-                  so the Delete All button is completely hidden on mobile phones! 
-                */}
-                <button 
-                    onClick={handleClearData}
-                    disabled={isClearing}
-                    className="hidden sm:flex items-center justify-center gap-2 px-3 py-1.5 h-8 bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 hover:text-red-700 transition-all shadow-sm text-xs font-bold"
-                    title="Permanently Delete All Results"
-                >
-                    {isClearing ? <Loader2 size={14} className="animate-spin"/> : <Trash2 size={14} />}
-                    <span>Delete All</span>
-                </button>
-
                 <div className="flex-1 sm:flex-none h-8">
                     <EntryDateTimePicker 
                         date={entryDateTime}
@@ -309,7 +272,6 @@ export default function ResultEntryPage() {
       {/* MAIN CONTENT AREA */}
       <div className="flex flex-1 overflow-hidden p-2 md:p-4 flex-col md:flex-row gap-0 md:gap-4 relative">
         
-        {/* LEFT PANE (WORKLIST): Visible on Desktop, or on Mobile if 'worklist' tab is active */}
         <div className={`w-full md:w-[40%] h-full bg-white rounded-lg md:rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-col ${activeMobileTab === 'worklist' ? 'flex' : 'hidden md:flex'}`}>
             <WorklistPanel 
                 bills={filteredBills} 
@@ -321,7 +283,6 @@ export default function ResultEntryPage() {
             />
         </div>
 
-        {/* RIGHT PANE (RESULT ENTRY FORM): Visible on Desktop, or on Mobile if 'form' tab is active */}
         <div className={`w-full md:w-[60%] h-full bg-white rounded-lg md:rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-col relative ${activeMobileTab === 'form' ? 'flex' : 'hidden md:flex'}`}>
             {selectedBillId ? (
                isBillLoading ? (
@@ -342,7 +303,6 @@ export default function ResultEntryPage() {
                   <h3 className="text-slate-600 font-bold text-base md:text-lg">No Patient Selected</h3>
                   <p className="text-slate-400 text-xs md:text-sm mt-1 max-w-xs text-center">Select a patient from the Worklist to start entering test results.</p>
                   
-                  {/* Button to quickly go back to worklist on mobile */}
                   <button onClick={() => setActiveMobileTab('worklist')} className="mt-6 md:hidden px-6 py-2.5 bg-[#9575cd] text-white font-bold rounded-lg shadow-md text-sm">
                       Go to Patient Worklist
                   </button>

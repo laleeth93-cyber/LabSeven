@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { requestOtp, verifyOtpCode, resetPasswordWithVerifiedEmail } from "@/app/actions/otp"; 
-import { Loader2, Mail, Lock, KeyRound, ArrowLeft, ShieldCheck, User, CheckCircle2, Hash } from "lucide-react";
+import { Loader2, Mail, Lock, KeyRound, ArrowLeft, ShieldCheck, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 const inputBaseClass = "w-full h-9 pl-9 pr-3 rounded-lg bg-slate-50 border border-slate-300 focus:bg-white focus:border-[#a07be1] focus:ring-2 focus:ring-[#a07be1]/20 outline-none focus:outline-none transition-all text-[13px] font-medium text-slate-800 placeholder:text-slate-400 placeholder:font-normal";
@@ -18,8 +18,6 @@ export default function LoginForm({ isActive }: { isActive: boolean }) {
   const [loginRole, setLoginRole] = useState<"admin" | "user">("admin"); 
 
   const [loginEmail, setLoginEmail] = useState("");
-  const [loginUsername, setLoginUsername] = useState(""); 
-  const [loginLabId, setLoginLabId] = useState(""); 
   const [loginPassword, setLoginPassword] = useState("");
   const [loginOtp, setLoginOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -34,13 +32,9 @@ export default function LoginForm({ isActive }: { isActive: boolean }) {
     setIsLoading(true); setError(""); setMessage("Verifying credentials...");
 
     try {
-      const identifier = loginRole === "admin" ? loginEmail : loginUsername;
-      
       const res = await signIn("credentials", {
-        username: identifier,
+        username: loginEmail, // We still pass this to NextAuth's default 'username' handler, but it holds the Email
         password: loginPassword,
-        // 🚨 THE FIX: Send an empty string ("") instead of undefined for Admins
-        labId: loginRole === "user" ? loginLabId : "", 
         redirect: false,
       });
 
@@ -121,32 +115,22 @@ export default function LoginForm({ isActive }: { isActive: boolean }) {
           {message && <div className="p-2 mb-3 bg-emerald-50 text-emerald-600 text-[11px] font-bold rounded-lg border border-emerald-100 text-center leading-tight">{message}</div>}
 
           <form onSubmit={handleSignIn} className="space-y-3.5">
-            {loginRole === "user" ? (
-              <div className="space-y-3.5 animate-in slide-in-from-top-2">
-                <div className="relative">
-                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                  <input type="text" required value={loginLabId} onChange={(e) => setLoginLabId(e.target.value)} className={inputBaseClass} placeholder="Workspace ID (Lab ID)" />
-                </div>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                  <input type="text" required value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} className={inputBaseClass} placeholder="Staff Username" />
-                </div>
-              </div>
-            ) : (
-              <div className="relative animate-in slide-in-from-top-2">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-                <input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className={inputBaseClass} placeholder="admin@laboratory.com" />
-              </div>
-            )}
+            {/* 🚨 THE FIX: A single, clean email input that dynamically changes its placeholder based on the role */}
+            <div className="relative animate-in slide-in-from-top-2">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+              <input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className={inputBaseClass} placeholder={loginRole === "admin" ? "admin@laboratory.com" : "staff@laboratory.com"} />
+            </div>
 
             <div className="relative">
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
               <input type="password" required value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className={inputBaseClass} placeholder="••••••••" />
             </div>
             
-            <div className="flex justify-end h-4">
-              {loginRole === "admin" && (
+            <div className="flex justify-end h-4 items-center">
+              {loginRole === "admin" ? (
                 <button type="button" onClick={() => { setLoginView("forgot"); setError(""); setMessage(""); }} className="text-[11px] font-bold text-slate-500 hover:text-[#a07be1] transition-colors outline-none focus:outline-none">Forgot password?</button>
+              ) : (
+                <button type="button" onClick={() => toast.error("Please contact your Lab Administrator to reset your password.", { icon: '🔒', duration: 4000 })} className="text-[11px] font-bold text-slate-500 hover:text-[#a07be1] transition-colors outline-none focus:outline-none">Forgot password?</button>
               )}
             </div>
 

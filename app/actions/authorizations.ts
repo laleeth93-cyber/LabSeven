@@ -3,13 +3,14 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
+import { requireAuth } from '@/lib/server-auth'; 
+import bcrypt from 'bcryptjs';
 
 export async function getRoles() {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         const roles = await prisma.role.findMany({
-            where: { organizationId: orgId }, // 🚨 Filter by tenant
+            where: { organizationId: orgId }, 
             orderBy: { name: 'asc' }
         });
         return { success: true, data: roles };
@@ -20,9 +21,8 @@ export async function getRoles() {
 
 export async function saveRole(data: { id?: number, name: string, description?: string }) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         if (data.id) {
-            // 🚨 SECURITY FIX: Ensure the role belongs to this lab
             await prisma.role.updateMany({
                 where: { id: data.id, organizationId: orgId },
                 data: { name: data.name, description: data.description }
@@ -41,9 +41,9 @@ export async function saveRole(data: { id?: number, name: string, description?: 
 
 export async function getUsers() {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         const users = await prisma.user.findMany({
-            where: { organizationId: orgId }, // 🚨 Filter by tenant
+            where: { organizationId: orgId }, 
             include: {
                 role: true,
                 doctor: true
@@ -58,12 +58,32 @@ export async function getUsers() {
 
 export async function saveUser(data: any) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
-        const payload = {
+        const { orgId } = await requireAuth(); 
+        
+        const cleanEmail = data.email?.trim().toLowerCase() || null;
+        const cleanUsername = data.username.trim().toLowerCase();
+
+        if (cleanEmail) {
+            const existingEmailUser = await prisma.user.findFirst({
+                where: { email: cleanEmail }
+            });
+            if (existingEmailUser && existingEmailUser.id !== data.id) {
+                return { success: false, message: "This Email ID is already registered in the system. Email addresses must be completely unique across all laboratories." };
+            }
+        }
+
+        const existingUsernameUser = await prisma.user.findFirst({
+            where: { username: cleanUsername }
+        });
+        
+        if (existingUsernameUser && existingUsernameUser.id !== data.id) {
+            return { success: false, message: "This Username is already taken by another account. Please choose a different username." };
+        }
+
+        const payload: any = {
             name: data.name,
-            username: data.username,
-            password: data.password, 
-            email: data.email?.trim() ? data.email.trim() : null,
+            username: cleanUsername,
+            email: cleanEmail,
             phone: data.phone?.trim() ? data.phone.trim() : null,
             degree: data.degree,
             roleId: data.roleId ? parseInt(data.roleId) : null,
@@ -71,34 +91,38 @@ export async function saveUser(data: any) {
             allowConcession: data.allowConcession,
             concessionLimit: data.concessionLimit ? parseFloat(data.concessionLimit) : 0,
             isBillingOnly: data.isBillingOnly || false,
-            organizationId: orgId // 🚨 Locks this user to the specific lab!
+            organizationId: orgId 
         };
 
+        if (data.password && data.password.trim() !== '') {
+            payload.password = await bcrypt.hash(data.password, 10);
+        }
+
         if (data.id) {
-            // 🚨 SECURITY FIX: Verify the user being updated belongs to this lab!
             await prisma.user.updateMany({
                 where: { id: data.id, organizationId: orgId },
                 data: payload
             });
         } else {
+            if (!payload.password) {
+                return { success: false, message: "A password is required for new users." };
+            }
             await prisma.user.create({
                 data: payload
             });
         }
+        
         revalidatePath('/authorizations');
         return { success: true, message: "User saved successfully" };
     } catch (error: any) {
-        if (error.code === 'P2002') {
-            return { success: false, message: "A user with this username or email already exists." };
-        }
+        if (error.code === 'P2002') return { success: false, message: "A user with this username or email already exists in the database." };
         return { success: false, message: error.message };
     }
 }
 
 export async function toggleUserStatus(id: number, isActive: boolean) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
-        // 🚨 SECURITY FIX: Prevent toggling users from other labs
+        const { orgId } = await requireAuth(); 
         await prisma.user.updateMany({
             where: { id: id, organizationId: orgId },
             data: { isActive }
@@ -112,11 +136,12 @@ export async function toggleUserStatus(id: number, isActive: boolean) {
 
 export async function resetUserPassword(id: number, newPassword: string) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
-        // 🚨 SECURITY FIX: Prevent resetting passwords for users in other labs
+        const { orgId } = await requireAuth(); 
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
         await prisma.user.updateMany({
             where: { id: id, organizationId: orgId },
-            data: { password: newPassword }
+            data: { password: hashedPassword }
         });
         revalidatePath('/authorizations');
         return { success: true, message: "Password reset successfully" };
@@ -127,8 +152,7 @@ export async function resetUserPassword(id: number, newPassword: string) {
 
 export async function deleteUser(id: number) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
-        // 🚨 SECURITY FIX: Prevent deleting users from other labs!
+        const { orgId } = await requireAuth(); 
         await prisma.user.deleteMany({
             where: { id: id, organizationId: orgId }
         });
@@ -141,7 +165,7 @@ export async function deleteUser(id: number) {
 
 export async function saveUserSignatureDetails(data: any) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         
         if (data.isDefaultSignature) {
             await prisma.user.updateMany({
@@ -176,7 +200,6 @@ export async function saveUserSignatureDetails(data: any) {
             }
         }
 
-        // 🚨 SECURITY FIX: Ensure we only update signature of a user in THIS lab
         await prisma.user.updateMany({
             where: { id: data.id, organizationId: orgId },
             data: { 
@@ -200,14 +223,24 @@ export async function saveUserSignatureDetails(data: any) {
     }
 }
 
-// Keeping user permissions generic for now, but usually they are scoped tightly by the User ID already restricted above.
 export async function getUserPermissions(userId: number) {
     try {
+        // 🚨 THE FIX: We also fetch the user's role to determine if they are an Admin
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { role: true }
+        });
+
         const userPerms = await prisma.userPermission.findMany({
             where: { userId },
             include: { permission: true }
         });
-        return { success: true, data: userPerms.map((up: any) => up.permission) };
+
+        return { 
+            success: true, 
+            data: userPerms.map((up: any) => up.permission),
+            roleName: user?.role?.name || ''
+        };
     } catch (error: any) {
         return { success: false, message: error.message };
     }

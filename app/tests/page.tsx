@@ -4,8 +4,10 @@
 import React, { useEffect, useState, useTransition, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation'; 
-import { Plus, Trash2, Search, Filter, Loader2, FileText, FlaskConical, Edit, ChevronDown, LayoutGrid, Archive, MoreHorizontal, Settings, Beaker, CheckCircle2, Network, Microscope, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Search, Filter, Loader2, FileText, FlaskConical, Edit, ChevronDown, LayoutGrid, Archive, MoreHorizontal, Settings, Beaker, CheckCircle2, Network, Microscope, AlertTriangle, CheckCircle, Lock } from 'lucide-react';
 import { getTests, deleteTest, toggleTestStatus } from '@/app/actions/tests';
+import { useSession } from "next-auth/react"; 
+import { getUserPermissions } from '@/app/actions/authorizations';
 
 // Import other page components
 import ParametersListPage from '../parameters/page';
@@ -16,37 +18,85 @@ import DepartmentPage from '../department/page';
 
 export default function TestsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('Department');
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
 
+  const { data: session } = useSession();
+  const orgId = (session?.user as any)?.orgId; 
+  const [permissions, setPermissions] = useState<any[]>([]);
+  const [userRole, setUserRole] = useState<string>('');
+  const [permsLoaded, setPermsLoaded] = useState(false);
+  const [activeTab, setActiveTab] = useState('Department');
+
   useEffect(() => {
-    if (tabParam) {
-        if (tabParam === 'Test Library') setActiveTab('Test Library');
-        else if (tabParam === 'Configuration') setActiveTab('Configuration');
-        else if (tabParam === 'Formats') setActiveTab('Formats');
-        else if (tabParam === 'Packages') setActiveTab('Packages');
-        else if (tabParam === 'Parameters') setActiveTab('Parameters');
-        else setActiveTab('Department');
-    } else {
-        setActiveTab('Department');
-    }
-  }, [tabParam]);
+      const fetchPerms = async () => {
+          if (session?.user) {
+              const userId = (session.user as any).id;
+              if (userId) {
+                  const res = await getUserPermissions(parseInt(userId));
+                  if (res.success) {
+                      setPermissions(res.data || []);
+                      setUserRole(res.roleName || '');
+                  }
+              }
+          }
+          setPermsLoaded(true);
+      };
+      fetchPerms();
+  }, [session]);
+
+  const canSee = (screenName: string) => {
+      if (orgId === 1) return true;
+      if (!permsLoaded) return false;
+      if (permissions.length === 0) return true;
+      return permissions.some(p => p.module === screenName && p.action === 'Access');
+  };
+
+  // 🚨 THE ACTION GATEKEEPER
+  const canPerform = (screenName: string, action: string) => {
+      if (orgId === 1 || userRole.toLowerCase().includes('admin')) return true;
+      if (permissions.length === 0) return true; // Default allow for non-auth modules
+      return permissions.some(p => p.module === screenName && p.action === action);
+  };
 
   const tabs = [
-    { label: 'Department', icon: <Network size={14}/>, color: 'bg-teal-500' },
-    { label: 'Test Library', icon: <FlaskConical size={14}/>, color: 'bg-blue-500' },
-    { label: 'Configuration', icon: <Beaker size={14}/>, color: 'bg-amber-500' },
-    { label: 'Formats', icon: <CheckCircle2 size={14}/>, color: 'bg-green-500' },
-    { label: 'Parameters', icon: <Settings size={14}/>, color: 'bg-purple-500' },
-    { label: 'Packages', icon: <Archive size={14}/>, color: 'bg-indigo-500' },
+    { label: 'Department', icon: <Network size={14}/>, color: 'bg-teal-500', screen: 'Departments' },
+    { label: 'Test Library', icon: <FlaskConical size={14}/>, color: 'bg-blue-500', screen: 'Tests' },
+    { label: 'Configuration', icon: <Beaker size={14}/>, color: 'bg-amber-500', screen: 'Tests' },
+    { label: 'Formats', icon: <CheckCircle2 size={14}/>, color: 'bg-green-500', screen: 'Test Formats' },
+    { label: 'Parameters', icon: <Settings size={14}/>, color: 'bg-purple-500', screen: 'Parameters' },
+    { label: 'Packages', icon: <Archive size={14}/>, color: 'bg-indigo-500', screen: 'Packages' },
   ];
+
+  const visibleTabs = tabs.filter(t => canSee(t.screen));
+
+  useEffect(() => {
+      if (!permsLoaded || visibleTabs.length === 0) return;
+      let requestedTab = 'Department';
+      if (tabParam && visibleTabs.find(t => t.label === tabParam)) requestedTab = tabParam;
+      else if (visibleTabs.length > 0) requestedTab = visibleTabs[0].label;
+      setActiveTab(requestedTab);
+  }, [tabParam, permsLoaded, permissions]);
+
+  if (!permsLoaded) return <div className="w-full h-full flex items-center justify-center bg-[#f1f5f9]"><Loader2 className="animate-spin text-[#9575cd]" size={32} /></div>;
+
+  if (visibleTabs.length === 0) {
+      return (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-[#f1f5f9] p-6 text-center">
+              <Lock className="text-slate-300 mb-4" size={48} />
+              <h2 className="text-xl font-bold text-slate-700">Access Restricted</h2>
+              <p className="text-slate-500 mt-2 text-sm max-w-sm">You do not have permission to view any settings within the Test Configuration module.</p>
+          </div>
+      );
+  }
+
+  const safeActiveTab = visibleTabs.find(t => t.label === activeTab) ? activeTab : visibleTabs[0].label;
 
   return (
     <div className="flex flex-col w-full h-full bg-[#f1f5f9] font-sans">
       <div className="bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm px-6 pt-3">
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {tabs.map(tab => (
+            {visibleTabs.map(tab => (
                 <button 
                     key={tab.label}
                     onClick={() => {
@@ -54,7 +104,7 @@ export default function TestsPage() {
                         router.replace(`/tests?tab=${tab.label}`, { scroll: false });
                     }}
                     className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all border-b-2 whitespace-nowrap ${
-                        activeTab === tab.label ? 'border-[#9575cd] text-[#9575cd] bg-purple-50/50 rounded-t-md' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-t-md'
+                        safeActiveTab === tab.label ? 'border-[#9575cd] text-[#9575cd] bg-purple-50/50 rounded-t-md' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-t-md'
                     }`}
                 >
                     {tab.icon}{tab.label}
@@ -63,18 +113,19 @@ export default function TestsPage() {
         </div>
       </div>
       <div className="flex-1 overflow-hidden relative">
-          {activeTab === 'Department' && <div className="h-full overflow-hidden"><DepartmentPage /></div>}
-          {activeTab === 'Test Library' && <TestsLibraryView initialType="All" />}
-          {activeTab === 'Configuration' && <div className="h-full overflow-hidden"><TestConfigurationPage /></div>}
-          {activeTab === 'Formats' && <div className="h-full overflow-hidden"><TestFormatsPage /></div>}
-          {activeTab === 'Parameters' && <div className="h-full overflow-hidden"><ParametersListPage /></div>}
-          {activeTab === 'Packages' && <div className="h-full overflow-hidden"><PackagesPage /></div>}
+          {safeActiveTab === 'Department' && <div className="h-full overflow-hidden"><DepartmentPage /></div>}
+          {safeActiveTab === 'Test Library' && <TestsLibraryView initialType="All" canPerform={(act) => canPerform('Tests', act)} />}
+          {safeActiveTab === 'Configuration' && <div className="h-full overflow-hidden"><TestConfigurationPage /></div>}
+          {safeActiveTab === 'Formats' && <div className="h-full overflow-hidden"><TestFormatsPage /></div>}
+          {safeActiveTab === 'Parameters' && <div className="h-full overflow-hidden"><ParametersListPage /></div>}
+          {safeActiveTab === 'Packages' && <div className="h-full overflow-hidden"><PackagesPage /></div>}
       </div>
     </div>
   );
 }
 
-function TestsLibraryView({ initialType = 'All' }: { initialType?: string }) {
+// 🚨 ADDED: `canPerform` passed via props
+function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: string, canPerform: (action: string) => boolean }) {
   const [tests, setTests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -171,7 +222,10 @@ function TestsLibraryView({ initialType = 'All' }: { initialType?: string }) {
                  {initialType === 'Package' ? <Archive className="text-[#9575cd]" size={24}/> : <FlaskConical className="text-[#9575cd]" size={24}/>}
                  <h1 className="text-xl font-bold tracking-tight">{initialType === 'Package' ? 'Packages Library' : 'Tests Overview'}</h1>
              </div>
-             <Link href="/tests/add"><button className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-4 py-2 rounded-md text-xs font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"><Plus size={16} /> ADD NEW TEST</button></Link>
+             {/* 🚨 SECURED: ADD NEW BUTTON */}
+             {canPerform('Add') && (
+                 <Link href="/tests/add"><button className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-4 py-2 rounded-md text-xs font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"><Plus size={16} /> ADD NEW TEST</button></Link>
+             )}
          </div>
 
          {initialType !== 'Package' && (
@@ -242,10 +296,18 @@ function TestsLibraryView({ initialType = 'All' }: { initialType?: string }) {
                           <div className={`${colWidths.dept} text-xs text-slate-600 font-medium truncate`}>{test.department?.name || test.department || '-'}</div>
                           <div className={`${colWidths.price} text-xs font-bold text-slate-700`}>{Number(test.price)?.toFixed(2)}</div>
                           <div className={`${colWidths.type} flex justify-center`}><span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${test.type === 'Package' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>{test.type || 'Test'}</span></div>
-                          <div className={`${colWidths.status} flex justify-center`}><button onClick={() => handleToggleStatus(test.id, test.isActive)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${test.isActive ? 'bg-green-500' : 'bg-slate-300'}`}><span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${test.isActive ? 'translate-x-4' : 'translate-x-0.5'}`} /></button></div>
+                          
+                          {/* 🚨 SECURED: TOGGLE STATUS (EDIT) */}
+                          <div className={`${colWidths.status} flex justify-center`}>
+                              {canPerform('Edit') ? (
+                                  <button onClick={() => handleToggleStatus(test.id, test.isActive)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${test.isActive ? 'bg-green-500' : 'bg-slate-300'}`}><span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${test.isActive ? 'translate-x-4' : 'translate-x-0.5'}`} /></button>
+                              ) : <Lock size={14} className="text-slate-300" />}
+                          </div>
+                          
+                          {/* 🚨 SECURED: EDIT & DELETE */}
                           <div className={`${colWidths.action} flex justify-center items-center gap-2`}>
-                              <Link href={`/tests/edit/${test.id}`}><button className="p-1.5 hover:bg-purple-50 rounded text-slate-400 hover:text-[#9575cd]"><Edit size={14} /></button></Link>
-                              <button onClick={() => handleDeleteClick(test.id)} className="p-1.5 hover:bg-red-50 rounded text-slate-400 hover:text-red-500"><Trash2 size={14} /></button>
+                              {canPerform('Edit') ? <Link href={`/tests/edit/${test.id}`}><button className="p-1.5 hover:bg-purple-50 rounded text-slate-400 hover:text-[#9575cd]"><Edit size={14} /></button></Link> : <span className="w-6 text-center text-slate-300">-</span>}
+                              {canPerform('Delete') ? <button onClick={() => handleDeleteClick(test.id)} className="p-1.5 hover:bg-red-50 rounded text-slate-400 hover:text-red-500"><Trash2 size={14} /></button> : <span className="w-6 text-center text-slate-300">-</span>}
                           </div>
                       </div>
                   ))
