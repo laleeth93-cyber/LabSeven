@@ -45,7 +45,9 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   return (
     <div className="w-full border border-slate-300 rounded-md overflow-hidden shadow-sm">
        <Editor
-         apiKey="6p9s0zv3zq9m1x8u3klun2dtgiopcvrmeecxmccmzm78rh0c"
+         // 🚨 REMOVED API KEY, ADDED LOCAL SCRIPT SOURCE:
+         tinymceScriptSrc="/tinymce/tinymce.min.js"
+         
          onInit={(_evt: any, editor: any) => editorRef.current = editor}
          value={value}
          onEditorChange={(newValue: string) => onChange(newValue)}
