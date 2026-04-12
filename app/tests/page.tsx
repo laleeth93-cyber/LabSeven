@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useTransition, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation'; 
-import { Plus, Trash2, Search, Filter, Loader2, FileText, FlaskConical, Edit, ChevronDown, LayoutGrid, Archive, MoreHorizontal, Settings, CheckCircle2, Network, Microscope, AlertTriangle, CheckCircle, Lock } from 'lucide-react';
+import { Plus, Trash2, Search, Filter, Loader2, FileText, FlaskConical, Edit, ChevronDown, LayoutGrid, Archive, MoreHorizontal, Settings, CheckCircle2, Network, Microscope, AlertTriangle, CheckCircle, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getTests, deleteTest, toggleTestStatus } from '@/app/actions/tests';
 import { useSession } from "next-auth/react"; 
 import { getUserPermissions } from '@/app/actions/authorizations';
@@ -57,7 +57,6 @@ export default function TestsPage() {
       return permissions.some(p => p.module === screenName && p.action === action);
   };
 
-  // 🚨 REMOVED CONFIGURATION TAB
   const tabs = [
     { label: 'Department', icon: <Network size={14}/>, color: 'bg-teal-500', screen: 'Departments' },
     { label: 'Test Library', icon: <FlaskConical size={14}/>, color: 'bg-blue-500', screen: 'Tests' },
@@ -131,6 +130,9 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
   const [filterType, setFilterType] = useState(initialType); 
   const [filterStatus, setFilterStatus] = useState('All'); 
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   const [isPending, startTransition] = useTransition();
   const filterRef = useRef<HTMLDivElement>(null);
 
@@ -141,6 +143,10 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
 
   useEffect(() => { loadTests(); }, []);
   useEffect(() => { setFilterType(initialType); }, [initialType]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterDepartment, filterType, filterStatus]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -186,6 +192,9 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
     });
   };
 
+  // 🚨 Extract unique departments safely from tests
+  const uniqueDepartments = Array.from(new Set(tests.map(t => t.department?.name || t.department).filter(Boolean))).sort();
+
   const stats = {
     total: tests.length,
     test: tests.filter(t => t.type === 'Test').length,
@@ -196,17 +205,29 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
 
   const filteredTests = tests.filter(t => {
     const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) || (t.code && t.code.toLowerCase().includes(searchTerm.toLowerCase())) || (t.displayName && t.displayName.toLowerCase().includes(searchTerm.toLowerCase()));
+    
     let matchesDept = true;
-    if (filterDepartment !== 'All') { const deptName = t.department?.name || t.department || ''; matchesDept = deptName === filterDepartment; }
+    if (filterDepartment !== 'All') { 
+        const deptName = t.department?.name || t.department || ''; 
+        matchesDept = deptName === filterDepartment; 
+    }
+    
     let matchesType = true;
     if (filterType === 'Outsource') matchesType = t.isOutsourced === true; else if (filterType !== 'All') matchesType = t.type === filterType;
+    
     let matchesStatus = true;
     if (filterStatus === 'Active') matchesStatus = t.isActive === true;
     if (filterStatus === 'Inactive') matchesStatus = t.isActive === false;
+    
     return matchesSearch && matchesDept && matchesType && matchesStatus;
   });
 
-  const activeFilterCount = (filterDepartment !== 'All' ? 1 : 0) + (filterType !== 'All' ? 1 : 0) + (filterStatus !== 'All' ? 1 : 0);
+  const totalPages = Math.ceil(filteredTests.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedTests = filteredTests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Exclude 'Other' and 'Outsource' from the active filter count since those are stat cards, but include Department
+  const activeFilterCount = (filterDepartment !== 'All' ? 1 : 0) + (filterStatus !== 'All' ? 1 : 0);
 
   const colWidths = { code: "w-24", name: "flex-1 min-w-[150px]", display: "flex-1 min-w-[150px]", dept: "w-32", price: "w-24", type: "w-24", status: "w-20", action: "w-20" };
 
@@ -245,21 +266,41 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
                       <Filter size={14}/> FILTER {activeFilterCount > 0 && <span className="bg-[#9575cd] text-white text-[9px] px-1.5 py-0.5 rounded-full">{activeFilterCount}</span>}
                       <ChevronDown size={12} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`}/>
                   </button>
+                  
+                  {/* 🚨 UPDATED FILTER POPUP WITH DEPARTMENT DROPDOWN */}
                   {showFilters && (
                     <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-xl border border-slate-100 z-50 p-4 animate-in fade-in zoom-in-95 duration-100">
+                        
+                        <div className="mb-4">
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Department</label>
+                            <div className="relative">
+                                <select 
+                                    value={filterDepartment} 
+                                    onChange={(e) => setFilterDepartment(e.target.value)}
+                                    className="w-full text-sm font-medium border border-slate-200 rounded-md px-3 h-9 bg-white focus:border-[#9575cd] focus:ring-1 focus:ring-[#9575cd] outline-none appearance-none text-slate-700"
+                                >
+                                    <option value="All">All Departments</option>
+                                    {uniqueDepartments.map(dept => (
+                                        <option key={dept as string} value={dept as string}>{dept as string}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                            </div>
+                        </div>
+
                          <div className="mb-4">
                             <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Status</label>
                             <div className="space-y-1">
                                 {['All', 'Active', 'Inactive'].map(s => (
-                                    <label key={s} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded">
-                                        <input type="radio" checked={filterStatus === s} onChange={() => setFilterStatus(s)} className="accent-[#9575cd]" />
-                                        <span className="text-sm text-slate-700">{s}</span>
+                                    <label key={s} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1.5 rounded transition-colors">
+                                        <input type="radio" checked={filterStatus === s} onChange={() => setFilterStatus(s)} className="accent-[#9575cd] w-4 h-4" />
+                                        <span className="text-sm text-slate-700 font-medium">{s}</span>
                                     </label>
                                 ))}
                             </div>
                         </div>
                         <div className="pt-3 border-t border-slate-100">
-                            <button onClick={() => { setFilterDepartment('All'); setFilterType(initialType); setFilterStatus('All'); setShowFilters(false); }} className="w-full py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded">Reset</button>
+                            <button onClick={() => { setFilterDepartment('All'); setFilterType(initialType); setFilterStatus('All'); setShowFilters(false); }} className="w-full py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 rounded transition-colors">Reset Filters</button>
                         </div>
                     </div>
                   )}
@@ -283,7 +324,7 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
               ) : filteredTests.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 text-slate-400"><FileText size={48} className="mb-2 opacity-20"/><p className="text-sm">No items found.</p></div>
               ) : (
-                  filteredTests.map((test) => (
+                  paginatedTests.map((test) => (
                       <div key={test.id} className="h-12 border-b border-slate-50 flex items-center px-6 hover:bg-slate-50 transition-colors group gap-4">
                           <div className={`${colWidths.code} text-xs font-semibold text-slate-700 font-mono truncate`}>{test.code}</div>
                           <div className={`${colWidths.name} text-sm font-medium text-slate-800 truncate`}>{test.name}</div>
@@ -306,6 +347,32 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
                   ))
               )}
           </div>
+
+          <div className="h-14 border-t border-slate-200 bg-white flex items-center justify-between px-6 shrink-0">
+             <div className="text-xs font-medium text-slate-500">
+                Showing <span className="font-bold text-slate-700">{filteredTests.length === 0 ? 0 : startIndex + 1}</span> to <span className="font-bold text-slate-700">{Math.min(startIndex + ITEMS_PER_PAGE, filteredTests.length)}</span> of <span className="font-bold text-slate-700">{filteredTests.length}</span> tests
+             </div>
+             <div className="flex items-center gap-3">
+                 <button 
+                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                     disabled={currentPage === 1}
+                     className="p-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                 >
+                     <ChevronLeft size={16} />
+                 </button>
+                 <span className="text-xs font-bold text-slate-700 min-w-[80px] text-center">
+                     Page {currentPage} of {totalPages || 1}
+                 </span>
+                 <button 
+                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                     disabled={currentPage === totalPages || totalPages === 0}
+                     className="p-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                 >
+                     <ChevronRight size={16} />
+                 </button>
+             </div>
+          </div>
+
       </div>
 
       {deleteConfirmId && (

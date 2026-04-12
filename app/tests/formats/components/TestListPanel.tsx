@@ -1,8 +1,8 @@
 // BLOCK app/tests/formats/components/TestListPanel.tsx OPEN
 "use client";
 
-import React, { useState } from 'react';
-import { Search, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TestListPanelProps {
     title: string;
@@ -21,6 +21,15 @@ export default function TestListPanel({
     const [deptFilter, setDeptFilter] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
 
+    // 🚨 NEW: PAGINATION STATE
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
+    // Reset pagination when searching or filtering
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, deptFilter]);
+
     const getDeptName = (dept: any) => {
         if (!dept) return '';
         if (typeof dept === 'string') return dept;
@@ -35,9 +44,14 @@ export default function TestListPanel({
         return matchesDept && matchesSearch;
     });
 
+    // 🚨 NEW: PAGINATION CALCULATION
+    const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedList = filteredList.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
     return (
         <div className="h-full flex flex-col">
-            <div className="p-3 border-b border-slate-100 space-y-2">
+            <div className="p-3 border-b border-slate-100 space-y-2 shrink-0">
                 <div className="flex items-center justify-between text-slate-700 mb-1">
                     <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${colorClass}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></div> 
@@ -71,7 +85,7 @@ export default function TestListPanel({
             </div>
             
             <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-                {filteredList.map((test: any) => (
+                {paginatedList.map((test: any) => (
                     <button 
                         key={test.id} 
                         onClick={() => onSelectTest(test)} 
@@ -85,6 +99,33 @@ export default function TestListPanel({
                     </button>
                 ))}
             </div>
+
+            {/* 🚨 NEW: COMPACT PAGINATION FOOTER */}
+            <div className="h-10 border-t border-slate-200 bg-white flex items-center justify-between px-3 shrink-0">
+                 <div className="text-[10px] font-medium text-slate-500">
+                    {filteredList.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredList.length)} of {filteredList.length}
+                 </div>
+                 <div className="flex items-center gap-1">
+                     <button 
+                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                         disabled={currentPage === 1}
+                         className="p-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                     >
+                         <ChevronLeft size={12} />
+                     </button>
+                     <span className="text-[10px] font-bold text-slate-700 w-16 text-center">
+                         {currentPage} / {totalPages || 1}
+                     </span>
+                     <button 
+                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                         disabled={currentPage === totalPages || totalPages === 0}
+                         className="p-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                     >
+                         <ChevronRight size={12} />
+                     </button>
+                 </div>
+            </div>
+
         </div>
     );
 }

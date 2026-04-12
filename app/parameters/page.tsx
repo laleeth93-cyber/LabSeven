@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useTransition, useRef } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Search, Filter, Loader2, FileText, Settings, Activity, Type, Edit, Check, X, ChevronDown, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Search, Filter, Loader2, FileText, Settings, Activity, Type, Edit, Check, X, ChevronDown, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getParameters, deleteParameter, updateParameterStatus } from '@/app/actions/parameters';
 
 export default function ParametersListPage() {
@@ -16,6 +16,10 @@ export default function ParametersListPage() {
   const [filterStatus, setFilterStatus] = useState('All'); 
   const [filterType, setFilterType] = useState('All');     
   
+  // 🚨 NEW: PAGINATION STATE
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
   const [isPending, startTransition] = useTransition();
   const filterRef = useRef<HTMLDivElement>(null);
 
@@ -29,6 +33,11 @@ export default function ParametersListPage() {
   useEffect(() => {
     loadParameters();
   }, []);
+
+  // 🚨 NEW: Reset page to 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterType]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -109,6 +118,11 @@ export default function ParametersListPage() {
 
     return matchesSearch && matchesStatus && matchesType;
   });
+
+  // 🚨 NEW: PAGINATION CALCULATION
+  const totalPages = Math.ceil(filteredParams.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedParams = filteredParams.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const activeFilterCount = (filterStatus !== 'All' ? 1 : 0) + (filterType !== 'All' ? 1 : 0);
 
@@ -205,7 +219,7 @@ export default function ParametersListPage() {
                           <p className="text-sm">No parameters found.</p>
                       </div>
                   ) : (
-                      filteredParams.map((param) => (
+                      paginatedParams.map((param) => (
                           <div key={param.id} className="h-12 border-b border-slate-50 flex items-center px-6 hover:bg-slate-50 transition-colors group">
                               <div className="w-48 text-xs font-semibold text-slate-700 font-mono truncate pr-8" title={param.code}>{param.code ? (param.code.length > 20 ? param.code.substring(0, 20) + '...' : param.code) : '-'}</div>
                               <div className="flex-1 text-sm font-medium text-slate-800 truncate pr-4">{param.name}</div>
@@ -242,6 +256,33 @@ export default function ParametersListPage() {
                       ))
                   )}
               </div>
+              
+              {/* 🚨 NEW: PAGINATION FOOTER */}
+              <div className="h-14 border-t border-slate-200 bg-white flex items-center justify-between px-6 shrink-0">
+                 <div className="text-xs font-medium text-slate-500">
+                    Showing <span className="font-bold text-slate-700">{filteredParams.length === 0 ? 0 : startIndex + 1}</span> to <span className="font-bold text-slate-700">{Math.min(startIndex + ITEMS_PER_PAGE, filteredParams.length)}</span> of <span className="font-bold text-slate-700">{filteredParams.length}</span> parameters
+                 </div>
+                 <div className="flex items-center gap-3">
+                     <button 
+                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                         disabled={currentPage === 1}
+                         className="p-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                     >
+                         <ChevronLeft size={16} />
+                     </button>
+                     <span className="text-xs font-bold text-slate-700 min-w-[80px] text-center">
+                         Page {currentPage} of {totalPages || 1}
+                     </span>
+                     <button 
+                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                         disabled={currentPage === totalPages || totalPages === 0}
+                         className="p-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                     >
+                         <ChevronRight size={16} />
+                     </button>
+                 </div>
+              </div>
+
           </div>
       </div>
 
