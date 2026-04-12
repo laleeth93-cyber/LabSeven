@@ -2,8 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, Settings2, AlertCircle, CheckCircle2 } from 'lucide-react';
-// 🚨 NEW: Imported both the lightweight sidebar fetch and the heavy detail fetch
+import { Settings2, AlertCircle, CheckCircle2 } from 'lucide-react'; // 🚨 Removed Loader2
 import { getTestsForFormats, getTestById } from '@/app/actions/tests';
 import { getDepartments } from '@/app/actions/department';
 import { getMasterData } from '@/app/actions/masters';
@@ -11,10 +10,11 @@ import { getParameters } from '@/app/actions/parameters';
 
 import TestListPanel from './components/TestListPanel';
 import FormatEditor from './components/FormatEditor';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW: Imported our custom loader!
 
 export default function TestFormatsPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false); // 🚨 Loader for when you click a test
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false); 
   
   const [allTests, setAllTests] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -22,14 +22,13 @@ export default function TestFormatsPage() {
   const [availableParams, setAvailableParams] = useState<any[]>([]); 
   
   const [selectedTestId, setSelectedTestId] = useState<number | null>(null);
-  const [selectedTestFull, setSelectedTestFull] = useState<any>(null); // 🚨 Stores the full database payload
+  const [selectedTestFull, setSelectedTestFull] = useState<any>(null); 
   
   const [sidebarTab, setSidebarTab] = useState<'pending' | 'completed'>('pending');
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-        // 🚨 Using the incredibly fast lightweight fetch!
         const [tRes, dRes, sRes, pRes] = await Promise.all([
           getTestsForFormats(), 
           getDepartments(), 
@@ -53,11 +52,9 @@ export default function TestFormatsPage() {
   }, []);
 
   const refreshData = async () => {
-      // Refresh the sidebar instantly
       const res = await getTestsForFormats();
       if(res.success) setAllTests(res.data);
       
-      // If a test is actively being edited, refresh its heavy payload too
       if (selectedTestId) {
           const fullRes = await getTestById(selectedTestId);
           if (fullRes.success) setSelectedTestFull(fullRes.data);
@@ -73,7 +70,7 @@ export default function TestFormatsPage() {
         (test.template && test.template !== 'Default') || 
         test.printNextPage === true || 
         (test.reportTitle && test.reportTitle.trim() !== '') || 
-        (test._count && test._count.parameters > 0) || // Uses the fast prisma counter
+        (test._count && test._count.parameters > 0) || 
         (test.parameters && test.parameters.length > 0);
       
       if (isFormatConfigured) completed.push(test);
@@ -83,7 +80,6 @@ export default function TestFormatsPage() {
     return { pendingList: pending, completedList: completed };
   }, [allTests]);
 
-  // 🚨 NEW: When you click a test in the sidebar, this fetches the heavy details
   const handleSelectTest = async (test: any) => {
       setSelectedTestId(test.id);
       setIsLoadingDetails(true);
@@ -95,7 +91,6 @@ export default function TestFormatsPage() {
       setIsLoadingDetails(false);
   };
 
-  // Compile the final test object safely
   const activeTest = useMemo(() => {
     if (!selectedTestFull) return undefined;
     const deptName = selectedTestFull.department?.name || '';
@@ -110,7 +105,12 @@ export default function TestFormatsPage() {
     };
   }, [selectedTestFull]);
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2"><Loader2 className="animate-spin"/> Loading Formats...</div>;
+  // 🚨 REPLACED: Uses the new MusicBarLoader for the main page load
+  if (isLoading) return (
+    <div className="h-screen flex items-center justify-center">
+      <MusicBarLoader text="Loading Formats..." />
+    </div>
+  );
 
   const scrollbarStyles = `
     .custom-scrollbar::-webkit-scrollbar { width: 2px; height: 2px; }
@@ -180,11 +180,10 @@ export default function TestFormatsPage() {
               <main className="flex-1 bg-white flex flex-col items-center p-4 min-h-0 relative">
                  <div className="absolute inset-0 bg-[#f8fafc] opacity-50 z-0 pointer-events-none"></div>
                  
-                 {/* 🚨 Show a loader here while the heavy database fetch is running */}
+                 {/* 🚨 REPLACED: Uses MusicBarLoader for the side panel loading! */}
                  {isLoadingDetails ? (
-                     <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-3 z-10 w-full h-full border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-                         <Loader2 size={32} className="animate-spin text-[#9575cd]"/>
-                         <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Loading Configuration...</p>
+                     <div className="flex-1 flex flex-col items-center justify-center z-10 w-full h-full border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                         <MusicBarLoader text="Loading Configuration..." />
                      </div>
                  ) : !selectedTestId || !activeTest ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-3 z-10 w-full h-full border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">

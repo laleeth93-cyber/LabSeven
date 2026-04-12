@@ -2,7 +2,8 @@
 "use client";
 
 import React from 'react';
-import { Printer, FileText, Barcode, Banknote, RefreshCcw, Edit, History, CheckCircle2, Loader2, AlertCircle, Sparkles, Trash2, Info, ChevronLeft, ChevronRight, Bug } from 'lucide-react';
+import { Printer, FileText, Barcode, Banknote, RefreshCcw, Edit, History, CheckCircle2, AlertCircle, Sparkles, Trash2, Info, ChevronLeft, ChevronRight, Bug } from 'lucide-react';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW: Imported Loader!
 
 interface ListTableProps {
     bills: any[];
@@ -55,11 +56,11 @@ export default function ListTable({
         return { doc, hosp, lab };
     };
 
+    // 🚨 REPLACED: Now using the cool music bar loader!
     if (isLoading) {
         return (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3">
-                <Loader2 className="animate-spin text-[#9575cd]" size={32}/>
-                <p className="text-sm font-medium">Loading Patients...</p>
+            <div className="h-full flex flex-col items-center justify-center">
+                <MusicBarLoader text="Loading Patients..." />
             </div>
         );
     }
@@ -269,10 +270,7 @@ export default function ListTable({
                 )}
             </div>
 
-            {/* 🚨 NEW: UNIFIED SINGLE FOOTER */}
             <div className="bg-white border-t border-slate-200 px-4 md:px-6 py-3 flex flex-col xl:flex-row items-center justify-between shrink-0 gap-4 w-full">
-                
-                {/* Left Side: Legend */}
                 <div className="flex items-center gap-3 shrink-0 overflow-x-auto w-full xl:w-auto pb-1 xl:pb-0 custom-scrollbar">
                     <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap"><Info size={14} className="text-[#9575cd]" /> Status:</div>
                     <div className="flex items-center gap-3 whitespace-nowrap">
@@ -283,7 +281,6 @@ export default function ListTable({
                     </div>
                 </div>
 
-                {/* Right Side: Count & Pagination */}
                 <div className="flex items-center gap-4 shrink-0 w-full xl:w-auto justify-between xl:justify-end">
                     <div className="text-[11px] md:text-xs font-medium text-slate-500 whitespace-nowrap">
                         Showing <span className="font-bold text-slate-700">{totalItems === 0 ? 0 : ((currentPage - 1) * 10) + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * 10, totalItems)}</span> of <span className="font-bold text-slate-700">{totalItems}</span>
@@ -308,7 +305,6 @@ export default function ListTable({
                         </button>
                     </div>
                 </div>
-
             </div>
         </div>
     );
