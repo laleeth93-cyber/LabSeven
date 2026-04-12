@@ -3,7 +3,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Loader2, Settings2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { getTests } from '@/app/actions/tests';
+// 🚨 NEW: Imported both the lightweight sidebar fetch and the heavy detail fetch
+import { getTestsForFormats, getTestById } from '@/app/actions/tests';
 import { getDepartments } from '@/app/actions/department';
 import { getMasterData } from '@/app/actions/masters';
 import { getParameters } from '@/app/actions/parameters'; 
@@ -11,50 +12,32 @@ import { getParameters } from '@/app/actions/parameters';
 import TestListPanel from './components/TestListPanel';
 import FormatEditor from './components/FormatEditor';
 
-interface TestData {
-  id: number;
-  name: string;
-  code: string;
-  department: any;
-  isCulture: boolean; 
-  specimen: any;
-  method: any;
-  vacutainer: any;
-  template: string | null;
-  printNextPage: boolean;
-  reportTitle: string | null;
-  colCaption1?: string | null; 
-  colCaption2?: string | null;
-  colCaption3?: string | null;
-  colCaption4?: string | null;
-  colCaption5?: string | null;
-  parameters: any[];
-  isConfigured: boolean; 
-  [key: string]: any; 
-}
-
 export default function TestFormatsPage() {
   const [isLoading, setIsLoading] = useState(true);
-  const [allTests, setAllTests] = useState<TestData[]>([]);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false); // 🚨 Loader for when you click a test
+  
+  const [allTests, setAllTests] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [specimens, setSpecimens] = useState<any[]>([]);
   const [availableParams, setAvailableParams] = useState<any[]>([]); 
+  
   const [selectedTestId, setSelectedTestId] = useState<number | null>(null);
-
-  // 🚨 NEW: Sidebar Tab State
+  const [selectedTestFull, setSelectedTestFull] = useState<any>(null); // 🚨 Stores the full database payload
+  
   const [sidebarTab, setSidebarTab] = useState<'pending' | 'completed'>('pending');
 
   const loadData = async () => {
     setIsLoading(true);
     try {
+        // 🚨 Using the incredibly fast lightweight fetch!
         const [tRes, dRes, sRes, pRes] = await Promise.all([
-          getTests(), 
+          getTestsForFormats(), 
           getDepartments(), 
           getMasterData('specimen'), 
           getParameters()
         ]);
         
-        if (tRes.success) setAllTests(tRes.data as TestData[]);
+        if (tRes.success) setAllTests(tRes.data);
         if (dRes.success) setDepartments(dRes.data);
         if (sRes.success) setSpecimens(sRes.data);
         if (pRes.success) setAvailableParams(pRes.data);
@@ -70,19 +53,27 @@ export default function TestFormatsPage() {
   }, []);
 
   const refreshData = async () => {
-      const res = await getTests();
-      if(res.success) setAllTests(res.data as TestData[]);
+      // Refresh the sidebar instantly
+      const res = await getTestsForFormats();
+      if(res.success) setAllTests(res.data);
+      
+      // If a test is actively being edited, refresh its heavy payload too
+      if (selectedTestId) {
+          const fullRes = await getTestById(selectedTestId);
+          if (fullRes.success) setSelectedTestFull(fullRes.data);
+      }
   };
 
-  const { pendingList, completedList } = useMemo<{ pendingList: TestData[]; completedList: TestData[] }>(() => {
-    const pending: TestData[] = [];
-    const completed: TestData[] = [];
+  const { pendingList, completedList } = useMemo(() => {
+    const pending: any[] = [];
+    const completed: any[] = [];
     
     allTests.forEach((test) => {
       const isFormatConfigured = 
         (test.template && test.template !== 'Default') || 
         test.printNextPage === true || 
         (test.reportTitle && test.reportTitle.trim() !== '') || 
+        (test._count && test._count.parameters > 0) || // Uses the fast prisma counter
         (test.parameters && test.parameters.length > 0);
       
       if (isFormatConfigured) completed.push(test);
@@ -92,29 +83,34 @@ export default function TestFormatsPage() {
     return { pendingList: pending, completedList: completed };
   }, [allTests]);
 
-  const selectedTest = useMemo(() => {
-    const test = allTests.find(t => t.id === selectedTestId);
-    if (!test) return undefined;
-
-    const deptName = test.department?.name || (typeof test.department === 'string' ? test.department : '');
-
-    return {
-      ...test,
-      reportTitle: test.reportTitle || `Department of ${deptName}`.trim(),
-      colCaption1: test.colCaption1 || 'PARAMETER',
-      colCaption2: test.colCaption2 || 'Result',
-      colCaption3: test.colCaption3 || 'UOM',
-      colCaption4: test.colCaption4 || 'BIO.REF.RANGE',
-      colCaption5: test.colCaption5 || 'Method'
-    };
-  }, [allTests, selectedTestId]);
-
-  // Ensure if we select a test, it matches the active tab visually
-  const handleSelectTest = (test: TestData) => {
+  // 🚨 NEW: When you click a test in the sidebar, this fetches the heavy details
+  const handleSelectTest = async (test: any) => {
       setSelectedTestId(test.id);
+      setIsLoadingDetails(true);
+      
+      const res = await getTestById(test.id);
+      if (res.success && res.data) {
+          setSelectedTestFull(res.data);
+      }
+      setIsLoadingDetails(false);
   };
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2"><Loader2 className="animate-spin"/> Loading...</div>;
+  // Compile the final test object safely
+  const activeTest = useMemo(() => {
+    if (!selectedTestFull) return undefined;
+    const deptName = selectedTestFull.department?.name || '';
+    return {
+      ...selectedTestFull,
+      reportTitle: selectedTestFull.reportTitle || `Department of ${deptName}`.trim(),
+      colCaption1: selectedTestFull.colCaption1 || 'PARAMETER',
+      colCaption2: selectedTestFull.colCaption2 || 'Result',
+      colCaption3: selectedTestFull.colCaption3 || 'UOM',
+      colCaption4: selectedTestFull.colCaption4 || 'BIO.REF.RANGE',
+      colCaption5: selectedTestFull.colCaption5 || 'Method'
+    };
+  }, [selectedTestFull]);
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2"><Loader2 className="animate-spin"/> Loading Formats...</div>;
 
   const scrollbarStyles = `
     .custom-scrollbar::-webkit-scrollbar { width: 2px; height: 2px; }
@@ -139,11 +135,7 @@ export default function TestFormatsPage() {
           </header>
 
           <div className="flex-1 flex overflow-hidden">
-              
-              {/* 🚨 NEW: SINGLE UNIFIED TABBED SIDEBAR */}
               <aside className="w-80 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0">
-                  
-                  {/* TAB SWITCHER */}
                   <div className="flex p-2 bg-slate-100 border-b border-slate-200 shrink-0">
                       <button 
                           onClick={() => setSidebarTab('pending')}
@@ -158,8 +150,6 @@ export default function TestFormatsPage() {
                           <CheckCircle2 size={14}/> Completed ({completedList.length})
                       </button>
                   </div>
-
-                  {/* ACTIVE LIST */}
                   <div className="flex-1 overflow-hidden bg-white">
                       {sidebarTab === 'pending' ? (
                           <TestListPanel 
@@ -187,10 +177,16 @@ export default function TestFormatsPage() {
                   </div>
               </aside>
 
-              {/* 🚨 MAIN EDITOR (Now has massive width!) */}
               <main className="flex-1 bg-white flex flex-col items-center p-4 min-h-0 relative">
                  <div className="absolute inset-0 bg-[#f8fafc] opacity-50 z-0 pointer-events-none"></div>
-                 {!selectedTestId || !selectedTest ? (
+                 
+                 {/* 🚨 Show a loader here while the heavy database fetch is running */}
+                 {isLoadingDetails ? (
+                     <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-3 z-10 w-full h-full border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                         <Loader2 size={32} className="animate-spin text-[#9575cd]"/>
+                         <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Loading Configuration...</p>
+                     </div>
+                 ) : !selectedTestId || !activeTest ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-3 z-10 w-full h-full border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                         <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200"><Settings2 size={32} className="text-slate-300"/></div>
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Select a test to format</p>
@@ -198,7 +194,7 @@ export default function TestFormatsPage() {
                     </div>
                  ) : (
                     <FormatEditor 
-                        test={selectedTest} 
+                        test={activeTest} 
                         specimens={specimens} 
                         availableParams={availableParams} 
                         onSaveComplete={refreshData} 

@@ -67,6 +67,30 @@ export async function getTests() {
   }
 }
 
+// 🚨 NEW: LIGHTWEIGHT FETCH JUST FOR THE FORMATS SIDEBAR!
+export async function getTestsForFormats() {
+  try {
+    const { orgId } = await requireAuth(); 
+    const data = await prisma.test.findMany({
+      where: { organizationId: orgId }, 
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        department: { select: { name: true } },
+        template: true,
+        printNextPage: true,
+        reportTitle: true,
+        _count: { select: { parameters: true } } // Fast way to count parameters without downloading them!
+      },
+      orderBy: { name: 'asc' }
+    });
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, message: "Failed to load tests.", data: [] };
+  }
+}
+
 export async function getTestById(id: number) {
   try {
     const { orgId } = await requireAuth(); 
@@ -127,7 +151,7 @@ export async function createTest(data: any) {
         vacutainerId: data.vacutainerId ? parseInt(data.vacutainerId) : null,
         sampleVolume: data.sampleVolume || null,
         barcodeCopies: data.barcodeCopies ? parseInt(data.barcodeCopies) : 1,
-        isConfigured: true, // 🚨 Now automatically skips the old config module!
+        isConfigured: true, 
         
         minDays: parseInt(data.minDays) || 0,
         minHours: parseInt(data.minHours) || 0,
@@ -189,7 +213,7 @@ export async function updateTest(id: number, data: any) {
         vacutainerId: data.vacutainerId ? parseInt(data.vacutainerId) : null,
         sampleVolume: data.sampleVolume || null,
         barcodeCopies: data.barcodeCopies ? parseInt(data.barcodeCopies) : 1,
-        isConfigured: true, // 🚨 Keeps it out of pending configuration status
+        isConfigured: true, 
         
         minDays: parseInt(data.minDays) || 0,
         minHours: parseInt(data.minHours) || 0,
