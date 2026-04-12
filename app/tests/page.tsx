@@ -8,6 +8,7 @@ import { Plus, Trash2, Search, Filter, Loader2, FileText, FlaskConical, Edit, Ch
 import { getTests, deleteTest, toggleTestStatus } from '@/app/actions/tests';
 import { useSession } from "next-auth/react"; 
 import { getUserPermissions } from '@/app/actions/authorizations';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 // Import other page components
 import ParametersListPage from '../parameters/page';
@@ -75,7 +76,12 @@ export default function TestsPage() {
       setActiveTab(requestedTab);
   }, [tabParam, permsLoaded, permissions]);
 
-  if (!permsLoaded) return <div className="w-full h-full flex items-center justify-center bg-[#f1f5f9]"><Loader2 className="animate-spin text-[#9575cd]" size={32} /></div>;
+  // 🚨 REPLACED PERMISSIONS SPINNER WITH MUSIC BAR
+  if (!permsLoaded) return (
+      <div className="w-full h-full flex items-center justify-center bg-[#f1f5f9]">
+          <MusicBarLoader text="Authenticating..." />
+      </div>
+  );
 
   if (visibleTabs.length === 0) {
       return (
@@ -192,7 +198,6 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
     });
   };
 
-  // 🚨 Extract unique departments safely from tests
   const uniqueDepartments = Array.from(new Set(tests.map(t => t.department?.name || t.department).filter(Boolean))).sort();
 
   const stats = {
@@ -226,7 +231,6 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedTests = filteredTests.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Exclude 'Other' and 'Outsource' from the active filter count since those are stat cards, but include Department
   const activeFilterCount = (filterDepartment !== 'All' ? 1 : 0) + (filterStatus !== 'All' ? 1 : 0);
 
   const colWidths = { code: "w-24", name: "flex-1 min-w-[150px]", display: "flex-1 min-w-[150px]", dept: "w-32", price: "w-24", type: "w-24", status: "w-20", action: "w-20" };
@@ -267,7 +271,6 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
                       <ChevronDown size={12} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`}/>
                   </button>
                   
-                  {/* 🚨 UPDATED FILTER POPUP WITH DEPARTMENT DROPDOWN */}
                   {showFilters && (
                     <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-xl border border-slate-100 z-50 p-4 animate-in fade-in zoom-in-95 duration-100">
                         
@@ -320,7 +323,10 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
 
           <div className="flex-1 overflow-y-auto">
               {isLoading ? (
-                  <div className="flex items-center justify-center h-40"><Loader2 className="animate-spin text-[#9575cd]" size={24} /></div>
+                  <div className="flex items-center justify-center h-40">
+                      {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
+                      <MusicBarLoader text="Loading Tests..." />
+                  </div>
               ) : filteredTests.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 text-slate-400"><FileText size={48} className="mb-2 opacity-20"/><p className="text-sm">No items found.</p></div>
               ) : (

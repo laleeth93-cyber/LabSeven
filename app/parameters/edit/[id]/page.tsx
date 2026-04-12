@@ -7,6 +7,7 @@ import { ArrowLeft, Save, Loader2, List, AlignVerticalJustifyCenter, AlignHorizo
 import { getParameter, updateParameter } from '@/app/actions/parameters';
 import { getMasterData } from '@/app/actions/masters';
 import RichTextEditorModal from '../../../components/RichTextEditorModal';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 export default function EditParameterPage() {
   const router = useRouter();
@@ -155,7 +156,12 @@ export default function EditParameterPage() {
   const tableInputClass = "w-full h-8 text-xs border border-transparent hover:border-slate-300 focus:border-[#9575cd] focus:bg-white bg-transparent rounded px-1 outline-none text-center font-medium";
   const tableSelectClass = "w-full h-8 text-xs border border-transparent hover:border-slate-300 focus:border-[#9575cd] focus:bg-white bg-transparent rounded px-0 outline-none font-medium cursor-pointer";
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2"><Loader2 className="animate-spin"/> Loading Parameter...</div>;
+  // 🚨 REPLACED SPINNER WITH MUSIC BAR
+  if (isLoading) return (
+      <div className="h-screen flex items-center justify-center">
+          <MusicBarLoader text="Loading Parameter..." />
+      </div>
+  );
 
   return (
     <div className="h-screen w-full bg-[#f1f5f9] flex flex-col overflow-hidden font-sans relative">

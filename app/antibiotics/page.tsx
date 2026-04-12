@@ -1,56 +1,48 @@
-// --- BLOCK app/antibiotics/page.tsx OPEN ---
+// --- BLOCK app/antibiotic-classes/page.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect, useTransition, useRef } from 'react';
-import { Save, Loader2, Pill, Edit2, Trash2, Plus, CheckCircle, Upload, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getMicrobiologyMaster, getAntibioticsPaginated, saveMicrobiologyMaster, deleteMicrobiologyMaster, deleteAllMicrobiologyMaster, importMicrobiologyMaster } from '@/app/actions/microbiology';
+import { Save, Loader2, Layers, Edit2, Trash2, Plus, CheckCircle, Upload, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getMicrobiologyMaster, getAntibioticClassesPaginated, saveMicrobiologyMaster, deleteMicrobiologyMaster, deleteAllMicrobiologyMaster, importMicrobiologyMaster } from '@/app/actions/microbiology';
 import * as XLSX from 'xlsx';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
-export default function AntibioticsPage() {
+export default function AntibioticClassesPage() {
     const [isPending, startTransition] = useTransition();
     const [isLoading, setIsLoading] = useState(true);
     const [isTableLoading, setIsTableLoading] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
     
     // Pagination & Search States
-    const [antibiotics, setAntibiotics] = useState<any[]>([]);
+    const [classes, setClasses] = useState<any[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalRecords, setTotalRecords] = useState(0);
     const [searchTerm, setSearchTerm] = useState("");
     
-    const [classes, setClasses] = useState<any[]>([]); 
-    
-    const [microForm, setMicroForm] = useState<{ id?: number, code: string, name: string, group: string, isActive: boolean }>({ code: '', name: '', group: '', isActive: true });
+    const [microForm, setMicroForm] = useState<{ id?: number, code: string, name: string, isActive: boolean }>({ code: '', name: '', isActive: true });
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
     
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Initial Load
-    useEffect(() => { loadInitialData(); }, []);
-
     // Debounced Search Effect
     useEffect(() => {
         const timer = setTimeout(() => {
-            loadAntibiotics(1, searchTerm);
+            loadClasses(1, searchTerm);
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    async function loadInitialData() {
-        setIsLoading(true);
-        const classRes = await getMicrobiologyMaster('antibioticClass');
-        if (classRes.success) setClasses(classRes.data || []);
-        setIsLoading(false);
-    }
-
-    async function loadAntibiotics(page: number, search: string) {
+    async function loadClasses(page: number, search: string) {
         setIsTableLoading(true);
+        // On initial load, component isn't visibly ready until this finishes
+        if (isLoading) setIsLoading(false); 
+        
         try {
-            const res = await getAntibioticsPaginated(page, 20, search);
+            const res = await getAntibioticClassesPaginated(page, 20, search);
             if (res.success) {
-                setAntibiotics(res.data || []);
+                setClasses(res.data || []);
                 setCurrentPage(page);
                 setTotalPages(res.totalPages || 1);
                 setTotalRecords(res.total || 0);
@@ -58,37 +50,37 @@ export default function AntibioticsPage() {
                 if (!microForm.id) {
                     let max = 0;
                     (res.data || []).forEach((item: any) => {
-                        if (item.code?.startsWith('ANT-')) {
-                            const num = parseInt(item.code.replace('ANT-', ''), 10);
+                        if (item.code?.startsWith('CLS-')) {
+                            const num = parseInt(item.code.replace('CLS-', ''), 10);
                             if (!isNaN(num) && num > max) max = num;
                         }
                     });
-                    setMicroForm(prev => ({ ...prev, code: `ANT-${(max + 1).toString().padStart(3, '0')}` }));
+                    setMicroForm(prev => ({ ...prev, code: `CLS-${(max + 1).toString().padStart(3, '0')}` }));
                 }
             }
         } catch (err) { console.error(err); } 
         finally { setIsTableLoading(false); }
     }
 
-    const handleEdit = (item: any) => setMicroForm({ id: item.id, code: item.code, name: item.name, group: item.group || '', isActive: item.isActive });
+    const handleEdit = (item: any) => setMicroForm({ id: item.id, code: item.code, name: item.name, isActive: item.isActive });
     
     const handleCancel = () => {
         let max = 0;
-        antibiotics.forEach(item => {
-            if (item.code?.startsWith('ANT-')) {
-                const num = parseInt(item.code.replace('ANT-', ''), 10);
+        classes.forEach(item => {
+            if (item.code?.startsWith('CLS-')) {
+                const num = parseInt(item.code.replace('CLS-', ''), 10);
                 if (!isNaN(num) && num > max) max = num;
             }
         });
-        setMicroForm({ id: undefined, code: `ANT-${(max + 1).toString().padStart(3, '0')}`, name: '', group: '', isActive: true });
+        setMicroForm({ id: undefined, code: `CLS-${(max + 1).toString().padStart(3, '0')}`, name: '', isActive: true });
     };
 
     const handleSave = () => {
         if (!microForm.name || !microForm.code) return alert("Code and Name are required.");
         startTransition(async () => {
-            const res = await saveMicrobiologyMaster('antibiotic', microForm);
+            const res = await saveMicrobiologyMaster('antibioticClass', microForm);
             if (res.success) {
-                await loadAntibiotics(currentPage, searchTerm);
+                await loadClasses(currentPage, searchTerm);
                 setSuccessMessage(res.message);
                 setShowSuccessPopup(true);
                 setTimeout(() => setShowSuccessPopup(false), 1500);
@@ -98,21 +90,21 @@ export default function AntibioticsPage() {
     };
 
     const handleDelete = async (id: number) => {
-        if(!confirm("Are you sure you want to delete this antibiotic?")) return;
-        const res = await deleteMicrobiologyMaster('antibiotic', id);
+        if(!confirm("Are you sure you want to delete this class?")) return;
+        const res = await deleteMicrobiologyMaster('antibioticClass', id);
         if (res.success) {
-            await loadAntibiotics(currentPage, searchTerm);
+            await loadClasses(currentPage, searchTerm);
         } else alert(res.message);
     };
 
     const handleDeleteAll = async () => {
         if (totalRecords === 0) return alert("No records to delete.");
-        if (!confirm("⚠️ WARNING: Are you sure you want to delete ALL Antibiotics? This action cannot be undone!")) return;
+        if (!confirm("⚠️ WARNING: Are you sure you want to delete ALL Antibiotic Classes? This action cannot be undone!")) return;
         
         setIsTableLoading(true);
-        const res = await deleteAllMicrobiologyMaster('antibiotic');
+        const res = await deleteAllMicrobiologyMaster('antibioticClass');
         if (res.success) {
-            await loadAntibiotics(1, "");
+            await loadClasses(1, "");
             setSuccessMessage("All records deleted!");
             setShowSuccessPopup(true);
             setTimeout(() => setShowSuccessPopup(false), 1500);
@@ -133,29 +125,47 @@ export default function AntibioticsPage() {
                 const bstr = evt.target?.result;
                 const wb = XLSX.read(bstr, { type: 'binary' });
                 const ws = wb.Sheets[wb.SheetNames[0]];
-                const data = XLSX.utils.sheet_to_json(ws);
+                
+                const rawData = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
 
-                if (data.length === 0) throw new Error("Excel file is empty.");
+                if (rawData.length === 0) throw new Error("Excel file is empty.");
 
                 let nextCodeNum = totalRecords + 1;
-                const formattedData = data.map((row: any) => {
-                    const name = row['Antibiotic name'] || row['Antibiotic Name'] || row.Name || row.name || row.NAME || Object.values(row)[0];
-                    const group = row['Antibioticclass Name'] || row['Antibiotic class'] || row['Antibiotic Class'] || row.Class || row.Group || row.group || (Object.values(row).length > 1 ? Object.values(row)[1] : '');
-                    let code = row.Code || row.code || row.CODE;
+                const formattedData: any[] = [];
+                
+                rawData.forEach(row => {
+                    if (!row || row.length === 0) return;
                     
-                    if (!code && name) {
-                        code = `ANT-${nextCodeNum.toString().padStart(3, '0')}`;
+                    const val1 = String(row[0] || '').trim();
+                    const val2 = String(row[1] || '').trim();
+                    
+                    if (!val1) return;
+                    
+                    if (val1.toLowerCase() === 'class' || val1.toLowerCase() === 'name' || val1.toLowerCase() === 'antibiotic class') return;
+
+                    let code = "";
+                    let name = "";
+
+                    if (val2 && (val1.startsWith('CLS-') || /^[A-Z0-9]+$/.test(val1))) {
+                        code = val1;
+                        name = val2;
+                    } else {
+                        name = val1; 
+                    }
+
+                    if (!code) {
+                        code = `CLS-${nextCodeNum.toString().padStart(3, '0')}`;
                         nextCodeNum++;
                     }
-                    
-                    return { code: String(code || '').trim().toUpperCase(), name: String(name || '').trim(), group: String(group || '').trim() };
-                }).filter(item => item.code && item.name && item.name !== "undefined"); 
+
+                    formattedData.push({ code: code.toUpperCase(), name });
+                });
 
                 if (formattedData.length === 0) throw new Error("Could not find any valid names to import.");
 
-                const res = await importMicrobiologyMaster('antibiotic', formattedData);
+                const res = await importMicrobiologyMaster('antibioticClass', formattedData);
                 if (res.success) {
-                    await loadAntibiotics(1, "");
+                    await loadClasses(1, "");
                     setSuccessMessage(res.message);
                     setShowSuccessPopup(true);
                     setTimeout(() => setShowSuccessPopup(false), 2000);
@@ -170,25 +180,24 @@ export default function AntibioticsPage() {
         if (totalRecords === 0) return alert("No data to export.");
         setIsTableLoading(true);
         try {
-            // Fetch all for export
-            const res = await getMicrobiologyMaster('antibiotic');
+            const res = await getMicrobiologyMaster('antibioticClass');
             if(res.success) {
                 const exportData = (res.data || []).map((item:any) => ({
                     Code: item.code,
                     Name: item.name,
-                    Group: item.group || '-',
                     Status: item.isActive ? 'Active' : 'Inactive'
                 }));
                 const ws = XLSX.utils.json_to_sheet(exportData);
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Antibiotics");
-                XLSX.writeFile(wb, "Antibiotics_Master.xlsx");
+                XLSX.utils.book_append_sheet(wb, ws, "Antibiotic_Classes");
+                XLSX.writeFile(wb, "Antibiotic_Classes_Master.xlsx");
             }
         } catch(e) {}
         setIsTableLoading(false);
     };
 
-    if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2 bg-[#f1f5f9]"><Loader2 className="animate-spin text-[#9575cd]" size={32}/> Preparing Application...</div>;
+    // 🚨 REPLACED SPINNER WITH MUSIC BAR
+    if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#f1f5f9]"><MusicBarLoader text="Preparing Classes..." /></div>;
 
     return (
         <div className="h-full w-full bg-[#f1f5f9] p-4 md:p-6 flex flex-col font-sans text-slate-600 overflow-hidden relative">
@@ -206,34 +215,19 @@ export default function AntibioticsPage() {
                     <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                         <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                            {microForm.id ? <Edit2 size={16} className="text-blue-500"/> : <Plus size={16} className="text-[#9575cd]"/>}
-                           {microForm.id ? `Edit Antibiotic` : `Add New Antibiotic`}
+                           {microForm.id ? `Edit Class` : `Add New Class`}
                         </h3>
                         {microForm.id && <button onClick={handleCancel} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 px-2 py-1 bg-white border rounded">Cancel</button>}
                     </div>
                     <div className="p-6 space-y-5 flex-1">
                         <div>
-                            <label className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block tracking-wide">Antibiotic Code *</label>
-                            <input type="text" value={microForm.code} onChange={(e) => setMicroForm({...microForm, code: e.target.value.toUpperCase()})} placeholder="E.g. ANT-001" className="w-full text-sm font-medium border border-slate-300 rounded-lg px-3 py-2.5 outline-none focus:border-[#9575cd] bg-slate-50 focus:bg-white" />
+                            <label className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block tracking-wide">Class Code *</label>
+                            <input type="text" value={microForm.code} onChange={(e) => setMicroForm({...microForm, code: e.target.value.toUpperCase()})} placeholder="E.g. CLS-001" className="w-full text-sm font-medium border border-slate-300 rounded-lg px-3 py-2.5 outline-none focus:border-[#9575cd] bg-slate-50 focus:bg-white" />
                         </div>
                         <div>
-                            <label className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block tracking-wide">Antibiotic Name *</label>
-                            <input type="text" value={microForm.name} onChange={(e) => setMicroForm({...microForm, name: e.target.value})} placeholder="E.g. Amoxicillin" className="w-full text-sm font-medium border border-slate-300 rounded-lg px-3 py-2.5 outline-none focus:border-[#9575cd]" />
+                            <label className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block tracking-wide">Class Name *</label>
+                            <input type="text" value={microForm.name} onChange={(e) => setMicroForm({...microForm, name: e.target.value})} placeholder="E.g. Penicillins" className="w-full text-sm font-medium border border-slate-300 rounded-lg px-3 py-2.5 outline-none focus:border-[#9575cd]" />
                         </div>
-                        
-                        <div>
-                            <label className="text-[11px] font-bold text-slate-500 uppercase mb-1.5 block tracking-wide">Group / Class</label>
-                            <select 
-                                value={microForm.group} 
-                                onChange={(e) => setMicroForm({...microForm, group: e.target.value})} 
-                                className="w-full text-sm font-medium border border-slate-300 rounded-lg px-3 py-2.5 outline-none focus:border-[#9575cd] bg-white cursor-pointer appearance-none"
-                            >
-                                <option value="">-- Select Class --</option>
-                                {classes.filter(c => c.isActive).map(c => (
-                                    <option key={c.id} value={c.name}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
-
                         <label className="flex items-center gap-2 cursor-pointer mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
                             <input type="checkbox" checked={microForm.isActive} onChange={(e) => setMicroForm({...microForm, isActive: e.target.checked})} className="rounded text-[#9575cd] accent-[#9575cd] w-4 h-4 cursor-pointer" />
                             <span className="text-xs font-bold text-slate-700">Active Status</span>
@@ -241,7 +235,7 @@ export default function AntibioticsPage() {
                     </div>
                     <div className="p-5 border-t border-slate-100 bg-slate-50">
                         <button onClick={handleSave} disabled={isPending} className="w-full flex justify-center items-center gap-2 py-2.5 rounded-lg text-white font-bold text-sm shadow-md transition-all active:scale-95 disabled:opacity-70" style={{ background: 'linear-gradient(to right, #9575cd, #b39ddb)' }}>
-                            {isPending ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} Save Antibiotic
+                            {isPending ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} Save Class
                         </button>
                     </div>
                 </div>
@@ -249,9 +243,9 @@ export default function AntibioticsPage() {
                 <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col relative">
                     <header className="px-6 py-5 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shrink-0 bg-slate-50/50">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-100 text-[#9575cd] rounded-lg shadow-sm"><Pill size={20}/></div>
+                            <div className="p-2 bg-purple-100 text-[#9575cd] rounded-lg shadow-sm"><Layers size={20}/></div>
                             <div>
-                                <h1 className="text-base font-bold text-slate-800 tracking-tight leading-none">Antibiotics Master</h1>
+                                <h1 className="text-base font-bold text-slate-800 tracking-tight leading-none">Antibiotic Classes</h1>
                                 <span className="text-[11px] text-slate-500 font-medium">Total Configured: {totalRecords}</span>
                             </div>
                         </div>
@@ -262,7 +256,7 @@ export default function AntibioticsPage() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                                 <input 
                                     type="text" 
-                                    placeholder="Search antibiotics..." 
+                                    placeholder="Search classes..." 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:border-[#9575cd] focus:ring-1 focus:ring-[#9575cd] w-48 sm:w-56 transition-all bg-white"
@@ -284,30 +278,29 @@ export default function AntibioticsPage() {
                     </header>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-white">
+                        {/* 🚨 REPLACED TABLE SPINNER WITH MUSIC BAR */}
                         {isTableLoading && (
                             <div className="absolute inset-0 z-20 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
-                                <Loader2 className="animate-spin text-[#9575cd]" size={28}/>
+                                <MusicBarLoader text="Loading Classes..." />
                             </div>
                         )}
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-slate-100/90 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10 shadow-sm">
                                 <tr>
                                     <th className="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-24">Code</th>
-                                    <th className="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Antibiotic Name</th>
-                                    <th className="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Group</th>
+                                    <th className="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">Class Name</th>
                                     <th className="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-28 text-center">Status</th>
                                     <th className="px-6 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-24 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
-                                {antibiotics.length === 0 && !isTableLoading ? (
-                                    <tr><td colSpan={5} className="py-16 text-center text-slate-400 text-sm font-medium">No antibiotics found.</td></tr>
+                                {classes.length === 0 && !isTableLoading ? (
+                                    <tr><td colSpan={4} className="py-16 text-center text-slate-400 text-sm font-medium">No classes found.</td></tr>
                                 ) : (
-                                    antibiotics.map((item) => (
+                                    classes.map((item) => (
                                         <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
                                             <td className="px-6 py-3 text-xs font-bold text-slate-400 w-24 font-mono">{item.code}</td>
                                             <td className="px-6 py-3 text-sm font-bold text-slate-700">{item.name}</td>
-                                            <td className="px-6 py-3 text-xs font-medium text-slate-500">{item.group || '-'}</td>
                                             <td className="px-6 py-3 w-28 text-center">
                                                 <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold ${item.isActive ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
                                                     {item.isActive ? 'Active' : 'Inactive'}
@@ -334,7 +327,7 @@ export default function AntibioticsPage() {
                             </span>
                             <div className="flex items-center gap-2">
                                 <button 
-                                    onClick={() => loadAntibiotics(currentPage - 1, searchTerm)} 
+                                    onClick={() => loadClasses(currentPage - 1, searchTerm)} 
                                     disabled={currentPage === 1 || isTableLoading}
                                     className="p-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-white transition-colors"
                                 >
@@ -342,7 +335,7 @@ export default function AntibioticsPage() {
                                 </button>
                                 <span className="text-xs font-bold text-slate-700 px-2">Page {currentPage} of {totalPages}</span>
                                 <button 
-                                    onClick={() => loadAntibiotics(currentPage + 1, searchTerm)} 
+                                    onClick={() => loadClasses(currentPage + 1, searchTerm)} 
                                     disabled={currentPage >= totalPages || isTableLoading}
                                     className="p-1.5 rounded bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-white transition-colors"
                                 >
@@ -356,4 +349,4 @@ export default function AntibioticsPage() {
         </div>
     );
 }
-// --- BLOCK app/antibiotics/page.tsx CLOSE ---
+// --- BLOCK app/antibiotic-classes/page.tsx CLOSE ---

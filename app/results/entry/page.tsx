@@ -8,6 +8,7 @@ import ResultEntryForm from './components/ResultEntryForm';
 import DateRangeFilter from './components/DateRangeFilter';
 import EntryDateTimePicker from './components/EntryDateTimePicker'; 
 import { Loader2, Printer, Search, Users, FileEdit } from 'lucide-react';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 export default function ResultEntryPage() {
   // ==========================================
@@ -122,7 +123,6 @@ export default function ResultEntryPage() {
     );
   };
 
-  // Clever Auto-Switch for Mobile: When a patient is clicked, switch to the form tab
   const handleSelectBill = (id: number) => {
       setSelectedBillId(id);
       setActiveMobileTab('form');
@@ -188,7 +188,12 @@ export default function ResultEntryPage() {
     ];
   }, [bills]);
 
-  if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2"><Loader2 className="animate-spin"/> Loading Worklist...</div>;
+  // 🚨 REPLACED SPINNER WITH MUSIC BAR
+  if (isLoading) return (
+      <div className="h-screen flex items-center justify-center bg-[#f1f5f9]">
+          <MusicBarLoader text="Loading Worklist..." />
+      </div>
+  );
 
   return (
     <div className="h-full w-full flex flex-col font-sans bg-[#f1f5f9] overflow-hidden">
@@ -286,7 +291,10 @@ export default function ResultEntryPage() {
         <div className={`w-full md:w-[60%] h-full bg-white rounded-lg md:rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-col relative ${activeMobileTab === 'form' ? 'flex' : 'hidden md:flex'}`}>
             {selectedBillId ? (
                isBillLoading ? (
-                 <div className="flex-1 flex items-center justify-center text-slate-400 gap-2"><Loader2 className="animate-spin"/> Loading Test Data...</div>
+                 <div className="flex-1 flex items-center justify-center">
+                     {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
+                     <MusicBarLoader text="Loading Test Data..." />
+                 </div>
                ) : (
                  <ResultEntryForm 
                     bill={selectedBillData} 

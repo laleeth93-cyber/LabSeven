@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { Save, Loader2, Search, Bug, Pill, CheckCircle, ChevronLeft, ChevronRight, AlertCircle, FileText, X, Trash2 } from 'lucide-react';
 import { getOrganismsPaginated, getMicrobiologyMaster, saveMicrobiologyMaster, deleteMicrobiologyMaster } from '@/app/actions/microbiology';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 export default function SusceptibilityInfoPage() {
     const [isPending, startTransition] = useTransition();
@@ -214,7 +215,8 @@ export default function SusceptibilityInfoPage() {
         } else alert(res.message);
     };
 
-    if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2 bg-[#f1f5f9]"><Loader2 className="animate-spin text-[#9575cd]" size={32}/> Loading Master Data...</div>;
+    // 🚨 REPLACED SPINNER WITH MUSIC BAR
+    if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#f1f5f9]"><MusicBarLoader text="Loading Master Data..." /></div>;
 
     const activeOrganismData = selectedOrganisms.find(o => o.id === activeOrganismId);
 
@@ -301,9 +303,10 @@ export default function SusceptibilityInfoPage() {
 
                     {/* COMPACT EXCEL-STYLE Organism List with Checkboxes */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-white">
+                        {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
                         {isTableLoading && (
                             <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-[1px] flex items-center justify-center">
-                                <Loader2 className="animate-spin text-[#9575cd]" size={24}/>
+                                <MusicBarLoader text="Loading Organisms..." />
                             </div>
                         )}
 

@@ -1,10 +1,11 @@
-// --- Packages Page OPEN ---
+// --- BLOCK app/packages/page.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { Package, Search, Settings, Settings2, Loader2, Archive, LayoutGrid, List } from 'lucide-react';
 import { getPackages } from '@/app/actions/packages';
 import PackageCartModal from './components/PackageCartModal';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 export default function PackagesPage() {
     const [packages, setPackages] = useState<any[]>([]);
@@ -93,9 +94,9 @@ export default function PackagesPage() {
             <div className={`flex-1 overflow-hidden flex flex-col ${viewMode === 'list' ? 'bg-white rounded-2xl shadow-sm border border-slate-200' : ''}`}>
                 <div className={`flex-1 overflow-y-auto custom-scrollbar ${viewMode === 'grid' ? 'pr-2' : ''}`}>
                     {isLoading ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3">
-                            <Loader2 className="animate-spin text-indigo-500" size={32}/>
-                            <p className="text-sm font-medium">Loading Packages...</p>
+                        <div className="h-full flex items-center justify-center">
+                            {/* 🚨 REPLACED SPINNER WITH MUSIC BAR (using indigo color to match this page) */}
+                            <MusicBarLoader text="Loading Packages..." color="#6366f1" />
                         </div>
                     ) : filteredPackages.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3 bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
@@ -261,4 +262,4 @@ function CheckBadge() {
 function AlertBadge() {
     return <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
 }
-// --- Packages Page CLOSE ---
+// --- BLOCK app/packages/page.tsx CLOSE ---

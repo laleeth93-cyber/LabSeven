@@ -10,6 +10,7 @@ import {
   toggleDepartmentStatus,
   generateDepartmentCode 
 } from '@/app/actions/department';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 export default function DepartmentPage() {
   const [departments, setDepartments] = useState<any[]>([]);
@@ -69,12 +70,10 @@ export default function DepartmentPage() {
     });
   };
 
-  // Triggered when user clicks the Trash icon
   const handleDeleteClick = (id: number) => {
     setDeleteConfirmId(id);
   };
 
-  // Triggered when user confirms deletion in our custom modal
   const confirmDelete = () => {
     if (!deleteConfirmId) return;
     
@@ -89,7 +88,6 @@ export default function DepartmentPage() {
   };
 
   const handleToggle = (id: number, currentStatus: boolean) => {
-    // Optimistic UI Update for instant switch
     setDepartments(prev => prev.map(d => d.id === id ? { ...d, isActive: !currentStatus } : d));
     
     startTransition(async () => {
@@ -195,7 +193,10 @@ export default function DepartmentPage() {
 
           <div className="flex-1 overflow-y-auto">
              {isLoading ? (
-                 <div className="flex items-center justify-center h-40 text-slate-400 gap-2"><Loader2 className="animate-spin" size={20}/> Loading...</div>
+                 <div className="flex items-center justify-center h-40">
+                     {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
+                     <MusicBarLoader text="Loading Departments..." />
+                 </div>
              ) : filteredList.length === 0 ? (
                  <div className="flex flex-col items-center justify-center h-40 text-slate-400">
                      <p className="text-xs">No departments found.</p>

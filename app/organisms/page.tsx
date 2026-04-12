@@ -5,6 +5,7 @@ import React, { useState, useEffect, useTransition, useRef, useMemo } from 'reac
 import { Save, Loader2, Bug, Edit2, Trash2, Plus, CheckCircle, Upload, Download, ListChecks, X, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getMicrobiologyMaster, getOrganismsPaginated, saveMicrobiologyMaster, deleteMicrobiologyMaster, deleteAllMicrobiologyMaster, importMicrobiologyMaster, mapOrganismAntibiotics } from '@/app/actions/microbiology';
 import * as XLSX from 'xlsx';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 export default function OrganismsPage() {
     const [isPending, startTransition] = useTransition();
@@ -57,7 +58,6 @@ export default function OrganismsPage() {
     async function loadOrganisms(page: number, search: string) {
         setIsTableLoading(true);
         try {
-            // CHANGED LIMIT FROM 50 TO 20
             const res = await getOrganismsPaginated(page, 20, search);
             if (res.success) {
                 setOrganisms(res.data || []);
@@ -238,7 +238,8 @@ export default function OrganismsPage() {
         }, {} as Record<string, any[]>);
     }, [allAntibiotics]);
 
-    if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2 bg-[#f1f5f9]"><Loader2 className="animate-spin text-[#9575cd]" size={32}/> Preparing Application...</div>;
+    // 🚨 REPLACED SPINNER WITH MUSIC BAR
+    if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#f1f5f9]"><MusicBarLoader text="Preparing Organisms..." /></div>;
 
     return (
         <div className="h-full w-full bg-[#f1f5f9] p-4 md:p-6 flex flex-col font-sans text-slate-600 overflow-hidden relative">
@@ -265,9 +266,7 @@ export default function OrganismsPage() {
                         <div className="flex-1 overflow-y-auto p-4 bg-white custom-scrollbar space-y-4">
                             {allAntibiotics.length === 0 ? (
                                 <div className="text-center py-12 text-slate-400 flex flex-col items-center">
-                                    <Loader2 className="animate-spin mb-3 text-slate-300" size={24}/>
-                                    <p>Loading antibiotics...</p>
-                                    <p className="text-xs mt-1">If this persists, make sure antibiotics exist in the master list.</p>
+                                    <MusicBarLoader text="Loading antibiotics..." />
                                 </div>
                             ) : (
                                 Object.keys(groupedAntibiotics).sort().map(group => (
@@ -372,9 +371,10 @@ export default function OrganismsPage() {
                     </header>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-white">
+                        {/* 🚨 REPLACED TABLE SPINNER WITH MUSIC BAR */}
                         {isTableLoading && (
                             <div className="absolute inset-0 z-20 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
-                                <Loader2 className="animate-spin text-[#9575cd]" size={28}/>
+                                <MusicBarLoader text="Loading Organisms..." />
                             </div>
                         )}
                         <table className="w-full text-left border-collapse">
@@ -424,7 +424,6 @@ export default function OrganismsPage() {
                     {totalPages > 1 && (
                         <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
                             <span className="text-xs font-medium text-slate-500">
-                                {/* CHANGED PAGINATION TEXT CALCULATION TO USE 20 */}
                                 Showing <span className="font-bold text-slate-700">{(currentPage - 1) * 20 + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * 20, totalRecords)}</span> of <span className="font-bold text-slate-700">{totalRecords}</span> entries
                             </span>
                             <div className="flex items-center gap-2">

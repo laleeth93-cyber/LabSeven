@@ -5,6 +5,7 @@ import React, { useEffect, useState, useTransition, useRef } from 'react';
 import Link from 'next/link';
 import { Plus, Trash2, Search, Filter, Loader2, FileText, Settings, Activity, Type, Edit, Check, X, ChevronDown, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getParameters, deleteParameter, updateParameterStatus } from '@/app/actions/parameters';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 export default function ParametersListPage() {
   const [parameters, setParameters] = useState<any[]>([]);
@@ -212,7 +213,10 @@ export default function ParametersListPage() {
 
               <div className="flex-1 overflow-y-auto">
                   {isLoading ? (
-                      <div className="flex items-center justify-center h-40"><Loader2 className="animate-spin text-[#9575cd]" size={24} /></div>
+                      <div className="flex items-center justify-center h-40">
+                          {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
+                          <MusicBarLoader text="Loading Parameters..." />
+                      </div>
                   ) : filteredParams.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-64 text-slate-400">
                           <FileText size={48} className="mb-2 opacity-20"/>

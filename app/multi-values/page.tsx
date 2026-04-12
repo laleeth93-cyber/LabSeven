@@ -5,6 +5,7 @@ import React, { useState, useEffect, useTransition, useRef } from 'react';
 import { Save, Loader2, ListTree, Edit2, Trash2, Plus, CheckCircle, Search, ChevronLeft, ChevronRight, Upload, Download } from 'lucide-react';
 import { getInterpretationsPaginated, saveMicrobiologyMaster, deleteMicrobiologyMaster, deleteAllMicrobiologyMaster, importMicrobiologyMaster } from '@/app/actions/microbiology';
 import * as XLSX from 'xlsx';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 export default function MultiValuesPage() {
     const [isPending, startTransition] = useTransition();
@@ -131,7 +132,8 @@ export default function MultiValuesPage() {
         setIsTableLoading(false);
     };
 
-    if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2 bg-[#f1f5f9]"><Loader2 className="animate-spin text-[#9575cd]" size={32}/> Preparing Application...</div>;
+    // 🚨 REPLACED SPINNER WITH MUSIC BAR
+    if (isLoading) return <div className="h-screen flex items-center justify-center bg-[#f1f5f9]"><MusicBarLoader text="Preparing Interpretations..." /></div>;
 
     return (
         <div className="h-full w-full bg-[#f1f5f9] p-4 md:p-6 flex flex-col font-sans text-slate-600 overflow-hidden relative">
@@ -204,9 +206,10 @@ export default function MultiValuesPage() {
                     </header>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-white">
+                        {/* 🚨 REPLACED TABLE SPINNER WITH MUSIC BAR */}
                         {isTableLoading && (
                             <div className="absolute inset-0 z-20 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
-                                <Loader2 className="animate-spin text-[#9575cd]" size={28}/>
+                                <MusicBarLoader text="Loading Values..." />
                             </div>
                         )}
                         <table className="w-full text-left border-collapse">

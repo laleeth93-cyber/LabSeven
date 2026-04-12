@@ -3,13 +3,14 @@
 
 import React, { useState, useEffect, Suspense } from 'react'; 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, Lock } from 'lucide-react'; 
+import { Lock } from 'lucide-react'; // 🚨 Removed Loader2
 import DashboardOverview from '@/app/components/DashboardOverview';
 import NewRegistration from '@/app/registration/NewRegistration';
 import CustomizeRegistrationModal from '@/app/registration/CustomizeRegistrationModal';
 import QuotationModal from '@/app/components/QuotationModal';
 import { useSession } from "next-auth/react"; 
 import { getUserPermissions } from '@/app/actions/authorizations';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 export interface FieldData {
   id: number;
@@ -64,7 +65,6 @@ function DashboardContent() {
   const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
   const [registrationFields, setRegistrationFields] = useState<FieldData[]>(initialFieldsData);
 
-  // 🚨 1. Fetch User Permissions Securely on Mount
   useEffect(() => {
     const fetchPerms = async () => {
         if (session?.user) {
@@ -98,21 +98,17 @@ function DashboardContent() {
       return permissions.some(p => screenNames.includes(p.module) && p.action === 'Access');
   };
 
-  // 🚨 2. The Smart Traffic Director (Redirects unauthorized users automatically)
   useEffect(() => {
     if (!permsLoaded) return;
 
     const viewParam = searchParams.get('view') || 'dashboard';
 
-    // If they asked for Dashboard and are allowed, show it
     if (viewParam === 'dashboard' && canSee(['Dashboard'])) {
         setActiveView('dashboard');
     } 
-    // If they asked for Registration and are allowed, show it
     else if (viewParam === 'registration' && canSee(['Registration'])) {
         setActiveView('registration');
     } 
-    // If they are NOT allowed, search for the first module they CAN see and force redirect!
     else {
         if (canSee(['Dashboard'])) router.replace('/?view=dashboard');
         else if (canSee(['Registration'])) router.replace('/?view=registration');
@@ -127,8 +123,6 @@ function DashboardContent() {
     }
   }, [searchParams, permsLoaded, permissions, userRole]);
 
-
-  // --- Local Storage Management for Registration Fields ---
   useEffect(() => {
     if (typeof window !== 'undefined') {
         const savedSettings = localStorage.getItem('lab_registration_fields');
@@ -157,7 +151,12 @@ function DashboardContent() {
   // --- RENDER STATES ---
   
   if (!permsLoaded || activeView === 'loading') {
-      return <div className="flex h-full w-full items-center justify-center"><Loader2 className="animate-spin text-[#9575cd]" size={32} /></div>;
+      return (
+          <div className="flex h-full w-full items-center justify-center">
+              {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
+              <MusicBarLoader text="Authenticating..." />
+          </div>
+      );
   }
 
   if (activeView === 'restricted') {
@@ -203,9 +202,9 @@ function DashboardContent() {
 export default function DashboardClient() {
     return (
         <Suspense fallback={
-            <div className="flex h-screen w-full items-center justify-center gap-2 text-[#9575cd]">
-                <Loader2 className="animate-spin" size={32} />
-                <span className="font-bold text-lg">Loading Lab Seven...</span>
+            <div className="flex h-screen w-full items-center justify-center">
+                {/* 🚨 REPLACED FALLBACK SPINNER WITH MUSIC BAR */}
+                <MusicBarLoader text="Loading Lab Seven..." />
             </div>
         }>
             <DashboardContent />
