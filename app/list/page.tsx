@@ -33,10 +33,9 @@ export default function PatientListPage() {
     const [bills, setBills] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
-    // Pagination
+    // 🚨 NEW: PAGINATION STATE
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalItems, setTotalItems] = useState(0);
+    const ITEMS_PER_PAGE = 10;
 
     // ==========================================
     // LIST HEADER STATES 
@@ -111,7 +110,12 @@ export default function PatientListPage() {
     // ==========================================
     useEffect(() => {
         fetchBills();
-    }, [dateRange, currentPage]); 
+    }, [dateRange]); // Trigger fetch only on date change, not page change (client-side pagination)
+
+    // 🚨 NEW: Reset page to 1 if user searches or filters
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, activeFilter, advFilters, sortOrder, dateRange]);
 
     const fetchBills = async () => {
         setIsLoading(true);
@@ -119,8 +123,6 @@ export default function PatientListPage() {
             const res = await getPendingWorklist(); 
             if (res.success && res.data) {
                 setBills(res.data);
-                setTotalItems(res.data.length);
-                setTotalPages(Math.ceil(res.data.length / 10)); 
             } else {
                 setBills([]);
             }
@@ -209,6 +211,12 @@ export default function PatientListPage() {
 
         return filtered;
     }, [bills, searchQuery, activeFilter, advFilters, sortOrder, dateRange]);
+
+    // 🚨 NEW: PAGINATION CALCULATIONS
+    const totalItems = filteredBills.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedBills = filteredBills.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     // ==========================================
     // ACTION HANDLERS
@@ -359,7 +367,8 @@ export default function PatientListPage() {
 
                 <div className="flex-1 overflow-hidden flex flex-col relative w-full pt-1">
                     <ListTable 
-                        bills={filteredBills} isLoading={isLoading} viewMode={viewMode}
+                        // 🚨 PASSED PAGINATED BILLS INSTEAD OF FILTERED BILLS
+                        bills={paginatedBills} isLoading={isLoading} viewMode={viewMode}
                         currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={setCurrentPage}
                         onPrintBill={handlePrintBill} onPrintBarcode={handlePrintBarcode} onOpenReport={handleOpenReport}
                         onOpenSmartReport={handleOpenSmartReport} onOpenCultureReport={handleOpenCultureReport}

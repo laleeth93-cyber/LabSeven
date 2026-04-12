@@ -2,7 +2,8 @@
 "use client";
 
 import React from 'react';
-import { Printer, FileText, Barcode, Banknote, RefreshCcw, Edit, History, CheckCircle2, Loader2, AlertCircle, Sparkles, Trash2, Info, Bug, User } from 'lucide-react';
+// 🚨 FIXED: Added 'Bug' to the imports!
+import { Printer, FileText, Barcode, Banknote, RefreshCcw, Edit, History, CheckCircle2, Loader2, AlertCircle, Sparkles, Trash2, Info, ChevronLeft, ChevronRight, Bug } from 'lucide-react';
 
 interface ListTableProps {
     bills: any[];
@@ -86,16 +87,29 @@ export default function ListTable({
     );
 
     const PaginationBar = () => {
-        if (totalPages <= 1) return null;
         return (
-            <div className="bg-white border-t border-slate-200 px-4 py-2.5 flex items-center justify-between shrink-0 w-full overflow-x-auto whitespace-nowrap custom-scrollbar">
-                <span className="text-xs text-slate-500 font-medium mr-4">
-                    Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalItems)} of {totalItems} entries
-                </span>
-                <div className="flex items-center gap-1">
-                    <button onClick={() => onPageChange?.(currentPage - 1)} disabled={currentPage === 1} className="px-3 py-1.5 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Prev</button>
-                    <span className="px-3 text-xs font-bold text-slate-600">Page {currentPage} of {totalPages}</span>
-                    <button onClick={() => onPageChange?.(currentPage + 1)} disabled={currentPage === totalPages} className="px-3 py-1.5 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">Next</button>
+            <div className="bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between shrink-0 w-full overflow-x-auto whitespace-nowrap custom-scrollbar">
+                <div className="text-xs font-medium text-slate-500">
+                    Showing <span className="font-bold text-slate-700">{totalItems === 0 ? 0 : ((currentPage - 1) * 10) + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * 10, totalItems)}</span> of <span className="font-bold text-slate-700">{totalItems}</span> patients
+                </div>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => onPageChange?.(currentPage - 1)} 
+                        disabled={currentPage === 1}
+                        className="p-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                    >
+                        <ChevronLeft size={16} />
+                    </button>
+                    <span className="text-xs font-bold text-slate-700 min-w-[80px] text-center">
+                        Page {currentPage} of {totalPages || 1}
+                    </span>
+                    <button 
+                        onClick={() => onPageChange?.(currentPage + 1)} 
+                        disabled={currentPage === totalPages || totalPages === 0}
+                        className="p-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                    >
+                        <ChevronRight size={16} />
+                    </button>
                 </div>
             </div>
         );
@@ -172,6 +186,7 @@ export default function ListTable({
                                             </div>
                                         </td>
                                         <td className="py-3 px-4 text-right align-top">
+                                            {/* 🚨 FIXED ENCODING SYMBOLS HERE */}
                                             <div className="font-bold text-slate-800">₹{bill.netAmount}</div>
                                             {bill.dueAmount > 0 ? (
                                                 <div className="text-[10px] font-bold text-red-600 mt-0.5">Due: ₹{bill.dueAmount}</div>
@@ -239,6 +254,7 @@ export default function ListTable({
                                         <div className="flex items-center justify-between bg-slate-50 rounded-lg p-2.5 border border-slate-100">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] uppercase font-bold text-slate-400">Net Amount</span>
+                                                {/* 🚨 FIXED ENCODING SYMBOLS HERE TOO */}
                                                 <span className="text-sm font-black text-slate-800">₹{bill.netAmount}</span>
                                             </div>
                                             <div className="flex flex-col items-end">
