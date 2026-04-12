@@ -2,7 +2,6 @@
 "use client";
 
 import React from 'react';
-// 🚨 FIXED: Added 'Bug' to the imports!
 import { Printer, FileText, Barcode, Banknote, RefreshCcw, Edit, History, CheckCircle2, Loader2, AlertCircle, Sparkles, Trash2, Info, ChevronLeft, ChevronRight, Bug } from 'lucide-react';
 
 interface ListTableProps {
@@ -73,47 +72,6 @@ export default function ListTable({
             </div>
         );
     }
-
-    const LegendBar = () => (
-        <div className="bg-slate-50 border-t border-slate-200 p-3 flex flex-wrap items-center gap-6 shrink-0 w-full overflow-x-auto whitespace-nowrap custom-scrollbar">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider"><Info size={14} className="text-[#9575cd]" /> Test Status Indicators:</div>
-            <div className="flex gap-4">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600"><span className="w-5 h-5 flex items-center justify-center rounded bg-amber-100 text-amber-700 font-bold border border-amber-200 text-[10px]">P</span>Pending</div>
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600"><span className="w-5 h-5 flex items-center justify-center rounded bg-blue-100 text-blue-700 font-bold border border-blue-200 text-[10px]">E</span>Entered</div>
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600"><span className="w-5 h-5 flex items-center justify-center rounded bg-green-100 text-green-700 font-bold border border-green-200 text-[10px]">A</span>Approved</div>
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600"><span className="w-5 h-5 flex items-center justify-center rounded bg-indigo-100 text-indigo-700 font-bold border border-indigo-200 text-[10px]">Pr</span>Printed</div>
-            </div>
-        </div>
-    );
-
-    const PaginationBar = () => {
-        return (
-            <div className="bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between shrink-0 w-full overflow-x-auto whitespace-nowrap custom-scrollbar">
-                <div className="text-xs font-medium text-slate-500">
-                    Showing <span className="font-bold text-slate-700">{totalItems === 0 ? 0 : ((currentPage - 1) * 10) + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * 10, totalItems)}</span> of <span className="font-bold text-slate-700">{totalItems}</span> patients
-                </div>
-                <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => onPageChange?.(currentPage - 1)} 
-                        disabled={currentPage === 1}
-                        className="p-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                    >
-                        <ChevronLeft size={16} />
-                    </button>
-                    <span className="text-xs font-bold text-slate-700 min-w-[80px] text-center">
-                        Page {currentPage} of {totalPages || 1}
-                    </span>
-                    <button 
-                        onClick={() => onPageChange?.(currentPage + 1)} 
-                        disabled={currentPage === totalPages || totalPages === 0}
-                        className="p-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                    >
-                        <ChevronRight size={16} />
-                    </button>
-                </div>
-            </div>
-        );
-    };
 
     return (
         <div className="flex flex-col h-full relative w-full overflow-hidden bg-slate-50/50">
@@ -186,7 +144,6 @@ export default function ListTable({
                                             </div>
                                         </td>
                                         <td className="py-3 px-4 text-right align-top">
-                                            {/* 🚨 FIXED ENCODING SYMBOLS HERE */}
                                             <div className="font-bold text-slate-800">₹{bill.netAmount}</div>
                                             {bill.dueAmount > 0 ? (
                                                 <div className="text-[10px] font-bold text-red-600 mt-0.5">Due: ₹{bill.dueAmount}</div>
@@ -254,7 +211,6 @@ export default function ListTable({
                                         <div className="flex items-center justify-between bg-slate-50 rounded-lg p-2.5 border border-slate-100">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] uppercase font-bold text-slate-400">Net Amount</span>
-                                                {/* 🚨 FIXED ENCODING SYMBOLS HERE TOO */}
                                                 <span className="text-sm font-black text-slate-800">₹{bill.netAmount}</span>
                                             </div>
                                             <div className="flex flex-col items-end">
@@ -313,8 +269,47 @@ export default function ListTable({
                 )}
             </div>
 
-            <PaginationBar />
-            <LegendBar />
+            {/* 🚨 NEW: UNIFIED SINGLE FOOTER */}
+            <div className="bg-white border-t border-slate-200 px-4 md:px-6 py-3 flex flex-col xl:flex-row items-center justify-between shrink-0 gap-4 w-full">
+                
+                {/* Left Side: Legend */}
+                <div className="flex items-center gap-3 shrink-0 overflow-x-auto w-full xl:w-auto pb-1 xl:pb-0 custom-scrollbar">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap"><Info size={14} className="text-[#9575cd]" /> Status:</div>
+                    <div className="flex items-center gap-3 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600"><span className="w-4 h-4 flex items-center justify-center rounded bg-amber-100 text-amber-700 font-bold border border-amber-200 text-[9px]">P</span>Pending</div>
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600"><span className="w-4 h-4 flex items-center justify-center rounded bg-blue-100 text-blue-700 font-bold border border-blue-200 text-[9px]">E</span>Entered</div>
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600"><span className="w-4 h-4 flex items-center justify-center rounded bg-green-100 text-green-700 font-bold border border-green-200 text-[9px]">A</span>Approved</div>
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600"><span className="w-4 h-4 flex items-center justify-center rounded bg-indigo-100 text-indigo-700 font-bold border border-indigo-200 text-[9px]">Pr</span>Printed</div>
+                    </div>
+                </div>
+
+                {/* Right Side: Count & Pagination */}
+                <div className="flex items-center gap-4 shrink-0 w-full xl:w-auto justify-between xl:justify-end">
+                    <div className="text-[11px] md:text-xs font-medium text-slate-500 whitespace-nowrap">
+                        Showing <span className="font-bold text-slate-700">{totalItems === 0 ? 0 : ((currentPage - 1) * 10) + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * 10, totalItems)}</span> of <span className="font-bold text-slate-700">{totalItems}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => onPageChange?.(currentPage - 1)} 
+                            disabled={currentPage === 1}
+                            className="p-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                        >
+                            <ChevronLeft size={16} />
+                        </button>
+                        <span className="text-[11px] md:text-xs font-bold text-slate-700 min-w-[70px] text-center whitespace-nowrap">
+                            Page {currentPage} / {totalPages || 1}
+                        </span>
+                        <button 
+                            onClick={() => onPageChange?.(currentPage + 1)} 
+                            disabled={currentPage === totalPages || totalPages === 0}
+                            className="p-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                        >
+                            <ChevronRight size={16} />
+                        </button>
+                    </div>
+                </div>
+
+            </div>
         </div>
     );
 }
