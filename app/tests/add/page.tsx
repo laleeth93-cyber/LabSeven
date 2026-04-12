@@ -3,23 +3,29 @@
 
 import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronDown, Save, Loader2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Save, Loader2, CheckCircle, Beaker } from 'lucide-react';
 import RichTextEditorModal from '@/app/components/RichTextEditorModal';
 import { createTest, generateTestCode, getOutsourceLabs } from '@/app/actions/tests';
 import { getDepartments } from '@/app/actions/department';
+import { getMasterData } from '@/app/actions/masters'; // 🚨 NEW: Fetch clinical dropdowns
 import toast from 'react-hot-toast';
 
 export default function AddTestPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  
   const [departments, setDepartments] = useState<any[]>([]);
   const [outsourceLabs, setOutsourceLabs] = useState<any[]>([]);
+  const [methods, setMethods] = useState<any[]>([]);
+  const [specimens, setSpecimens] = useState<any[]>([]);
+  const [vacutainers, setVacutainers] = useState<any[]>([]);
 
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const [formData, setFormData] = useState({
     testType: 'Test', departmentId: '', testName: '', displayTestName: '', gender: 'Both', price: '', code: '',
+    methodId: '', specimenId: '', vacutainerId: '', sampleVolume: '', barcodeCopies: '1', // 🚨 ADDED CLINICAL FIELDS
     minDays: '0', minHours: '0', minMinutes: '0', maxDays: '0', maxHours: '0', maxMinutes: '0',
     instructions: '', lmpRequired: false, idRequired: false, consentRequired: false,
     billingOnly: false, isCulture: false, isOutsourced: false, outsourceLabId: '', printNextPage: false
@@ -28,8 +34,16 @@ export default function AddTestPage() {
   useEffect(() => {
     async function init() {
         try {
-            const [dRes, code, lRes] = await Promise.all([getDepartments(), generateTestCode('Test'), getOutsourceLabs()]);
+            const [dRes, code, lRes, mRes, sRes, vRes] = await Promise.all([
+                getDepartments(), generateTestCode('Test'), getOutsourceLabs(),
+                getMasterData('method'), getMasterData('specimen'), getMasterData('vacutainer')
+            ]);
+            
             if(lRes.success && lRes.data) setOutsourceLabs(lRes.data);
+            if(mRes.success && mRes.data) setMethods(mRes.data);
+            if(sRes.success && sRes.data) setSpecimens(sRes.data);
+            if(vRes.success && vRes.data) setVacutainers(vRes.data);
+            
             if(dRes.success && dRes.data) {
                 setDepartments(dRes.data);
                 if(dRes.data.length > 0) setFormData(prev => ({ ...prev, departmentId: dRes.data![0].id.toString(), code: code }));
@@ -68,7 +82,7 @@ export default function AddTestPage() {
         setShowSuccessPopup(true);
         setTimeout(() => {
             setShowSuccessPopup(false);
-            router.push('/tests?tab=Test Library');
+            router.push('/tests?tab=Formats'); // 🚨 Jumps straight to formats!
             router.refresh();
         }, 1500);
       } else {
@@ -94,10 +108,12 @@ export default function AddTestPage() {
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
               <div className="flex items-center gap-2 font-bold text-slate-700"><ChevronDown size={18} /><span>{formData.testName || 'New Test Definition'}</span></div>
               <button onClick={handleSave} disabled={isPending} className="px-6 py-2 text-xs font-bold text-white bg-[#9575cd] rounded hover:bg-[#7e57c2] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-70">
-                  {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {isPending ? 'Saving...' : 'Save Test'}
+                  {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {isPending ? 'Saving...' : 'Save & Format'}
               </button>
           </div>
           <div className="p-8 space-y-8 overflow-y-auto flex-1">
+              
+              {/* --- Core Details --- */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="lg:col-span-1">
                       <label className={labelClass}>Test Type</label>
@@ -134,7 +150,70 @@ export default function AddTestPage() {
                       <input type="number" value={formData.price} onChange={(e) => handleChange('price', e.target.value)} placeholder="0.00" className={inputClass} />
                   </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-slate-100">
+
+              {/* 🚨 NEW: Clinical Details & TAT Section (Replaces Configuration Tab) */}
+              {formData.testType === 'Test' && (
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-6 pt-6 border-t border-slate-100">
+                      <div className="md:col-span-5 mb-[-10px]">
+                          <h3 className="text-[12px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                              <Beaker size={14} className="text-[#9575cd]"/> Clinical & Turnaround Time
+                          </h3>
+                      </div>
+                      
+                      <div className="lg:col-span-1">
+                          <label className={labelClass}>Method</label>
+                          <select value={formData.methodId} onChange={(e) => handleChange('methodId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
+                              <option value="">-- None --</option>
+                              {methods.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                          </select>
+                      </div>
+                      <div className="lg:col-span-1">
+                          <label className={labelClass}>Specimen</label>
+                          <select value={formData.specimenId} onChange={(e) => handleChange('specimenId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
+                              <option value="">-- None --</option>
+                              {specimens.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          </select>
+                      </div>
+                      <div className="lg:col-span-1">
+                          <label className={labelClass}>Container</label>
+                          <select value={formData.vacutainerId} onChange={(e) => handleChange('vacutainerId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
+                              <option value="">-- None --</option>
+                              {vacutainers.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                          </select>
+                      </div>
+                      <div className="lg:col-span-1">
+                          <label className={labelClass}>Sample Volume</label>
+                          <input type="text" value={formData.sampleVolume} onChange={(e) => handleChange('sampleVolume', e.target.value)} placeholder="e.g. 2 ml" className={inputClass} />
+                      </div>
+                      <div className="lg:col-span-1">
+                          <label className={labelClass}>Barcode Copies</label>
+                          <input type="number" min="0" value={formData.barcodeCopies} onChange={(e) => handleChange('barcodeCopies', e.target.value)} className={inputClass} />
+                      </div>
+
+                      {/* Turnaround Time Row */}
+                      <div className="md:col-span-5 grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                         <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                             <label className="text-[10px] font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">Report Available (Min)</label>
+                             <div className="flex gap-2">
+                                 <div className="flex-1"><input type="number" value={formData.minDays} onChange={(e) => handleChange('minDays', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Days</span></div>
+                                 <div className="flex-1"><input type="number" value={formData.minHours} onChange={(e) => handleChange('minHours', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Hrs</span></div>
+                                 <div className="flex-1"><input type="number" value={formData.minMinutes} onChange={(e) => handleChange('minMinutes', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Mins</span></div>
+                             </div>
+                         </div>
+                         <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                             <label className="text-[10px] font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">Deadline (Max)</label>
+                             <div className="flex gap-2">
+                                 <div className="flex-1"><input type="number" value={formData.maxDays} onChange={(e) => handleChange('maxDays', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Days</span></div>
+                                 <div className="flex-1"><input type="number" value={formData.maxHours} onChange={(e) => handleChange('maxHours', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Hrs</span></div>
+                                 <div className="flex-1"><input type="number" value={formData.maxMinutes} onChange={(e) => handleChange('maxMinutes', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Mins</span></div>
+                             </div>
+                         </div>
+                      </div>
+                  </div>
+              )}
+
+              {/* --- Flags & Guidelines --- */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
                   <div>
                       <label className={labelClass}>Configuration Flags</label>
                       <div className="flex flex-col gap-2 mt-2">

@@ -125,6 +125,9 @@ export async function createTest(data: any) {
         methodId: data.methodId ? parseInt(data.methodId) : null,
         specimenId: data.specimenId ? parseInt(data.specimenId) : null,
         vacutainerId: data.vacutainerId ? parseInt(data.vacutainerId) : null,
+        sampleVolume: data.sampleVolume || null,
+        barcodeCopies: data.barcodeCopies ? parseInt(data.barcodeCopies) : 1,
+        isConfigured: true, // 🚨 Now automatically skips the old config module!
         
         minDays: parseInt(data.minDays) || 0,
         minHours: parseInt(data.minHours) || 0,
@@ -149,7 +152,7 @@ export async function createTest(data: any) {
         
         parameters: {
           create: (data.parameters || []).map((p: any, index: number) => ({
-            organizationId: orgId, // 🚨 THE FIX
+            organizationId: orgId, 
             parameterId: parseInt(p.parameterId),
             order: index + 1
           }))
@@ -184,6 +187,9 @@ export async function updateTest(id: number, data: any) {
         methodId: data.methodId ? parseInt(data.methodId) : null,
         specimenId: data.specimenId ? parseInt(data.specimenId) : null,
         vacutainerId: data.vacutainerId ? parseInt(data.vacutainerId) : null,
+        sampleVolume: data.sampleVolume || null,
+        barcodeCopies: data.barcodeCopies ? parseInt(data.barcodeCopies) : 1,
+        isConfigured: true, // 🚨 Keeps it out of pending configuration status
         
         minDays: parseInt(data.minDays) || 0,
         minHours: parseInt(data.minHours) || 0,
@@ -213,7 +219,7 @@ export async function updateTest(id: number, data: any) {
       if (data.parameters.length > 0) {
         await prisma.testParameter.createMany({
           data: data.parameters.map((p: any, index: number) => ({
-            organizationId: orgId, // 🚨 THE FIX
+            organizationId: orgId, 
             testId: id,
             parameterId: parseInt(p.parameterId),
             order: index + 1
