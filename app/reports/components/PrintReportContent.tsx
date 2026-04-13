@@ -1,4 +1,4 @@
-// --- app/reports/components/PrintReportContent.tsx Block Open ---
+// --- BLOCK app/reports/components/PrintReportContent.tsx OPEN ---
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getFieldValue } from '@/app/list/components/report-pdf/reportUtils';
@@ -47,16 +47,37 @@ export default function PrintReportContent({
     else if (bodySettings?.gridLineThickness === '4') bw = '3px'; 
 
     const bColor = "black";
-    const maxRows = Math.max(leftColFields.length, rightColFields.length);
+    
+    // 🚨 FIX: ADDED SAFETY NET FOR EMPTY ARRAYS (MATCHES PDF ENGINE)
+    let safeLeftFields = Array.isArray(leftColFields) ? leftColFields : [];
+    let safeRightFields = Array.isArray(rightColFields) ? rightColFields : [];
+
+    if (safeLeftFields.length === 0 && safeRightFields.length === 0) {
+        safeLeftFields = [ 
+            { key: 'showName', label: 'Patient Name' }, 
+            { key: 'showAgeGender', label: 'Age & Gender' }, 
+            { key: 'showPatientId', label: 'Patient ID' }, 
+            { key: 'showRefDoc', label: 'Ref. Doctor' }
+        ];
+        safeRightFields = [ 
+            { key: 'showBillNumber', label: 'Bill Number' }, 
+            { key: 'showReceivedDate', label: 'Received Date' }, 
+            { key: 'showReportedDate', label: 'Reported Date' } 
+        ];
+    }
+
+    const maxRows = Math.max(safeLeftFields.length, safeRightFields.length);
     const previewRows = maxRows > 0 ? Array.from({ length: maxRows }) : [];
+    
     const currentHeaderStyle = formData?.tableStyle || 'grid';
     const dynamicLabelClass = `${formData?.labelBold ? 'font-bold' : 'font-medium'} text-slate-800`;
     const dynamicDataClass = `${formData?.dataBold ? 'font-bold' : 'font-medium'} text-slate-700`;
     
-    const lSplit = (formData?.leftColWidth || "35 65").split(' '); 
-    const rSplit = (formData?.rightColWidth || "35 65").split(' ');
-    const lLabelW = Number(lSplit[0]); const lDataW = Number(lSplit[1]); 
-    const rLabelW = Number(rSplit[0]); const rDataW = Number(rSplit[1]);
+    // 🚨 FIX: SAFE WIDTH CALCULATION
+    const lSplit = (formData?.leftColWidth || "35 65").trim().split(' '); 
+    const rSplit = (formData?.rightColWidth || "35 65").trim().split(' ');
+    const lLabelW = Number(lSplit[0]) || 35; const lDataW = Number(lSplit[1]) || 65; 
+    const rLabelW = Number(rSplit[0]) || 35; const rDataW = Number(rSplit[1]) || 65;
 
     let demoTableStyle: React.CSSProperties = { borderCollapse: 'collapse', borderSpacing: 0, width: '100%' };
     let demoTdStyle: React.CSSProperties = {};
@@ -135,7 +156,6 @@ export default function PrintReportContent({
         groupedDummyData.push(currentDummyGroup);
     }
 
-    // Dynamic Preview Signature Styling
     const sigHeightPx = (footerSettings.sigSize || 40) * ptToPx;
     const sigSpacingPx = (footerSettings.sigSpacing ?? 4) * ptToPx;
     const docNamePx = (footerSettings.docNameSize || 10) * ptToPx;
@@ -192,7 +212,6 @@ export default function PrintReportContent({
         return items.filter(item => item !== null);
     };
 
-    // --- DUMMY DATA FOR PREVIEW RESOLUTION ---
     const dummyPatient = {
         designation: 'Mr.',
         firstName: 'John',
@@ -201,7 +220,7 @@ export default function PrintReportContent({
         gender: 'Male',
         patientId: 'SL-20260101-1234',
         uhid: 'UHID-9999',
-        refDoctor: 'Self', // This tests the referral logic
+        refDoctor: 'Self', 
         phone: '9876543210',
         email: 'john.doe@example.com',
         address: '123 Main Street',
@@ -256,7 +275,7 @@ export default function PrintReportContent({
                                         <table className="w-[49.5%] table-fixed" style={demoTableStyle}>
                                             <tbody>
                                                 {previewRows.map((_, idx) => {
-                                                    const field = leftColFields[idx];
+                                                    const field = safeLeftFields[idx];
                                                     const resolvedValue = field ? getFieldValue(field, dummyPatient, dummyBill, dummyDate, dummyDate) || '[ Data ]' : '';
                                                     return (
                                                         <tr key={`l-${idx}`}>
@@ -270,7 +289,7 @@ export default function PrintReportContent({
                                         <table className="w-[49.5%] table-fixed" style={demoTableStyle}>
                                             <tbody>
                                                 {previewRows.map((_, idx) => {
-                                                    const field = rightColFields[idx];
+                                                    const field = safeRightFields[idx];
                                                     const resolvedValue = field ? getFieldValue(field, dummyPatient, dummyBill, dummyDate, dummyDate) || '[ Data ]' : '';
                                                     return (
                                                         <tr key={`r-${idx}`}>
@@ -286,8 +305,8 @@ export default function PrintReportContent({
                                     <table className={`w-full table-fixed ${formData?.fontSize}`} style={demoTableStyle}>
                                         <tbody>
                                             {previewRows.map((_, idx) => {
-                                                const lField = leftColFields[idx];
-                                                const rField = rightColFields[idx];
+                                                const lField = safeLeftFields[idx];
+                                                const rField = safeRightFields[idx];
                                                 const lVal = lField ? getFieldValue(lField, dummyPatient, dummyBill, dummyDate, dummyDate) || '[ Data ]' : '';
                                                 const rVal = rField ? getFieldValue(rField, dummyPatient, dummyBill, dummyDate, dummyDate) || '[ Data ]' : '';
                                                 return (
@@ -396,4 +415,4 @@ export default function PrintReportContent({
         </div>
     );
 }
-// --- app/reports/components/PrintReportContent.tsx Block Close ---
+// --- BLOCK app/reports/components/PrintReportContent.tsx CLOSE ---

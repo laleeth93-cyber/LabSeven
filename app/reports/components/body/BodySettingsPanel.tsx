@@ -1,4 +1,4 @@
-// --- app/reports/components/body/BodySettingsPanel.tsx Block Open ---
+// --- BLOCK app/reports/components/body/BodySettingsPanel.tsx OPEN ---
 import React from 'react';
 
 interface BodySettingsPanelProps {
@@ -21,10 +21,11 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
     const isValid = totalWidth === 100;
 
     return (
-        <div className="w-full flex flex-col gap-5 h-full">
+        // 🚨 REMOVED 'h-full' to allow natural expansion for the single scrollbar
+        <div className="w-full flex flex-col gap-5">
             
-            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col shrink-0">
-                <div className="border-b border-slate-100 pb-3 mb-4 shrink-0">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col">
+                <div className="border-b border-slate-100 pb-3 mb-4">
                     <h3 className="font-bold text-slate-800 text-sm">Table Content</h3>
                     <p className="text-[11px] text-slate-500 mt-0.5">Toggle and configure the columns displayed in the results table.</p>
                 </div>
@@ -66,13 +67,15 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                 </div>
             </div>
 
-            <div className="flex-1 bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col overflow-hidden">
-                <div className="border-b border-slate-100 pb-3 mb-4 shrink-0">
+            {/* 🚨 REMOVED overflow-hidden and flex-1 so it acts like a normal, expandable block */}
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col">
+                <div className="border-b border-slate-100 pb-3 mb-4">
                     <h3 className="font-bold text-slate-800 text-sm">Table Design & Typography</h3>
                     <p className="text-[11px] text-slate-500 mt-0.5">Customize the borders, fonts, colors, and layout of the results table.</p>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-6 pb-4">
+                {/* 🚨 REMOVED inner scrollbar (overflow-y-auto) to rely entirely on the outer window scroll */}
+                <div className="flex flex-col gap-6">
                     
                     {/* INDIVIDUAL COLUMN WIDTH SETTINGS WITH 100% VALIDATOR */}
                     <div>
@@ -300,4 +303,4 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
         </div>
     );
 }
-// --- app/reports/components/body/BodySettingsPanel.tsx Block Close ---
+// --- BLOCK app/reports/components/body/BodySettingsPanel.tsx CLOSE ---
