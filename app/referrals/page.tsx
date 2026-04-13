@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { Search, Plus, Edit, Trash2, Loader2, Building2, Phone, MapPin, Stethoscope, FlaskConical, Microscope, AlertCircle, X, CheckCircle2, Percent, AlertTriangle, CheckCircle } from 'lucide-react';
 import { getReferrals, saveReferral, deleteReferral, toggleReferralStatus } from '@/app/actions/referral';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 type ReferralType = 'Doctor' | 'Lab' | 'Hospital' | 'Outsource';
 
@@ -336,10 +337,10 @@ export default function ReferralsPage() {
             {/* TABLE LIST */}
             <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col z-10 relative">
                 <div className="overflow-x-auto flex-1 custom-scrollbar">
+                    {/* 🚨 REPLACED TABLE SPINNER WITH MUSIC BAR */}
                     {isLoading ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3">
-                            <Loader2 className="animate-spin text-[#9575cd]" size={32}/>
-                            <p className="text-sm font-medium">Loading {activeTab === 'Outsource' ? 'Centers' : activeTab}s...</p>
+                        <div className="h-full flex items-center justify-center">
+                            <MusicBarLoader text={`Loading ${activeTab === 'Outsource' ? 'Centers' : activeTab}s...`} />
                         </div>
                     ) : filteredReferrals.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-slate-400 gap-3">

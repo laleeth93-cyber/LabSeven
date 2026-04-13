@@ -6,6 +6,7 @@ import { Database, Plus, Search, Edit, Trash2, Droplet, Box, FlaskConical, Scale
 import { getMasterData, saveMasterData, deleteMasterData, toggleMasterStatus, generateMasterCode } from '@/app/actions/masters';
 import { useSession } from "next-auth/react"; 
 import { getUserPermissions } from '@/app/actions/authorizations';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 type MasterTab = 'specimen' | 'vacutainer' | 'method' | 'uom' | 'operator' | 'multivalue';
 
@@ -159,7 +160,12 @@ export default function MastersPage() {
     (item.code && item.code.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  if (!permsLoaded) return <div className="w-full h-full flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-[#9575cd]" size={32} /></div>;
+  // 🚨 REPLACED AUTH SPINNER WITH MUSIC BAR
+  if (!permsLoaded) return (
+      <div className="w-full h-full flex items-center justify-center bg-slate-50">
+          <MusicBarLoader text="Authenticating..." />
+      </div>
+  );
 
   if (visibleTabs.length === 0) {
       return (
@@ -282,9 +288,12 @@ export default function MastersPage() {
              <div className="w-20 text-center text-[10px] font-bold text-slate-500 uppercase">Action</div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto relative">
              {isLoading ? (
-                <div className="flex items-center justify-center h-40 text-slate-400 gap-2"><Loader2 className="animate-spin" size={20}/> Loading...</div>
+                // 🚨 REPLACED TABLE SPINNER WITH MUSIC BAR
+                <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
+                    <MusicBarLoader text={`Loading ${safeActiveTab}s...`} />
+                </div>
              ) : filteredList.length === 0 ? (
                  <div className="flex flex-col items-center justify-center h-40 text-slate-400"><p className="text-xs">No records found.</p></div>
              ) : (

@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Users, PenTool, Key, Loader2, Lock } from 'lucide-react';
 import { getRoles, getUsers, getUserPermissions } from '@/app/actions/authorizations';
 import { useSession } from "next-auth/react"; 
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 import UsersTab from './components/UsersTab';
 import RolesTab from './components/RolesTab';
@@ -88,8 +89,13 @@ export default function AuthorizationsPage() {
         setIsLoading(false);
     };
 
+    // 🚨 REPLACED AUTH SPINNER WITH MUSIC BAR
     if (!permsLoaded) {
-        return <div className="w-full h-full flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-[#9575cd]" size={32} /></div>;
+        return (
+            <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                <MusicBarLoader text="Authenticating..." />
+            </div>
+        );
     }
 
     if (visibleTabs.length === 0) {
@@ -120,11 +126,13 @@ export default function AuthorizationsPage() {
                     ))}
                 </div>
 
+                {/* 🚨 REPLACED DATA SPINNER WITH MUSIC BAR */}
                 {isLoading ? (
-                    <div className="flex justify-center p-12"><Loader2 className="animate-spin text-[#9575cd]" size={32} /></div>
+                    <div className="flex justify-center p-12">
+                        <MusicBarLoader text="Loading Data..." />
+                    </div>
                 ) : (
                     <>
-                        {/* 🚨 PASSING canPerform prop down */}
                         {safeActiveTab === 'users' && <UsersTab users={users} roles={roles} loadData={loadData} canPerform={canPerform} />}
                         {safeActiveTab === 'roles' && <RolesTab roles={roles} loadData={loadData} />}
                         {safeActiveTab === 'permissions' && <PermissionsTab users={users} />}

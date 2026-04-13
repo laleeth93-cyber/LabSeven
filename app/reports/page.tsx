@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { Save, Loader2, Table, LayoutTemplate, Stethoscope, Printer, CheckCircle, Activity } from 'lucide-react';
 import { getReportSettings, updateReportSettings } from '@/app/actions/reports';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 import HeaderTab from './components/HeaderTab';
 import BodyTab from './components/BodyTab';
@@ -340,7 +341,12 @@ export default function ReportsSettingsPage() {
         { id: 'DeltaReport', label: 'Delta Report (Analytics)', icon: <Activity size={14}/> } // NEW TAB
     ];
 
-    if (isLoading) return <div className="h-full flex items-center justify-center text-slate-500"><Loader2 className="animate-spin mr-2"/> Loading Settings...</div>;
+    // 🚨 REPLACED SPINNER WITH MUSIC BAR
+    if (isLoading) return (
+        <div className="h-full flex items-center justify-center bg-[#f1f5f9]">
+            <MusicBarLoader text="Loading Settings..." />
+        </div>
+    );
 
     return (
         <div className="h-full w-full bg-[#f1f5f9] flex flex-col font-sans relative">

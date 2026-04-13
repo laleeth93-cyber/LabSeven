@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { Key, Save, Loader2, LayoutGrid, ChevronDown, ChevronRight, CheckSquare } from 'lucide-react';
 import { getUserPermissions, saveUserPermissions } from '@/app/actions/authorizations';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 const ALL_ACTIONS = ['View', 'Add', 'Edit', 'Delete', 'Approve', 'Print'];
 
-// 🚨 THE FIX: A highly specific matrix mapping exact logical actions to specific screens
 const MODULE_HIERARCHY = [
     { 
         module: 'Front Desk', 
@@ -74,7 +74,6 @@ export default function PermissionsTab({ users }: any) {
     const [selectedUserForPerms, setSelectedUserForPerms] = useState<number | ''>('');
     const [isPermsLoading, setIsPermsLoading] = useState(false);
     
-    // Matrix now holds actual assigned permissions: 
     const [permMatrix, setPermMatrix] = useState<Record<string, string[]>>({});
 
     const handleUserSelectForPerms = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -95,7 +94,6 @@ export default function PermissionsTab({ users }: any) {
         setIsPermsLoading(false);
     };
 
-    // --- GLOBAL SELECT ALL LOGIC ---
     const isAllSelected = MODULE_HIERARCHY.every(moduleGroup => {
         const hasModuleAccess = (permMatrix[moduleGroup.module] || []).includes('Access');
         if (!hasModuleAccess) return false;
@@ -103,7 +101,6 @@ export default function PermissionsTab({ users }: any) {
         return moduleGroup.screens.every(screen => {
             const screenPerms = permMatrix[screen.name] || [];
             if (!screenPerms.includes('Access')) return false;
-            // Only verify the actions that actually belong to this screen
             return screen.actions.every(action => screenPerms.includes(action));
         });
     });
@@ -118,7 +115,6 @@ export default function PermissionsTab({ users }: any) {
         MODULE_HIERARCHY.forEach(moduleGroup => {
             newMatrix[moduleGroup.module] = ['Access'];
             moduleGroup.screens.forEach(screen => {
-                // Grant access and ONLY the valid actions for this screen
                 newMatrix[screen.name] = ['Access', ...screen.actions];
             });
         });
@@ -207,8 +203,11 @@ export default function PermissionsTab({ users }: any) {
 
             {selectedUserForPerms ? (
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+                    {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
                     {isPermsLoading ? (
-                        <div className="flex justify-center p-12"><Loader2 className="animate-spin text-[#9575cd]" size={32} /></div>
+                        <div className="flex justify-center p-12">
+                            <MusicBarLoader text="Loading Permissions..." />
+                        </div>
                     ) : (
                         <table className="w-full text-left text-sm border-collapse">
                             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
@@ -263,7 +262,6 @@ export default function PermissionsTab({ users }: any) {
                                                         </td>
                                                         {ALL_ACTIONS.map(action => (
                                                             <td key={action} className="py-3 px-4 text-center">
-                                                                {/* 🚨 THE LOGIC: If the action belongs to the screen, show a checkbox. Otherwise, show a dash. */}
                                                                 {screen.actions.includes(action) ? (
                                                                     <input 
                                                                         type="checkbox" 

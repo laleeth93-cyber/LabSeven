@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Save, Upload, Loader2, Image as ImageIcon, MapPin, Phone, Mail, Globe, Info, Hash, CheckCircle } from 'lucide-react';
 import { getLabProfile, updateLabProfile } from '@/app/actions/lab-profile';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
 
 export default function LabProfilePage() {
     const [isLoading, setIsLoading] = useState(true);
@@ -54,11 +55,11 @@ export default function LabProfilePage() {
         }
     };
 
+    // 🚨 REPLACED SPINNER WITH MUSIC BAR
     if (isLoading) {
         return (
             <div className="h-full w-full flex flex-col items-center justify-center bg-[#f1f5f9]">
-                <Loader2 className="animate-spin text-[#9575cd] mb-4" size={32} />
-                <p className="text-slate-500 font-medium text-sm">Loading Lab Profile...</p>
+                <MusicBarLoader text="Loading Lab Profile..." />
             </div>
         );
     }
@@ -287,4 +288,4 @@ export default function LabProfilePage() {
         </div>
     );
 }
-// --- app/lab-profile/page.tsx Block Close ---
+// --- BLOCK app/lab-profile/page.tsx CLOSE ---
