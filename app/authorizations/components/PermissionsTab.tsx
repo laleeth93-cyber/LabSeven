@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Key, Save, Loader2, LayoutGrid, ChevronDown, ChevronRight, CheckSquare } from 'lucide-react';
 import { getUserPermissions, saveUserPermissions } from '@/app/actions/authorizations';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
+import MusicBarLoader from '@/app/components/MusicBarLoader'; 
 
 const ALL_ACTIONS = ['View', 'Add', 'Edit', 'Delete', 'Approve', 'Print'];
 
+// 🚨 UPDATED HIERARCHY MATCHING YOUR EXACT REQUEST
 const MODULE_HIERARCHY = [
     { 
         module: 'Front Desk', 
@@ -22,24 +23,33 @@ const MODULE_HIERARCHY = [
         ] 
     },
     { 
-        module: 'Test Configuration', 
+        module: 'Test Config', 
         screens: [
-            { name: 'Tests', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Departments', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Test Library', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Formats', actions: ['View', 'Edit'] },
             { name: 'Parameters', actions: ['View', 'Add', 'Edit', 'Delete'] },
-            { name: 'Test Formats', actions: ['View', 'Edit'] },
             { name: 'Packages', actions: ['View', 'Add', 'Edit', 'Delete'] }
         ] 
     },
     { 
         module: 'Masters', 
         screens: [
-            { name: 'Departments', actions: ['View', 'Add', 'Edit', 'Delete'] },
-            { name: 'Specimens', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Specimen', actions: ['View', 'Add', 'Edit', 'Delete'] },
             { name: 'Vacutainers', actions: ['View', 'Add', 'Edit', 'Delete'] },
-            { name: 'Methods', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Method', actions: ['View', 'Add', 'Edit', 'Delete'] },
             { name: 'UOM', actions: ['View', 'Add', 'Edit', 'Delete'] },
-            { name: 'Operators', actions: ['View', 'Add', 'Edit', 'Delete'] },
-            { name: 'Lab Lists', actions: ['View', 'Add', 'Edit', 'Delete'] }
+            { name: 'Operator', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Multivalues', actions: ['View', 'Add', 'Edit', 'Delete'] }
+        ] 
+    },
+    { 
+        module: 'Referrals', 
+        screens: [
+            { name: 'Doctors', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Partner Labs', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Hospitals', actions: ['View', 'Add', 'Edit', 'Delete'] },
+            { name: 'Outsourced Labs', actions: ['View', 'Add', 'Edit', 'Delete'] }
         ] 
     },
     { 
@@ -63,9 +73,7 @@ const MODULE_HIERARCHY = [
     { 
         module: 'Setup', 
         screens: [
-            { name: 'General Settings', actions: ['View', 'Edit'] },
-            { name: 'Multivalues', actions: ['View', 'Add', 'Edit', 'Delete'] },
-            { name: 'Referrals', actions: ['View', 'Add', 'Edit', 'Delete'] }
+            { name: 'General Settings', actions: ['View', 'Edit'] }
         ] 
     }
 ];
@@ -203,7 +211,6 @@ export default function PermissionsTab({ users }: any) {
 
             {selectedUserForPerms ? (
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-                    {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
                     {isPermsLoading ? (
                         <div className="flex justify-center p-12">
                             <MusicBarLoader text="Loading Permissions..." />

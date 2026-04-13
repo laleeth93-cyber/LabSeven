@@ -8,9 +8,8 @@ import { Plus, Trash2, Search, Filter, Loader2, FileText, FlaskConical, Edit, Ch
 import { getTests, deleteTest, toggleTestStatus } from '@/app/actions/tests';
 import { useSession } from "next-auth/react"; 
 import { getUserPermissions } from '@/app/actions/authorizations';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
+import MusicBarLoader from '@/app/components/MusicBarLoader'; 
 
-// Import other page components
 import ParametersListPage from '../parameters/page';
 import TestFormatsPage from './formats/page';
 import PackagesPage from '../packages/page';
@@ -58,10 +57,11 @@ export default function TestsPage() {
       return permissions.some(p => p.module === screenName && p.action === action);
   };
 
+  // 🚨 UPDATED SCREEN NAMES TO MATCH PERMISSIONS MATRIX
   const tabs = [
     { label: 'Department', icon: <Network size={14}/>, color: 'bg-teal-500', screen: 'Departments' },
-    { label: 'Test Library', icon: <FlaskConical size={14}/>, color: 'bg-blue-500', screen: 'Tests' },
-    { label: 'Formats', icon: <CheckCircle2 size={14}/>, color: 'bg-green-500', screen: 'Test Formats' },
+    { label: 'Test Library', icon: <FlaskConical size={14}/>, color: 'bg-blue-500', screen: 'Test Library' },
+    { label: 'Formats', icon: <CheckCircle2 size={14}/>, color: 'bg-green-500', screen: 'Formats' },
     { label: 'Parameters', icon: <Settings size={14}/>, color: 'bg-purple-500', screen: 'Parameters' },
     { label: 'Packages', icon: <Archive size={14}/>, color: 'bg-indigo-500', screen: 'Packages' },
   ];
@@ -76,7 +76,6 @@ export default function TestsPage() {
       setActiveTab(requestedTab);
   }, [tabParam, permsLoaded, permissions]);
 
-  // 🚨 REPLACED PERMISSIONS SPINNER WITH MUSIC BAR
   if (!permsLoaded) return (
       <div className="w-full h-full flex items-center justify-center bg-[#f1f5f9]">
           <MusicBarLoader text="Authenticating..." />
@@ -117,7 +116,7 @@ export default function TestsPage() {
       </div>
       <div className="flex-1 overflow-hidden relative">
           {safeActiveTab === 'Department' && <div className="h-full overflow-hidden"><DepartmentPage /></div>}
-          {safeActiveTab === 'Test Library' && <TestsLibraryView initialType="All" canPerform={(act) => canPerform('Tests', act)} />}
+          {safeActiveTab === 'Test Library' && <TestsLibraryView initialType="All" canPerform={(act) => canPerform('Test Library', act)} />}
           {safeActiveTab === 'Formats' && <div className="h-full overflow-hidden"><TestFormatsPage /></div>}
           {safeActiveTab === 'Parameters' && <div className="h-full overflow-hidden"><ParametersListPage /></div>}
           {safeActiveTab === 'Packages' && <div className="h-full overflow-hidden"><PackagesPage /></div>}
@@ -324,7 +323,6 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
           <div className="flex-1 overflow-y-auto">
               {isLoading ? (
                   <div className="flex items-center justify-center h-40">
-                      {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
                       <MusicBarLoader text="Loading Tests..." />
                   </div>
               ) : filteredTests.length === 0 ? (

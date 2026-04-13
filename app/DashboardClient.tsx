@@ -3,14 +3,14 @@
 
 import React, { useState, useEffect, Suspense } from 'react'; 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Lock } from 'lucide-react'; // 🚨 Removed Loader2
+import { Lock } from 'lucide-react';
 import DashboardOverview from '@/app/components/DashboardOverview';
 import NewRegistration from '@/app/registration/NewRegistration';
 import CustomizeRegistrationModal from '@/app/registration/CustomizeRegistrationModal';
 import QuotationModal from '@/app/components/QuotationModal';
 import { useSession } from "next-auth/react"; 
 import { getUserPermissions } from '@/app/actions/authorizations';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
+import MusicBarLoader from '@/app/components/MusicBarLoader'; 
 
 export interface FieldData {
   id: number;
@@ -114,9 +114,10 @@ function DashboardContent() {
         else if (canSee(['Registration'])) router.replace('/?view=registration');
         else if (canSee(['Result Entry'])) router.replace('/results/entry');
         else if (canSee(['Patient List'])) router.replace('/list');
-        else if (canSee(['Tests', 'Parameters', 'Test Formats', 'Packages'])) router.replace('/tests');
-        else if (canSee(['Departments', 'Specimens', 'Vacutainers', 'Methods', 'UOM', 'Operators', 'Lab Lists'])) router.replace('/masters');
-        else if (canSee(['Referrals'])) router.replace('/referrals');
+        // 🚨 UPDATED TO MATCH NEW PERMISSION NAMES
+        else if (canSee(['Departments', 'Test Library', 'Formats', 'Parameters', 'Packages'])) router.replace('/tests');
+        else if (canSee(['Specimen', 'Vacutainers', 'Method', 'UOM', 'Operator', 'Multivalues'])) router.replace('/masters');
+        else if (canSee(['Doctors', 'Partner Labs', 'Hospitals', 'Outsourced Labs'])) router.replace('/referrals');
         else if (canSee(['General Settings'])) router.replace('/lab-profile');
         else if (canSee(['Header Setup', 'Body Settings', 'Footer Layout', 'Page Formatting'])) router.replace('/reports');
         else setActiveView('restricted'); // Total Lockout
@@ -153,7 +154,6 @@ function DashboardContent() {
   if (!permsLoaded || activeView === 'loading') {
       return (
           <div className="flex h-full w-full items-center justify-center">
-              {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
               <MusicBarLoader text="Authenticating..." />
           </div>
       );
@@ -203,7 +203,6 @@ export default function DashboardClient() {
     return (
         <Suspense fallback={
             <div className="flex h-screen w-full items-center justify-center">
-                {/* 🚨 REPLACED FALLBACK SPINNER WITH MUSIC BAR */}
                 <MusicBarLoader text="Loading Lab Seven..." />
             </div>
         }>

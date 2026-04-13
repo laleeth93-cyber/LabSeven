@@ -2,13 +2,24 @@
 "use client";
 
 import React, { useState, useEffect, useTransition } from 'react';
-import { Search, Plus, Edit, Trash2, Loader2, Building2, Phone, MapPin, Stethoscope, FlaskConical, Microscope, AlertCircle, X, CheckCircle2, Percent, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Loader2, Building2, Phone, MapPin, Stethoscope, FlaskConical, Microscope, AlertCircle, X, CheckCircle2, Percent, AlertTriangle, CheckCircle, Lock } from 'lucide-react';
 import { getReferrals, saveReferral, deleteReferral, toggleReferralStatus } from '@/app/actions/referral';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
+import MusicBarLoader from '@/app/components/MusicBarLoader';
+
+// IMPORT SESSION & PERMISSIONS
+import { useSession } from "next-auth/react"; 
+import { getUserPermissions } from '@/app/actions/authorizations';
 
 type ReferralType = 'Doctor' | 'Lab' | 'Hospital' | 'Outsource';
 
 export default function ReferralsPage() {
+    // RBAC GATING LOGIC
+    const { data: session } = useSession();
+    const orgId = (session?.user as any)?.orgId; 
+    const [permissions, setPermissions] = useState<any[]>([]);
+    const [userRole, setUserRole] = useState<string>('');
+    const [permsLoaded, setPermsLoaded] = useState(false);
+
     const [activeTab, setActiveTab] = useState<ReferralType>('Doctor');
 
     const [referrals, setReferrals] = useState<any[]>([]);
@@ -18,28 +29,65 @@ export default function ReferralsPage() {
     
     const [isPending, startTransition] = useTransition();
 
-    // Form Dropdown State
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingRef, setEditingRef] = useState<any>(null);
     const [formData, setFormData] = useState({
-        name: '',
-        phone: '',
-        email: '',
-        specialization: '', 
-        clinicName: '',
-        hospital: '',
-        degree: '',
-        contactPerson: '',
-        commission: '',
-        isActive: true
+        name: '', phone: '', email: '', specialization: '', clinicName: '', hospital: '', degree: '', contactPerson: '', commission: '', isActive: true
     });
 
-    // --- DELETE CONFIRMATION STATE ---
     const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-
-    // --- SUCCESS POPUP STATE ---
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
+
+    // FETCH PERMISSIONS
+    useEffect(() => {
+        const fetchPerms = async () => {
+            if (session?.user) {
+                const userId = (session.user as any).id;
+                if (userId) {
+                    const res = await getUserPermissions(parseInt(userId));
+                    if (res.success) {
+                        setPermissions(res.data || []);
+                        setUserRole(res.roleName || '');
+                    }
+                }
+            }
+            setPermsLoaded(true);
+        };
+        fetchPerms();
+    }, [session]);
+
+    // SCREEN LEVEL GATING
+    const canSee = (screenName: string) => {
+        if (orgId === 1) return true;
+        if (!permsLoaded) return false;
+        if (permissions.length === 0) return true; 
+        return permissions.some(p => p.module === screenName && p.action === 'Access');
+    };
+
+    // ACTION LEVEL GATING
+    const canPerform = (screenName: string, action: string) => {
+        if (orgId === 1 || userRole.toLowerCase().includes('admin')) return true;
+        if (permissions.length === 0) return true; 
+        return permissions.some(p => p.module === screenName && p.action === action);
+    };
+
+    // TABS MAPPED TO EXACT PERMISSION STRINGS
+    const tabsDef = [
+        { id: 'Doctor', screen: 'Doctors', icon: <Stethoscope size={16} /> },
+        { id: 'Lab', screen: 'Partner Labs', icon: <FlaskConical size={16} /> },
+        { id: 'Hospital', screen: 'Hospitals', icon: <Building2 size={16} /> },
+        { id: 'Outsource', screen: 'Outsourced Labs', icon: <Microscope size={16} /> }
+    ];
+
+    const visibleTabs = tabsDef.filter(t => canSee(t.screen));
+
+    // Ensure tab safely lands on a visible one
+    useEffect(() => {
+        if (permsLoaded && visibleTabs.length > 0 && !visibleTabs.find(t => t.id === activeTab)) {
+            setActiveTab(visibleTabs[0].id as ReferralType);
+        }
+    }, [permsLoaded, activeTab, visibleTabs]);
 
     const loadData = async () => {
         setIsLoading(true);
@@ -49,9 +97,10 @@ export default function ReferralsPage() {
     };
 
     useEffect(() => {
+        if (!permsLoaded) return;
         const timer = setTimeout(() => { loadData(); }, 300);
         return () => clearTimeout(timer);
-    }, [searchQuery, activeTab]);
+    }, [searchQuery, activeTab, permsLoaded]);
 
     const handleOpenAdd = () => {
         if (isFormOpen && !editingRef) {
@@ -66,16 +115,9 @@ export default function ReferralsPage() {
     const handleOpenEdit = (ref: any) => {
         setEditingRef(ref);
         setFormData({
-            name: ref.name || '',
-            phone: ref.phone || '',
-            email: ref.email || '',
-            specialization: ref.specialization || '',
-            clinicName: ref.clinicName || '',
-            hospital: ref.hospital || '',
-            degree: ref.degree || '',
-            contactPerson: ref.contactPerson || '',
-            commission: ref.commission ? ref.commission.toString() : '',
-            isActive: ref.isActive
+            name: ref.name || '', phone: ref.phone || '', email: ref.email || '', specialization: ref.specialization || '',
+            clinicName: ref.clinicName || '', hospital: ref.hospital || '', degree: ref.degree || '', contactPerson: ref.contactPerson || '',
+            commission: ref.commission ? ref.commission.toString() : '', isActive: ref.isActive
         });
         setIsFormOpen(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -97,9 +139,7 @@ export default function ReferralsPage() {
         });
     };
 
-    const handleDeleteClick = (id: number) => {
-        setDeleteConfirmId(id);
-    };
+    const handleDeleteClick = (id: number) => { setDeleteConfirmId(id); };
 
     const confirmDelete = () => {
         if (!deleteConfirmId) return;
@@ -110,15 +150,12 @@ export default function ReferralsPage() {
                 setSuccessMessage("Deleted Successfully!");
                 setShowSuccessPopup(true);
                 setTimeout(() => { setShowSuccessPopup(false); loadData(); }, 1500);
-            } else {
-                alert(res.message);
-            }
+            } else alert(res.message);
         });
     };
 
     const handleToggleStatus = async (id: number, currentStatus: boolean) => {
         const newStatus = !currentStatus;
-        // Optimistic UI update
         setReferrals(prev => prev.map(r => r.id === id ? { ...r, isActive: newStatus } : r));
         
         startTransition(async () => {
@@ -147,13 +184,29 @@ export default function ReferralsPage() {
         Hospital: { icon: Building2, title: "Hospitals Directory", nameLabel: "Hospital Name", specLabel: "Hospital Type", locLabel: "Address" },
         Outsource: { icon: Microscope, title: "Outsourced Centers Directory", nameLabel: "Center Name", specLabel: "", locLabel: "Address" }
     };
-    const currentUI = uiConfig[activeTab];
+    
+    const currentUI = activeTab ? uiConfig[activeTab] : uiConfig['Doctor'];
     const ActiveIcon = currentUI.icon;
+
+    if (!permsLoaded) return (
+        <div className="w-full h-full flex items-center justify-center bg-[#f1f5f9]">
+            <MusicBarLoader text="Authenticating..." />
+        </div>
+    );
+
+    if (visibleTabs.length === 0) {
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-[#f1f5f9] p-6 text-center">
+                <Lock className="text-slate-300 mb-4" size={48} />
+                <h2 className="text-xl font-bold text-slate-700">Access Restricted</h2>
+                <p className="text-slate-500 mt-2 text-sm max-w-sm">You do not have permission to view any settings within the Referrals module.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="h-full w-full bg-[#f1f5f9] p-4 md:p-6 flex flex-col font-sans relative">
             
-            {/* --- DELETE CONFIRMATION MODAL --- */}
             {deleteConfirmId && (
               <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
                 <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center animate-in zoom-in-95 duration-200">
@@ -172,7 +225,6 @@ export default function ReferralsPage() {
               </div>
             )}
 
-            {/* --- SUCCESS POPUP OVERLAY --- */}
             {showSuccessPopup && (
               <div className="fixed inset-0 z-[600] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
                 <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-sm w-full mx-4 border border-slate-100">
@@ -186,22 +238,12 @@ export default function ReferralsPage() {
 
             <header className="bg-white rounded-2xl shadow-sm border border-slate-200 mb-4 shrink-0 flex flex-col relative z-20">
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-white overflow-x-auto no-scrollbar rounded-t-2xl">
-                    <button onClick={() => { setActiveTab('Doctor'); setSearchQuery(''); setActiveFilter('All'); setIsFormOpen(false); }}
-                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'Doctor' ? 'bg-[#9575cd] text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}>
-                        <Stethoscope size={16} /> Doctors
-                    </button>
-                    <button onClick={() => { setActiveTab('Lab'); setSearchQuery(''); setActiveFilter('All'); setIsFormOpen(false); }}
-                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'Lab' ? 'bg-[#9575cd] text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}>
-                        <FlaskConical size={16} /> Partner Labs
-                    </button>
-                    <button onClick={() => { setActiveTab('Hospital'); setSearchQuery(''); setActiveFilter('All'); setIsFormOpen(false); }}
-                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'Hospital' ? 'bg-[#9575cd] text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}>
-                        <Building2 size={16} /> Hospitals
-                    </button>
-                    <button onClick={() => { setActiveTab('Outsource'); setSearchQuery(''); setActiveFilter('All'); setIsFormOpen(false); }}
-                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'Outsource' ? 'bg-[#9575cd] text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}>
-                        <Microscope size={16} /> Outsourced Labs
-                    </button>
+                    {visibleTabs.map(tab => (
+                        <button key={tab.id} onClick={() => { setActiveTab(tab.id as ReferralType); setSearchQuery(''); setActiveFilter('All'); setIsFormOpen(false); }}
+                            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-[#9575cd] text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}>
+                            {tab.icon} {tab.screen}
+                        </button>
+                    ))}
                 </div>
 
                 <div className="p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
@@ -232,10 +274,12 @@ export default function ReferralsPage() {
                         </div>
                         
                         <div className="relative w-full md:w-auto shrink-0 z-50">
-                            <button onClick={handleOpenAdd} className="w-full md:w-auto h-10 px-4 bg-[#9575cd] hover:bg-[#7e57c2] text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm">
-                                {isFormOpen && !editingRef ? <X size={18} /> : <Plus size={18} />}
-                                {isFormOpen && !editingRef ? 'Close Form' : `Add ${activeTab === 'Outsource' ? 'Center' : activeTab}`}
-                            </button>
+                            {canPerform(tabsDef.find(t => t.id === activeTab)?.screen!, 'Add') && (
+                                <button onClick={handleOpenAdd} className="w-full md:w-auto h-10 px-4 bg-[#9575cd] hover:bg-[#7e57c2] text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm">
+                                    {isFormOpen && !editingRef ? <X size={18} /> : <Plus size={18} />}
+                                    {isFormOpen && !editingRef ? 'Close Form' : `Add ${activeTab === 'Outsource' ? 'Center' : activeTab}`}
+                                </button>
+                            )}
 
                             {isFormOpen && (
                                 <div className="absolute right-0 top-full mt-3 w-[340px] md:w-[400px] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 origin-top-right z-[500]">
@@ -248,7 +292,6 @@ export default function ReferralsPage() {
                                     </div>
                                     
                                     <div className="flex-1 overflow-y-auto p-5 space-y-4 max-h-[60vh] custom-scrollbar">
-                                        {/* NAME & DEGREE ROW */}
                                         <div className="grid grid-cols-3 gap-3">
                                             <div className={activeTab === 'Doctor' ? 'col-span-2' : 'col-span-3'}>
                                                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">{currentUI.nameLabel} <span className="text-red-500">*</span></label>
@@ -262,7 +305,6 @@ export default function ReferralsPage() {
                                             )}
                                         </div>
 
-                                        {/* DOCTOR NAME FOR HOSPITALS/LABS ONLY */}
                                         {(activeTab === 'Hospital' || activeTab === 'Lab') && (
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">{activeTab === 'Hospital' ? 'Doctor Name' : 'Contact Person'}</label>
@@ -270,7 +312,6 @@ export default function ReferralsPage() {
                                             </div>
                                         )}
 
-                                        {/* CONTACT ROW */}
                                         <div className="grid grid-cols-2 gap-3">
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Phone</label>
@@ -282,7 +323,6 @@ export default function ReferralsPage() {
                                             </div>
                                         </div>
 
-                                        {/* HOSPITAL ROW */}
                                         {activeTab === 'Doctor' && (
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Hospital Name</label>
@@ -290,7 +330,6 @@ export default function ReferralsPage() {
                                             </div>
                                         )}
 
-                                        {/* SPEC & COMMISSION ROW (HIDDEN FOR OUTSOURCE) */}
                                         {activeTab !== 'Outsource' && (
                                             <div className="grid grid-cols-2 gap-3">
                                                 <div>
@@ -304,7 +343,6 @@ export default function ReferralsPage() {
                                             </div>
                                         )}
 
-                                        {/* ADDRESS */}
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">{currentUI.locLabel}</label>
                                             <input type="text" value={formData.clinicName} onChange={e => setFormData({...formData, clinicName: e.target.value})} placeholder="Full Address" className="w-full h-9 border border-slate-300 rounded-md px-3 text-xs focus:border-[#9575cd] outline-none" />
@@ -334,10 +372,8 @@ export default function ReferralsPage() {
                 </div>
             </header>
 
-            {/* TABLE LIST */}
             <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col z-10 relative">
                 <div className="overflow-x-auto flex-1 custom-scrollbar">
-                    {/* 🚨 REPLACED TABLE SPINNER WITH MUSIC BAR */}
                     {isLoading ? (
                         <div className="h-full flex items-center justify-center">
                             <MusicBarLoader text={`Loading ${activeTab === 'Outsource' ? 'Centers' : activeTab}s...`} />
@@ -353,7 +389,6 @@ export default function ReferralsPage() {
                                 <tr>
                                     <th className="py-3 px-6 font-bold uppercase tracking-wider text-[11px]">{currentUI.nameLabel}</th>
                                     
-                                    {/* DYNAMIC COLUMNS based on tab */}
                                     {activeTab === 'Doctor' && <th className="py-3 px-6 font-bold uppercase tracking-wider text-[11px]">Specialization</th>}
                                     {activeTab === 'Doctor' && <th className="py-3 px-6 font-bold uppercase tracking-wider text-[11px]">Hospital / Clinic</th>}
                                     
@@ -364,7 +399,6 @@ export default function ReferralsPage() {
 
                                     <th className="py-3 px-6 font-bold uppercase tracking-wider text-[11px]">Contact Info</th>
                                     
-                                    {/* HIDDEN FOR OUTSOURCE */}
                                     {activeTab !== 'Outsource' && <th className="py-3 px-4 font-bold uppercase tracking-wider text-[11px] text-center bg-purple-50/50">Comm. %</th>}
                                     
                                     <th className="py-3 px-6 font-bold uppercase tracking-wider text-[11px] text-center">Status</th>
@@ -375,7 +409,6 @@ export default function ReferralsPage() {
                                 {filteredReferrals.map(ref => (
                                     <tr key={ref.id} className="hover:bg-slate-50/50 transition-colors group">
                                         
-                                        {/* DYNAMIC NAME & DEGREE */}
                                         <td className="py-3 px-6">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
@@ -389,7 +422,6 @@ export default function ReferralsPage() {
                                             </div>
                                         </td>
                                         
-                                        {/* DOCTOR VIEW */}
                                         {activeTab === 'Doctor' && (
                                             <td className="py-3 px-6">
                                                 <span className="text-sm text-slate-600 font-medium">{ref.specialization || '-'}</span>
@@ -405,7 +437,6 @@ export default function ReferralsPage() {
                                             </td>
                                         )}
 
-                                        {/* HOSPITAL / LAB VIEW */}
                                         {(activeTab === 'Hospital' || activeTab === 'Lab') && (
                                             <td className="py-3 px-6">
                                                 <div className="flex items-center gap-2 text-slate-700 font-bold text-sm">
@@ -415,14 +446,12 @@ export default function ReferralsPage() {
                                             </td>
                                         )}
                                         
-                                        {/* ALL ADDRESS VIEWS */}
                                         {(activeTab === 'Hospital' || activeTab === 'Lab' || activeTab === 'Outsource') && (
                                             <td className="py-3 px-6">
                                                 <span className="text-sm text-slate-600">{ref.clinicName || '-'}</span>
                                             </td>
                                         )}
                                         
-                                        {/* Contact */}
                                         <td className="py-3 px-6">
                                             <div className="flex flex-col gap-1">
                                                 {ref.phone ? (
@@ -436,7 +465,6 @@ export default function ReferralsPage() {
                                             </div>
                                         </td>
 
-                                        {/* COMMISSION PERCENTAGE */}
                                         {activeTab !== 'Outsource' && (
                                             <td className="py-3 px-4 text-center bg-purple-50/30">
                                                 {ref.commission > 0 ? (
@@ -447,22 +475,26 @@ export default function ReferralsPage() {
                                             </td>
                                         )}
                                         
-                                        {/* Status Toggle */}
                                         <td className="py-3 px-6 text-center">
-                                            <button onClick={() => handleToggleStatus(ref.id, ref.isActive)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${ref.isActive ? 'bg-green-500' : 'bg-slate-300'}`}>
-                                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${ref.isActive ? 'translate-x-4' : 'translate-x-1'}`} />
-                                            </button>
+                                            {canPerform(tabsDef.find(t => t.id === activeTab)?.screen!, 'Edit') ? (
+                                                <button onClick={() => handleToggleStatus(ref.id, ref.isActive)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${ref.isActive ? 'bg-green-500' : 'bg-slate-300'}`}>
+                                                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${ref.isActive ? 'translate-x-4' : 'translate-x-1'}`} />
+                                                </button>
+                                            ) : <Lock size={14} className="text-slate-300 mx-auto" />}
                                         </td>
                                         
-                                        {/* Actions */}
                                         <td className="py-3 px-6 text-center border-l border-slate-100">
                                             <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => handleOpenEdit(ref)} className="p-1.5 bg-white border border-slate-200 rounded text-teal-600 hover:bg-teal-50 hover:border-teal-200 shadow-sm" title={`Edit ${activeTab}`}>
-                                                    <Edit size={14} />
-                                                </button>
-                                                <button onClick={() => handleDeleteClick(ref.id)} className="p-1.5 bg-white border border-slate-200 rounded text-rose-600 hover:bg-rose-50 hover:border-rose-200 shadow-sm" title={`Delete ${activeTab}`}>
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                {canPerform(tabsDef.find(t => t.id === activeTab)?.screen!, 'Edit') ? (
+                                                    <button onClick={() => handleOpenEdit(ref)} className="p-1.5 bg-white border border-slate-200 rounded text-teal-600 hover:bg-teal-50 hover:border-teal-200 shadow-sm" title={`Edit ${activeTab}`}>
+                                                        <Edit size={14} />
+                                                    </button>
+                                                ) : <span className="w-6 text-center text-slate-300">-</span>}
+                                                {canPerform(tabsDef.find(t => t.id === activeTab)?.screen!, 'Delete') ? (
+                                                    <button onClick={() => handleDeleteClick(ref.id)} className="p-1.5 bg-white border border-slate-200 rounded text-rose-600 hover:bg-rose-50 hover:border-rose-200 shadow-sm" title={`Delete ${activeTab}`}>
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                ) : <span className="w-6 text-center text-slate-300">-</span>}
                                             </div>
                                         </td>
                                     </tr>

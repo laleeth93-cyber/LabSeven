@@ -6,7 +6,7 @@ import { Database, Plus, Search, Edit, Trash2, Droplet, Box, FlaskConical, Scale
 import { getMasterData, saveMasterData, deleteMasterData, toggleMasterStatus, generateMasterCode } from '@/app/actions/masters';
 import { useSession } from "next-auth/react"; 
 import { getUserPermissions } from '@/app/actions/authorizations';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
+import MusicBarLoader from '@/app/components/MusicBarLoader'; 
 
 type MasterTab = 'specimen' | 'vacutainer' | 'method' | 'uom' | 'operator' | 'multivalue';
 
@@ -52,24 +52,24 @@ export default function MastersPage() {
   const canSee = (screenName: string) => {
       if (orgId === 1) return true;
       if (!permsLoaded) return false;
-      if (permissions.length === 0) return true; // Default allow unmapped to view
+      if (permissions.length === 0) return true; 
       return permissions.some(p => p.module === screenName && p.action === 'Access');
   };
 
-  // 🚨 ACTION-LEVEL GATEKEEPER
   const canPerform = (action: string) => {
       if (orgId === 1 || userRole.toLowerCase().includes('admin')) return true;
-      if (permissions.length === 0) return true; // Default allow unmapped
+      if (permissions.length === 0) return true; 
       const activeScreen = tabs.find(t => t.id === safeActiveTab)?.screen;
       return permissions.some(p => p.module === activeScreen && p.action === action);
   };
 
+  // 🚨 UPDATED SCREEN NAMES TO MATCH PERMISSIONS MATRIX
   const tabs = [
-      { id: 'specimen', label: 'Specimen', icon: <Droplet size={16}/>, screen: 'Specimens' },
+      { id: 'specimen', label: 'Specimen', icon: <Droplet size={16}/>, screen: 'Specimen' },
       { id: 'vacutainer', label: 'Vacutainer', icon: <Box size={16}/>, screen: 'Vacutainers' },
-      { id: 'method', label: 'Method', icon: <FlaskConical size={16}/>, screen: 'Methods' },
+      { id: 'method', label: 'Method', icon: <FlaskConical size={16}/>, screen: 'Method' },
       { id: 'uom', label: 'UOM', icon: <Scale size={16}/>, screen: 'UOM' },
-      { id: 'operator', label: 'Operator', icon: <Calculator size={16}/>, screen: 'Operators' },
+      { id: 'operator', label: 'Operator', icon: <Calculator size={16}/>, screen: 'Operator' },
       { id: 'multivalue', label: 'Multivalues', icon: <List size={16}/>, screen: 'Multivalues' },
   ];
 
@@ -160,7 +160,6 @@ export default function MastersPage() {
     (item.code && item.code.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // 🚨 REPLACED AUTH SPINNER WITH MUSIC BAR
   if (!permsLoaded) return (
       <div className="w-full h-full flex items-center justify-center bg-slate-50">
           <MusicBarLoader text="Authenticating..." />
@@ -180,7 +179,6 @@ export default function MastersPage() {
   return (
     <div className="flex flex-col w-full h-full bg-slate-50 p-6 font-sans relative">
       
-      {/* ADD / EDIT MODAL - Left untouched as it relies on Add/Edit clicks to open */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -232,7 +230,6 @@ export default function MastersPage() {
         </div>
       )}
 
-      {/* --- DELETE CONFIRMATION MODAL --- */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center animate-in zoom-in-95 duration-200">
@@ -251,7 +248,6 @@ export default function MastersPage() {
 
       <div className="h-16 bg-white border border-slate-200 rounded-t-xl flex items-center justify-between px-6 shrink-0">
           <div className="flex items-center gap-2 text-slate-800"><Database className="text-[#9575cd]" size={20}/><h1 className="text-lg font-bold tracking-tight">Lab Masters</h1></div>
-          {/* 🚨 SECURED: ADD BUTTON */}
           {canPerform('Add') && (
             <button onClick={handleAdd} className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-4 py-2 rounded-md text-xs font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"><Plus size={16} /> ADD NEW</button>
           )}
@@ -290,7 +286,6 @@ export default function MastersPage() {
 
           <div className="flex-1 overflow-y-auto relative">
              {isLoading ? (
-                // 🚨 REPLACED TABLE SPINNER WITH MUSIC BAR
                 <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
                     <MusicBarLoader text={`Loading ${safeActiveTab}s...`} />
                 </div>
@@ -310,14 +305,12 @@ export default function MastersPage() {
                         
                         {['uom', 'operator', 'vacutainer'].includes(safeActiveTab as string) && <div className="flex-1"></div>}
                         
-                        {/* 🚨 SECURED: TOGGLE STATUS (EDIT) */}
                         <div className="w-20 flex justify-center">
                             {canPerform('Edit') ? (
                               <button onClick={() => handleToggleStatus(item.id, item.isActive)} disabled={isPending} className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${item.isActive ? 'bg-green-500' : 'bg-slate-300'}`}><span className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${item.isActive ? 'translate-x-3.5' : 'translate-x-0.5'}`} /></button>
                             ) : <Lock size={14} className="text-slate-300" />}
                         </div>
 
-                        {/* 🚨 SECURED: EDIT & DELETE BUTTONS */}
                         <div className="w-20 flex justify-center gap-2">
                              {canPerform('Edit') ? <button onClick={() => handleEdit(item)} disabled={isPending} className="text-slate-400 hover:text-[#9575cd] transition-colors"><Edit size={14}/></button> : <span className="w-6 text-center text-slate-300">-</span>}
                              {canPerform('Delete') ? <button onClick={() => handleDeleteClick(item.id)} disabled={isPending} className="text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={14}/></button> : <span className="w-6 text-center text-slate-300">-</span>}
