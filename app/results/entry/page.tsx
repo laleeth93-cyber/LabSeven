@@ -7,13 +7,16 @@ import WorklistPanel from './components/WorklistPanel';
 import ResultEntryForm from './components/ResultEntryForm';
 import DateRangeFilter from './components/DateRangeFilter';
 import EntryDateTimePicker from './components/EntryDateTimePicker'; 
-import { Loader2, Printer, Search, Users, FileEdit } from 'lucide-react';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
+import { Loader2, Printer, Search, Users, FileEdit, Lock } from 'lucide-react';
+import MusicBarLoader from '@/app/components/MusicBarLoader';
+
+// 🚨 1. IMPORT FAST HOOK
+import { usePermissions } from '@/app/context/PermissionContext';
 
 export default function ResultEntryPage() {
-  // ==========================================
-  // MOBILE UI STATE
-  // ==========================================
+  // 🚨 2. USE HOOK FOR INSTANT RBAC
+  const { orgId, permissions, userRole, permsLoaded } = usePermissions();
+
   const [activeMobileTab, setActiveMobileTab] = useState<'worklist' | 'form'>('worklist');
 
   const [bills, setBills] = useState<any[]>([]);
@@ -27,14 +30,12 @@ export default function ResultEntryPage() {
   const [activeTab, setActiveTab] = useState('Pending'); 
   const [searchTerm, setSearchTerm] = useState('');
   
-  // 1. Date Filter State (For searching worklist)
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>({
     from: new Date(), 
     to: new Date(),
     label: 'Today'
   });
 
-  // --- 2. Entry Date/Time Logic (Live Clock) ---
   const [isManualTime, setIsManualTime] = useState(false);
   
   const getLocalISOString = () => {
@@ -57,20 +58,18 @@ export default function ResultEntryPage() {
       setIsManualTime(true); 
       setEntryDateTime(newDate);
   };
-  // ---------------------------------------------
 
-
-  // 1. Load Worklist
-  useEffect(() => { loadWorklist(); }, []);
-
-  const loadWorklist = async () => {
-    setIsLoading(true);
-    const res = await getPendingWorklist(); 
-    if (res.success) setBills(res.data || []);
-    setIsLoading(false);
+  const canSee = (screenName: string) => {
+      if (orgId === 1) return true;
+      if (!permsLoaded) return false;
+      if (permissions.length === 0) return true; 
+      return permissions.some(p => p.module === screenName && p.action === 'Access');
   };
 
-  // 2. Fetch Bill Details
+  useEffect(() => { 
+      if(permsLoaded && canSee('Result Entry')) loadWorklist(); 
+  }, [permsLoaded]);
+
   useEffect(() => {
     if (selectedBillId) {
       fetchBillDetails(selectedBillId);
@@ -80,29 +79,58 @@ export default function ResultEntryPage() {
     }
   }, [selectedBillId]);
 
+  // 🚨 3. BULLETPROOF LOADING
+  const loadWorklist = async () => {
+    setIsLoading(true);
+    try {
+        const res = await getPendingWorklist(); 
+        if (res && res.success) {
+            setBills(res.data || []);
+        } else {
+            setBills([]);
+        }
+    } catch (error) {
+        console.error("Failed to load worklist", error);
+        setBills([]);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  // 🚨 3. BULLETPROOF LOADING
   const fetchBillDetails = async (billId: number) => {
     setIsBillLoading(true);
-    const res = await getResultEntryData(billId);
-    if (res.success) {
-        setSelectedBillData(res.data);
-        
-        if (res.data && res.data.items) {
-            const items = res.data.items;
-            let idsToSelect: number[] = [];
+    try {
+        const res = await getResultEntryData(billId);
+        if (res && res.success && res.data) {
+            setSelectedBillData(res.data);
+            
+            if (res.data.items) {
+                const items = res.data.items;
+                let idsToSelect: number[] = [];
 
-            if (activeTab === 'Pending') {
-                idsToSelect = items.filter((i: any) => i.status === 'Pending').map((i: any) => i.id);
-            } else if (activeTab === 'Partial') {
-                idsToSelect = items.filter((i: any) => i.status === 'Entered').map((i: any) => i.id);
-            } else if (activeTab === 'Completed') {
-                idsToSelect = items.filter((i: any) => i.status === 'Approved' || i.status === 'Printed').map((i: any) => i.id);
-            } else {
-                idsToSelect = items.map((i: any) => i.id);
+                if (activeTab === 'Pending') {
+                    idsToSelect = items.filter((i: any) => i.status === 'Pending').map((i: any) => i.id);
+                } else if (activeTab === 'Partial') {
+                    idsToSelect = items.filter((i: any) => i.status === 'Entered').map((i: any) => i.id);
+                } else if (activeTab === 'Completed') {
+                    idsToSelect = items.filter((i: any) => i.status === 'Approved' || i.status === 'Printed').map((i: any) => i.id);
+                } else {
+                    idsToSelect = items.map((i: any) => i.id);
+                }
+                setSelectedTestIds(idsToSelect);
             }
-            setSelectedTestIds(idsToSelect);
+        } else {
+            setSelectedBillData(null);
+            setSelectedTestIds([]);
         }
+    } catch (error) {
+        console.error("Failed to fetch bill details", error);
+        setSelectedBillData(null);
+        setSelectedTestIds([]);
+    } finally {
+        setIsBillLoading(false);
     }
-    setIsBillLoading(false);
   };
 
   const handleSaveSuccess = async () => {
@@ -188,7 +216,20 @@ export default function ResultEntryPage() {
     ];
   }, [bills]);
 
-  // 🚨 REPLACED SPINNER WITH MUSIC BAR
+  if (!permsLoaded) return (
+      <div className="h-screen flex items-center justify-center bg-[#f1f5f9]">
+          <MusicBarLoader text="Authenticating..." />
+      </div>
+  );
+
+  if (!canSee('Result Entry')) return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#f1f5f9] p-6 text-center">
+          <Lock className="text-slate-300 mb-4" size={48} />
+          <h2 className="text-xl font-bold text-slate-700">Access Restricted</h2>
+          <p className="text-slate-500 mt-2 text-sm max-w-sm">You do not have permission to view the Result Entry module.</p>
+      </div>
+  );
+
   if (isLoading) return (
       <div className="h-screen flex items-center justify-center bg-[#f1f5f9]">
           <MusicBarLoader text="Loading Worklist..." />
@@ -199,7 +240,6 @@ export default function ResultEntryPage() {
     <div className="h-full w-full flex flex-col font-sans bg-[#f1f5f9] overflow-hidden">
       <header className="bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm">
         
-        {/* ROW 1: TITLE & SEARCH */}
         <div className="px-4 md:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h1 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
                 Result Entry
@@ -217,7 +257,6 @@ export default function ResultEntryPage() {
             </div>
         </div>
 
-        {/* ROW 2: TABS & CONTROLS */}
         <div className="px-4 md:px-6 pb-0 flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-t border-slate-50 pt-2 md:pt-3">
             
             <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar w-full xl:w-auto pb-1">
@@ -255,7 +294,6 @@ export default function ResultEntryPage() {
         </div>
       </header>
 
-      {/* --- MOBILE TABS NAVIGATION --- */}
       <div className="md:hidden flex px-2 pt-2 bg-white border-b border-slate-200 shrink-0 gap-2">
          <button 
             onClick={() => setActiveMobileTab('worklist')}
@@ -274,7 +312,6 @@ export default function ResultEntryPage() {
          </button>
       </div>
 
-      {/* MAIN CONTENT AREA */}
       <div className="flex flex-1 overflow-hidden p-2 md:p-4 flex-col md:flex-row gap-0 md:gap-4 relative">
         
         <div className={`w-full md:w-[40%] h-full bg-white rounded-lg md:rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-col ${activeMobileTab === 'worklist' ? 'flex' : 'hidden md:flex'}`}>
@@ -292,7 +329,6 @@ export default function ResultEntryPage() {
             {selectedBillId ? (
                isBillLoading ? (
                  <div className="flex-1 flex items-center justify-center">
-                     {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
                      <MusicBarLoader text="Loading Test Data..." />
                  </div>
                ) : (

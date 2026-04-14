@@ -2,9 +2,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Download, Calendar, ArrowRight, ChevronDown, Check, Filter } from 'lucide-react';
+import { Search, Download, Calendar, ArrowRight, ChevronDown, Check, Filter, Lock } from 'lucide-react';
 import ResultsTable from './components/ResultsTable';
 import FilterSidebar from './components/FilterSidebar';
+import MusicBarLoader from '@/app/components/MusicBarLoader';
+
+// 🚨 1. IMPORT FAST HOOK
+import { usePermissions } from '@/app/context/PermissionContext';
 
 // --- MOCK DATA ---
 const MOCK_DATA = [
@@ -15,11 +19,13 @@ const MOCK_DATA = [
 ];
 
 export default function ResultsDashboard() {
+  // 🚨 2. USE HOOK FOR INSTANT RBAC
+  const { orgId, permissions, userRole, permsLoaded } = usePermissions();
+
   const [activeTab, setActiveTab] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Grouped Filter State for cleaner code
   const [filters, setFilters] = useState({
     test: '', machine: '', b2b: '', doctor: '', hospital: '', centre: '', urgent: false, sortOrder: 'desc'
   });
@@ -31,7 +37,6 @@ export default function ResultsDashboard() {
     setShowFilters(false);
   };
 
-  // Date Logic
   const getLocalInputDate = (date: Date = new Date()) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
@@ -55,6 +60,13 @@ export default function ResultsDashboard() {
   useEffect(() => {
     if (showDatePopover) { setTempFromDate(fromDate); setTempToDate(toDate); }
   }, [showDatePopover, fromDate, toDate]);
+
+  const canSee = (screenName: string) => {
+      if (orgId === 1) return true;
+      if (!permsLoaded) return false;
+      if (permissions.length === 0) return true; 
+      return permissions.some(p => p.module === screenName && p.action === 'Access');
+  };
 
   const tabs = [
     { label: 'All', count: 20, color: 'bg-[#9575cd]' }, 
@@ -86,7 +98,6 @@ export default function ResultsDashboard() {
     setFromDate(todayStr); setToDate(todayStr); setTempFromDate(todayStr); setTempToDate(todayStr);
   };
 
-  // Data Processing
   const filteredData = MOCK_DATA.filter(item => {
     const matchesTab = activeTab === 'All' || item.status === activeTab;
     const matchesSearch = item.patientName.toLowerCase().includes(searchTerm.toLowerCase()) || item.id.includes(searchTerm) || item.barcode.includes(searchTerm);
@@ -107,6 +118,20 @@ export default function ResultsDashboard() {
 
   const sortedData = [...filteredData].sort((a, b) => filters.sortOrder === 'asc' ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id));
   const allTestNames = Array.from(new Set(MOCK_DATA.flatMap(item => item.tests.map(t => t.name))));
+
+  if (!permsLoaded) return (
+      <div className="w-full h-full flex items-center justify-center bg-[#eceff1]">
+          <MusicBarLoader text="Authenticating..." />
+      </div>
+  );
+
+  if (!canSee('Result Entry')) return (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-[#eceff1] p-6 text-center">
+          <Lock className="text-slate-300 mb-4" size={48} />
+          <h2 className="text-xl font-bold text-slate-700">Access Restricted</h2>
+          <p className="text-slate-500 mt-2 text-sm max-w-sm">You do not have permission to view the Results module.</p>
+      </div>
+  );
 
   return (
     <div className="h-full flex flex-col relative bg-[#eceff1]">

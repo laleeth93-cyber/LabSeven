@@ -3,13 +3,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, AlertCircle, Trash2 } from 'lucide-react';
+import { Loader2, AlertCircle, Trash2, Lock } from 'lucide-react';
 
-// --- COMPONENTS ---
 import ListTable from './components/ListTable';
 import ListHeader from './components/ListHeader'; 
-
-// --- MODALS ---
 import BarcodeModal from '@/app/components/BarcodeModal';
 import PatientReportModal from './components/PatientReportModal';
 import CultureReportModal from './components/CultureReportModal';
@@ -19,27 +16,24 @@ import RefundModal from './components/RefundModal';
 import ClearDueModal from './components/ClearDueModal'; 
 import InvoiceModal from '@/app/registration/InvoiceModal';
 import EditPatientModal from './components/EditPatientModal';
+import MusicBarLoader from '@/app/components/MusicBarLoader';
 
-// --- API ACTIONS ---
+// 🚨 1. IMPORT FAST HOOK
+import { usePermissions } from '@/app/context/PermissionContext';
 import { getPendingWorklist } from '@/app/actions/result-entry'; 
 import { deleteBill } from '@/app/actions/patient-list';
 
 export default function PatientListPage() {
     const router = useRouter();
 
-    // ==========================================
-    // STATE
-    // ==========================================
+    // 🚨 2. USE HOOK FOR INSTANT RBAC
+    const { orgId, permissions, userRole, permsLoaded } = usePermissions();
+
     const [bills, setBills] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    
-    // 🚨 NEW: PAGINATION STATE
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
 
-    // ==========================================
-    // LIST HEADER STATES 
-    // ==========================================
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
     const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
@@ -54,6 +48,19 @@ export default function PatientListPage() {
     });
 
     const filtersList = ['All', 'Pending', 'Partial', 'Completed', 'Printed'];
+
+    const canSee = (screenName: string) => {
+        if (orgId === 1) return true;
+        if (!permsLoaded) return false;
+        if (permissions.length === 0) return true; 
+        return permissions.some(p => p.module === screenName && p.action === 'Access');
+    };
+
+    const canPerform = (action: string) => {
+        if (orgId === 1 || userRole.toLowerCase().includes('admin')) return true;
+        if (permissions.length === 0) return true; 
+        return permissions.some(p => p.module === 'Patient List' && p.action === action);
+    };
 
     useEffect(() => {
         const savedView = localStorage.getItem('patientListViewPref');
@@ -84,9 +91,6 @@ export default function PatientListPage() {
         return Array.from(docs);
     }, [bills]);
 
-    // ==========================================
-    // MODAL STATES
-    // ==========================================
     const [selectedBill, setSelectedBill] = useState<any>(null);
     const [isBarcodeOpen, setIsBarcodeOpen] = useState(false);
     const [isPatientReportOpen, setIsPatientReportOpen] = useState(false);
@@ -96,38 +100,33 @@ export default function PatientListPage() {
     const [isRefundOpen, setIsRefundOpen] = useState(false);
     const [isClearDueOpen, setIsClearDueOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false); 
-    
     const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
     const [invoiceData, setInvoiceData] = useState<any>(null);
-
-    // Delete Modal States
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [billToDelete, setBillToDelete] = useState<any>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // ==========================================
-    // DATA FETCHING
-    // ==========================================
     useEffect(() => {
-        fetchBills();
-    }, [dateRange]); // Trigger fetch only on date change, not page change (client-side pagination)
+        if(permsLoaded && canSee('Patient List')) fetchBills();
+    }, [dateRange, permsLoaded]);
 
-    // 🚨 NEW: Reset page to 1 if user searches or filters
     useEffect(() => {
         setCurrentPage(1);
     }, [searchQuery, activeFilter, advFilters, sortOrder, dateRange]);
 
+    // 🚨 3. BULLETPROOF LOADING
     const fetchBills = async () => {
         setIsLoading(true);
         try {
             const res = await getPendingWorklist(); 
-            if (res.success && res.data) {
+            if (res && res.success && res.data) {
                 setBills(res.data);
             } else {
                 setBills([]);
             }
         } catch (error) {
             console.error("Failed to fetch bills", error);
+            setBills([]);
         } finally {
             setIsLoading(false);
         }
@@ -143,9 +142,6 @@ export default function PatientListPage() {
         return doc.trim() || 'Self';
     };
 
-    // ==========================================
-    // FILTERING & SORTING LOGIC
-    // ==========================================
     const filteredBills = useMemo(() => {
         let filtered = [...bills];
 
@@ -212,15 +208,11 @@ export default function PatientListPage() {
         return filtered;
     }, [bills, searchQuery, activeFilter, advFilters, sortOrder, dateRange]);
 
-    // 🚨 NEW: PAGINATION CALCULATIONS
     const totalItems = filteredBills.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const paginatedBills = filteredBills.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-    // ==========================================
-    // ACTION HANDLERS
-    // ==========================================
     const handlePrintBill = (bill: any) => {
         const fullName = `${bill.patient?.designation || ''} ${bill.patient?.firstName || ''} ${bill.patient?.lastName || ''}`.trim();
         const ageString = `${bill.patient?.ageY || 0} Y / ${bill.patient?.gender || 'Unknown'}`;
@@ -256,12 +248,15 @@ export default function PatientListPage() {
     const handleOpenRefund = (bill: any) => { setSelectedBill(bill); setIsRefundOpen(true); };
     const handleOpenAudit = (bill: any) => { setSelectedBill(bill); setIsAuditOpen(true); };
     
+    // 🚨 4. SECURE EDIT & DELETE ACTIONS
     const handleEditBill = (bill: any) => {
+        if (!canPerform('Edit')) return alert("You do not have permission to edit patient records.");
         setSelectedBill(bill);
         setIsEditOpen(true);
     };
     
     const handleDeleteBill = (bill: any) => {
+        if (!canPerform('Delete')) return alert("You do not have permission to delete patient records.");
         setBillToDelete(bill);
         setIsDeleteModalOpen(true);
     };
@@ -286,9 +281,22 @@ export default function PatientListPage() {
         }
     };
 
+    if (!permsLoaded) return (
+        <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+            <MusicBarLoader text="Authenticating..." />
+        </div>
+    );
+
+    if (!canSee('Patient List')) return (
+        <div className="w-full h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+            <Lock className="text-slate-300 mb-4" size={48} />
+            <h2 className="text-xl font-bold text-slate-700">Access Restricted</h2>
+            <p className="text-slate-500 mt-2 text-sm max-w-sm">You do not have permission to view the Patient List.</p>
+        </div>
+    );
+
     return (
         <React.Fragment>
-            {/* DELETE MODAL */}
             {isDeleteModalOpen && billToDelete && (
                 <div className="fixed inset-0 z-[99999] bg-slate-900/60 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
@@ -352,7 +360,6 @@ export default function PatientListPage() {
                 />
             )}
 
-            {/* MAIN PAGE LAYOUT */}
             <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden relative">
                 
                 <div className="px-4 md:px-6 pt-4 pb-2 shrink-0 w-full max-w-full z-20">
@@ -367,7 +374,6 @@ export default function PatientListPage() {
 
                 <div className="flex-1 overflow-hidden flex flex-col relative w-full pt-1">
                     <ListTable 
-                        // 🚨 PASSED PAGINATED BILLS INSTEAD OF FILTERED BILLS
                         bills={paginatedBills} isLoading={isLoading} viewMode={viewMode}
                         currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={setCurrentPage}
                         onPrintBill={handlePrintBill} onPrintBarcode={handlePrintBarcode} onOpenReport={handleOpenReport}
