@@ -6,12 +6,9 @@ import Link from 'next/link';
 import { Plus, Trash2, Search, Filter, Loader2, FileText, Settings, Activity, Type, Edit, Check, X, ChevronDown, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { getParameters, deleteParameter, updateParameterStatus } from '@/app/actions/parameters';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
-
-// 🚨 1. IMPORT FAST HOOK
 import { usePermissions } from '@/app/context/PermissionContext';
 
 export default function ParametersListPage() {
-  // 🚨 2. USE HOOK FOR INSTANT RBAC
   const { orgId, permissions, userRole, permsLoaded } = usePermissions();
 
   const [parameters, setParameters] = useState<any[]>([]);
@@ -55,11 +52,22 @@ export default function ParametersListPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // 🚨 FIXED: Bulletproof loading state
   const loadParameters = async () => {
     setIsLoading(true);
-    const res = await getParameters();
-    if (res.success) setParameters(res.data || []);
-    setIsLoading(false);
+    try {
+        const res = await getParameters();
+        if (res && res.success) {
+            setParameters(res.data || []);
+        } else {
+            setParameters([]);
+        }
+    } catch (error) {
+        console.error("Vercel Timeout or Database Error:", error);
+        setParameters([]);
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const handleDeleteClick = (id: number) => {

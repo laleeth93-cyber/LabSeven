@@ -11,12 +11,9 @@ import {
   generateDepartmentCode 
 } from '@/app/actions/department';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
-
-// 🚨 1. IMPORT FAST HOOK
 import { usePermissions } from '@/app/context/PermissionContext';
 
 export default function DepartmentPage() {
-  // 🚨 2. USE HOOK FOR INSTANT RBAC
   const { orgId, permissions, userRole, permsLoaded } = usePermissions();
 
   const [departments, setDepartments] = useState<any[]>([]);
@@ -41,11 +38,22 @@ export default function DepartmentPage() {
     loadData();
   }, []);
 
+  // 🚨 FIXED: Bulletproof loading state
   const loadData = async () => {
     setIsLoading(true);
-    const res = await getDepartments();
-    if (res.success) setDepartments(res.data);
-    setIsLoading(false);
+    try {
+        const res = await getDepartments();
+        if (res && res.success) {
+            setDepartments(res.data || []);
+        } else {
+            setDepartments([]);
+        }
+    } catch (error) {
+        console.error("Vercel Timeout or Database Error:", error);
+        setDepartments([]);
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const handleAdd = async () => {

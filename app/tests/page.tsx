@@ -7,8 +7,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Plus, Trash2, Search, Filter, Loader2, FileText, FlaskConical, Edit, ChevronDown, LayoutGrid, Archive, MoreHorizontal, Settings, CheckCircle2, Network, Microscope, AlertTriangle, CheckCircle, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getTests, deleteTest, toggleTestStatus } from '@/app/actions/tests';
 import MusicBarLoader from '@/app/components/MusicBarLoader'; 
-
-// 🚨 1. IMPORT OUR FAST NEW HOOK
 import { usePermissions } from '@/app/context/PermissionContext';
 
 import ParametersListPage from '../parameters/page';
@@ -21,7 +19,6 @@ export default function TestsPage() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
 
-  // 🚨 2. USE THE HOOK INSTEAD OF FETCHING FROM DATABASE
   const { orgId, permissions, userRole, permsLoaded } = usePermissions();
   const [activeTab, setActiveTab] = useState('Department');
 
@@ -141,11 +138,22 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // 🚨 FIXED: Bulletproof loading state
   const loadTests = async () => {
     setIsLoading(true);
-    const res = await getTests();
-    if (res.success) setTests(res.data || []);
-    setIsLoading(false);
+    try {
+        const res = await getTests();
+        if (res && res.success) {
+            setTests(res.data || []);
+        } else {
+            setTests([]);
+        }
+    } catch (error) {
+        console.error("Vercel Timeout or Database Error:", error);
+        setTests([]);
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   const handleDeleteClick = (id: number) => {

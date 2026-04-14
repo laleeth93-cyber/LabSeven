@@ -2,12 +2,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-// 🚨 FIXED: Added 'Lock' to the import list!
 import { Package, Search, Settings, Settings2, Loader2, Archive, LayoutGrid, List, Lock } from 'lucide-react';
 import { getPackages } from '@/app/actions/packages';
 import PackageCartModal from './components/PackageCartModal';
 import MusicBarLoader from '@/app/components/MusicBarLoader'; 
-
 import { usePermissions } from '@/app/context/PermissionContext';
 
 export default function PackagesPage() {
@@ -26,15 +24,22 @@ export default function PackagesPage() {
         return permissions.some(p => p.module === 'Packages' && p.action === action);
     };
 
+    // 🚨 FIXED: Bulletproof loading state
     const loadPackages = async () => {
         setIsLoading(true);
-        const res = await getPackages();
-        if (res.success && res.data) {
-            setPackages(res.data);
-        } else {
+        try {
+            const res = await getPackages();
+            if (res && res.success && res.data) {
+                setPackages(res.data);
+            } else {
+                setPackages([]);
+            }
+        } catch (error) {
+            console.error("Vercel Timeout or Database Error:", error);
             setPackages([]);
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     useEffect(() => {
