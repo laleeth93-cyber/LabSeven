@@ -6,19 +6,14 @@ import { Search, Plus, Edit, Trash2, Loader2, Building2, Phone, MapPin, Stethosc
 import { getReferrals, saveReferral, deleteReferral, toggleReferralStatus } from '@/app/actions/referral';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 
-// IMPORT SESSION & PERMISSIONS
-import { useSession } from "next-auth/react"; 
-import { getUserPermissions } from '@/app/actions/authorizations';
+// 🚨 1. IMPORT OUR NEW HOOK
+import { usePermissions } from '@/app/context/PermissionContext';
 
 type ReferralType = 'Doctor' | 'Lab' | 'Hospital' | 'Outsource';
 
 export default function ReferralsPage() {
-    // RBAC GATING LOGIC
-    const { data: session } = useSession();
-    const orgId = (session?.user as any)?.orgId; 
-    const [permissions, setPermissions] = useState<any[]>([]);
-    const [userRole, setUserRole] = useState<string>('');
-    const [permsLoaded, setPermsLoaded] = useState(false);
+    // 🚨 2. USE THE FAST HOOK!
+    const { orgId, permissions, userRole, permsLoaded } = usePermissions();
 
     const [activeTab, setActiveTab] = useState<ReferralType>('Doctor');
 
@@ -38,24 +33,6 @@ export default function ReferralsPage() {
     const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
-
-    // FETCH PERMISSIONS
-    useEffect(() => {
-        const fetchPerms = async () => {
-            if (session?.user) {
-                const userId = (session.user as any).id;
-                if (userId) {
-                    const res = await getUserPermissions(parseInt(userId));
-                    if (res.success) {
-                        setPermissions(res.data || []);
-                        setUserRole(res.roleName || '');
-                    }
-                }
-            }
-            setPermsLoaded(true);
-        };
-        fetchPerms();
-    }, [session]);
 
     // SCREEN LEVEL GATING
     const canSee = (screenName: string) => {

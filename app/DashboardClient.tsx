@@ -8,8 +8,9 @@ import DashboardOverview from '@/app/components/DashboardOverview';
 import NewRegistration from '@/app/registration/NewRegistration';
 import CustomizeRegistrationModal from '@/app/registration/CustomizeRegistrationModal';
 import QuotationModal from '@/app/components/QuotationModal';
-import { useSession } from "next-auth/react"; 
-import { getUserPermissions } from '@/app/actions/authorizations';
+
+// 🚨 1. IMPORT OUR NEW HOOK
+import { usePermissions } from '@/app/context/PermissionContext';
 import MusicBarLoader from '@/app/components/MusicBarLoader'; 
 
 export interface FieldData {
@@ -53,34 +54,14 @@ const initialFieldsData: FieldData[] = [
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
   
-  const orgId = (session?.user as any)?.orgId;
-  const [permissions, setPermissions] = useState<any[]>([]);
-  const [userRole, setUserRole] = useState<string>('');
-  const [permsLoaded, setPermsLoaded] = useState(false);
+  // 🚨 2. USE THE NEW FAST HOOK INSTEAD OF FETCHING MANUALLY
+  const { orgId, permissions, userRole, permsLoaded } = usePermissions();
 
   const [activeView, setActiveView] = useState('loading');
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
   const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
   const [registrationFields, setRegistrationFields] = useState<FieldData[]>(initialFieldsData);
-
-  useEffect(() => {
-    const fetchPerms = async () => {
-        if (session?.user) {
-            const userId = (session.user as any).id;
-            if (userId) {
-                const res = await getUserPermissions(parseInt(userId));
-                if (res.success) {
-                    setPermissions(res.data || []);
-                    setUserRole(res.roleName || '');
-                }
-            }
-        }
-        setPermsLoaded(true);
-    };
-    fetchPerms();
-  }, [session]);
 
   const canSee = (screenNames: string[]) => {
       if (orgId === 1) return true; // Super Admins bypass
@@ -114,7 +95,6 @@ function DashboardContent() {
         else if (canSee(['Registration'])) router.replace('/?view=registration');
         else if (canSee(['Result Entry'])) router.replace('/results/entry');
         else if (canSee(['Patient List'])) router.replace('/list');
-        // 🚨 UPDATED TO MATCH NEW PERMISSION NAMES
         else if (canSee(['Departments', 'Test Library', 'Formats', 'Parameters', 'Packages'])) router.replace('/tests');
         else if (canSee(['Specimen', 'Vacutainers', 'Method', 'UOM', 'Operator', 'Multivalues'])) router.replace('/masters');
         else if (canSee(['Doctors', 'Partner Labs', 'Hospitals', 'Outsourced Labs'])) router.replace('/referrals');
@@ -148,9 +128,6 @@ function DashboardContent() {
     }
   }, [registrationFields]);
 
-
-  // --- RENDER STATES ---
-  
   if (!permsLoaded || activeView === 'loading') {
       return (
           <div className="flex h-full w-full items-center justify-center">

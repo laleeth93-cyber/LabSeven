@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation'; 
 import { Plus, Trash2, Search, Filter, Loader2, FileText, FlaskConical, Edit, ChevronDown, LayoutGrid, Archive, MoreHorizontal, Settings, CheckCircle2, Network, Microscope, AlertTriangle, CheckCircle, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getTests, deleteTest, toggleTestStatus } from '@/app/actions/tests';
-import { useSession } from "next-auth/react"; 
-import { getUserPermissions } from '@/app/actions/authorizations';
 import MusicBarLoader from '@/app/components/MusicBarLoader'; 
+
+// 🚨 1. IMPORT OUR FAST NEW HOOK
+import { usePermissions } from '@/app/context/PermissionContext';
 
 import ParametersListPage from '../parameters/page';
 import TestFormatsPage from './formats/page';
@@ -20,29 +21,9 @@ export default function TestsPage() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
 
-  const { data: session } = useSession();
-  const orgId = (session?.user as any)?.orgId; 
-  const [permissions, setPermissions] = useState<any[]>([]);
-  const [userRole, setUserRole] = useState<string>('');
-  const [permsLoaded, setPermsLoaded] = useState(false);
+  // 🚨 2. USE THE HOOK INSTEAD OF FETCHING FROM DATABASE
+  const { orgId, permissions, userRole, permsLoaded } = usePermissions();
   const [activeTab, setActiveTab] = useState('Department');
-
-  useEffect(() => {
-      const fetchPerms = async () => {
-          if (session?.user) {
-              const userId = (session.user as any).id;
-              if (userId) {
-                  const res = await getUserPermissions(parseInt(userId));
-                  if (res.success) {
-                      setPermissions(res.data || []);
-                      setUserRole(res.roleName || '');
-                  }
-              }
-          }
-          setPermsLoaded(true);
-      };
-      fetchPerms();
-  }, [session]);
 
   const canSee = (screenName: string) => {
       if (orgId === 1) return true;
@@ -57,7 +38,6 @@ export default function TestsPage() {
       return permissions.some(p => p.module === screenName && p.action === action);
   };
 
-  // 🚨 UPDATED SCREEN NAMES TO MATCH PERMISSIONS MATRIX
   const tabs = [
     { label: 'Department', icon: <Network size={14}/>, color: 'bg-teal-500', screen: 'Departments' },
     { label: 'Test Library', icon: <FlaskConical size={14}/>, color: 'bg-blue-500', screen: 'Test Library' },

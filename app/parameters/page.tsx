@@ -3,39 +3,44 @@
 
 import React, { useEffect, useState, useTransition, useRef } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Search, Filter, Loader2, FileText, Settings, Activity, Type, Edit, Check, X, ChevronDown, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Search, Filter, Loader2, FileText, Settings, Activity, Type, Edit, Check, X, ChevronDown, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { getParameters, deleteParameter, updateParameterStatus } from '@/app/actions/parameters';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
+import MusicBarLoader from '@/app/components/MusicBarLoader';
+
+// 🚨 1. IMPORT FAST HOOK
+import { usePermissions } from '@/app/context/PermissionContext';
 
 export default function ParametersListPage() {
+  // 🚨 2. USE HOOK FOR INSTANT RBAC
+  const { orgId, permissions, userRole, permsLoaded } = usePermissions();
+
   const [parameters, setParameters] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // --- FILTER STATES ---
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState('All'); 
   const [filterType, setFilterType] = useState('All');     
   
-  // 🚨 NEW: PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
   const [isPending, startTransition] = useTransition();
   const filterRef = useRef<HTMLDivElement>(null);
-
-  // --- DELETE CONFIRMATION STATE ---
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-
-  // --- SUCCESS POPUP STATE ---
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  const canPerform = (action: string) => {
+    if (orgId === 1 || userRole.toLowerCase().includes('admin')) return true;
+    if (permissions.length === 0) return true; 
+    return permissions.some(p => p.module === 'Parameters' && p.action === action);
+  };
 
   useEffect(() => {
     loadParameters();
   }, []);
 
-  // 🚨 NEW: Reset page to 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus, filterType]);
@@ -47,17 +52,13 @@ export default function ParametersListPage() {
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const loadParameters = async () => {
     setIsLoading(true);
     const res = await getParameters();
-    if (res.success) {
-      setParameters(res.data || []);
-    }
+    if (res.success) setParameters(res.data || []);
     setIsLoading(false);
   };
 
@@ -71,7 +72,6 @@ export default function ParametersListPage() {
     startTransition(async () => {
       await deleteParameter(deleteConfirmId);
       setDeleteConfirmId(null);
-      
       setSuccessMessage("Deleted Successfully!");
       setShowSuccessPopup(true);
       setTimeout(() => { setShowSuccessPopup(false); loadParameters(); }, 1500);
@@ -80,11 +80,8 @@ export default function ParametersListPage() {
 
   const handleToggleStatus = (id: number, currentStatus: boolean) => {
     const newStatus = !currentStatus;
-    
-    // 1. Optimistic UI update
     setParameters(prev => prev.map(p => p.id === id ? { ...p, isActive: newStatus } : p));
 
-    // 2. Persist to Database
     startTransition(async () => {
        const res = await updateParameterStatus(id, newStatus);
        if (!res.success) {
@@ -120,7 +117,6 @@ export default function ParametersListPage() {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  // 🚨 NEW: PAGINATION CALCULATION
   const totalPages = Math.ceil(filteredParams.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedParams = filteredParams.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -138,11 +134,13 @@ export default function ParametersListPage() {
                  <h1 className="text-lg font-bold tracking-tight">Parameters Library</h1>
              </div>
              <div className="flex items-center gap-3">
-                 <Link href="/parameters/add">
-                    <button className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-4 py-2 rounded-md text-xs font-bold shadow-md flex items-center gap-2 transition-all active:scale-95">
-                        <Plus size={16} /> ADD NEW PARAMETER
-                    </button>
-                 </Link>
+                 {canPerform('Add') && (
+                     <Link href="/parameters/add">
+                        <button className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-4 py-2 rounded-md text-xs font-bold shadow-md flex items-center gap-2 transition-all active:scale-95">
+                            <Plus size={16} /> ADD NEW PARAMETER
+                        </button>
+                     </Link>
+                 )}
              </div>
           </div>
 
@@ -214,7 +212,6 @@ export default function ParametersListPage() {
               <div className="flex-1 overflow-y-auto">
                   {isLoading ? (
                       <div className="flex items-center justify-center h-40">
-                          {/* 🚨 REPLACED SPINNER WITH MUSIC BAR */}
                           <MusicBarLoader text="Loading Parameters..." />
                       </div>
                   ) : filteredParams.length === 0 ? (
@@ -241,27 +238,33 @@ export default function ParametersListPage() {
                               <div className="w-24 text-[11px] font-medium text-slate-500">{param.inputType}</div>
                               
                               <div className="w-24 flex justify-center">
-                                  <button onClick={() => handleToggleStatus(param.id, param.isActive)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#9575cd] focus:ring-offset-1 ${param.isActive ? 'bg-green-500' : 'bg-slate-300'}`}>
-                                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${param.isActive ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                                  </button>
+                                  {canPerform('Edit') ? (
+                                    <button onClick={() => handleToggleStatus(param.id, param.isActive)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#9575cd] focus:ring-offset-1 ${param.isActive ? 'bg-green-500' : 'bg-slate-300'}`}>
+                                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${param.isActive ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                    </button>
+                                  ) : <Lock size={14} className="text-slate-300" />}
                               </div>
 
                               <div className="w-24 flex justify-center items-center gap-1">
-                                  {param.id ? (
-                                    <Link href={`/parameters/edit/${param.id}`}><button className="p-1.5 hover:bg-purple-50 rounded text-slate-400 hover:text-[#9575cd] transition-colors"><Edit size={14} /></button></Link>
-                                  ) : (
-                                    <button className="p-1.5 text-slate-300 cursor-not-allowed"><Edit size={14} /></button>
-                                  )}
-                                  <button onClick={() => handleDeleteClick(param.id)} disabled={isPending} className="p-1.5 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors">
-                                      {isPending ? <Loader2 size={14} className="animate-spin"/> : <Trash2 size={14} />}
-                                  </button>
+                                  {canPerform('Edit') ? (
+                                      param.id ? (
+                                        <Link href={`/parameters/edit/${param.id}`}><button className="p-1.5 hover:bg-purple-50 rounded text-slate-400 hover:text-[#9575cd] transition-colors"><Edit size={14} /></button></Link>
+                                      ) : (
+                                        <button className="p-1.5 text-slate-300 cursor-not-allowed"><Edit size={14} /></button>
+                                      )
+                                  ) : <span className="w-6 text-center text-slate-300">-</span>}
+                                  
+                                  {canPerform('Delete') ? (
+                                      <button onClick={() => handleDeleteClick(param.id)} disabled={isPending} className="p-1.5 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors">
+                                          {isPending ? <Loader2 size={14} className="animate-spin"/> : <Trash2 size={14} />}
+                                      </button>
+                                  ) : <span className="w-6 text-center text-slate-300">-</span>}
                               </div>
                           </div>
                       ))
                   )}
               </div>
               
-              {/* 🚨 NEW: PAGINATION FOOTER */}
               <div className="h-14 border-t border-slate-200 bg-white flex items-center justify-between px-6 shrink-0">
                  <div className="text-xs font-medium text-slate-500">
                     Showing <span className="font-bold text-slate-700">{filteredParams.length === 0 ? 0 : startIndex + 1}</span> to <span className="font-bold text-slate-700">{Math.min(startIndex + ITEMS_PER_PAGE, filteredParams.length)}</span> of <span className="font-bold text-slate-700">{filteredParams.length}</span> parameters
@@ -290,7 +293,6 @@ export default function ParametersListPage() {
           </div>
       </div>
 
-      {/* --- DELETE CONFIRMATION MODAL --- */}
       {deleteConfirmId && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center animate-in zoom-in-95 duration-200">
@@ -309,7 +311,6 @@ export default function ParametersListPage() {
         </div>
       )}
 
-      {/* --- SUCCESS POPUP OVERLAY --- */}
       {showSuccessPopup && (
         <div className="absolute inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-sm w-full mx-4 border border-slate-100">

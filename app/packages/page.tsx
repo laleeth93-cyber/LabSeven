@@ -2,22 +2,29 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Settings, Settings2, Loader2, Archive, LayoutGrid, List } from 'lucide-react';
+// 🚨 FIXED: Added 'Lock' to the import list!
+import { Package, Search, Settings, Settings2, Loader2, Archive, LayoutGrid, List, Lock } from 'lucide-react';
 import { getPackages } from '@/app/actions/packages';
 import PackageCartModal from './components/PackageCartModal';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
+import MusicBarLoader from '@/app/components/MusicBarLoader'; 
+
+import { usePermissions } from '@/app/context/PermissionContext';
 
 export default function PackagesPage() {
+    const { orgId, permissions, userRole, permsLoaded } = usePermissions();
+
     const [packages, setPackages] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    
-    // View Mode State
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    
-    // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedPackage, setSelectedPackage] = useState<any>(null);
+
+    const canPerform = (action: string) => {
+        if (orgId === 1 || userRole.toLowerCase().includes('admin')) return true;
+        if (permissions.length === 0) return true; 
+        return permissions.some(p => p.module === 'Packages' && p.action === action);
+    };
 
     const loadPackages = async () => {
         setIsLoading(true);
@@ -48,7 +55,6 @@ export default function PackagesPage() {
     return (
         <div className="h-full w-full bg-[#f1f5f9] p-4 md:p-6 flex flex-col font-sans">
             
-            {/* Header */}
             <header className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6 flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl"><Archive size={24}/></div>
@@ -70,7 +76,6 @@ export default function PackagesPage() {
                         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
                     </div>
 
-                    {/* View Toggles */}
                     <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 shadow-inner">
                         <button 
                             onClick={() => setViewMode('grid')}
@@ -90,12 +95,10 @@ export default function PackagesPage() {
                 </div>
             </header>
 
-            {/* Main Content Area */}
             <div className={`flex-1 overflow-hidden flex flex-col ${viewMode === 'list' ? 'bg-white rounded-2xl shadow-sm border border-slate-200' : ''}`}>
                 <div className={`flex-1 overflow-y-auto custom-scrollbar ${viewMode === 'grid' ? 'pr-2' : ''}`}>
                     {isLoading ? (
                         <div className="h-full flex items-center justify-center">
-                            {/* 🚨 REPLACED SPINNER WITH MUSIC BAR (using indigo color to match this page) */}
                             <MusicBarLoader text="Loading Packages..." color="#6366f1" />
                         </div>
                     ) : filteredPackages.length === 0 ? (
@@ -107,7 +110,6 @@ export default function PackagesPage() {
                             </p>
                         </div>
                     ) : viewMode === 'grid' ? (
-                        // --- GRID VIEW ---
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-6">
                             {filteredPackages.map(pkg => {
                                 const testCount = pkg.packageTests?.length || 0;
@@ -115,11 +117,9 @@ export default function PackagesPage() {
 
                                 return (
                                     <div key={pkg.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all flex flex-col overflow-hidden group">
-                                        {/* Card Header (Gradient Line) */}
                                         <div className={`h-1.5 w-full ${hasTests ? 'bg-indigo-500' : 'bg-slate-300 group-hover:bg-indigo-300 transition-colors'}`}></div>
                                         
                                         <div className="p-5 flex flex-col flex-1">
-                                            {/* Top Section */}
                                             <div className="flex justify-between items-start mb-3 gap-2">
                                                 <h3 className="text-base font-bold text-slate-800 leading-tight line-clamp-2" title={pkg.name}>
                                                     {pkg.name}
@@ -129,7 +129,6 @@ export default function PackagesPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Badges */}
                                             <div className="flex flex-wrap items-center gap-2 mb-4">
                                                 <span className="text-[10px] font-mono text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded shadow-sm">
                                                     {pkg.code}
@@ -143,7 +142,6 @@ export default function PackagesPage() {
 
                                             <div className="flex-1"></div>
 
-                                            {/* Status Area */}
                                             <div className={`flex items-center gap-2 p-3 rounded-xl mb-4 text-xs font-bold border ${hasTests ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>
                                                 <div className={`p-1.5 rounded-lg ${hasTests ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
                                                     <Package size={16} />
@@ -154,25 +152,29 @@ export default function PackagesPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Action Button - Reverted to default purple */}
-                                            <button 
-                                                onClick={() => handleOpenModal(pkg)}
-                                                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm border ${
-                                                    hasTests 
-                                                    ? 'bg-purple-50 text-[#9575cd] border-purple-200 hover:border-[#9575cd] hover:bg-purple-100' 
-                                                    : 'bg-[#9575cd] text-white border-[#9575cd] hover:bg-[#7e57c2] hover:shadow-md'
-                                                }`}
-                                            >
-                                                {hasTests ? <Settings2 size={16}/> : <Settings size={16}/>}
-                                                {hasTests ? 'Update Configuration' : 'Configure Tests'}
-                                            </button>
+                                            {canPerform('Edit') ? (
+                                                <button 
+                                                    onClick={() => handleOpenModal(pkg)}
+                                                    className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm border ${
+                                                        hasTests 
+                                                        ? 'bg-purple-50 text-[#9575cd] border-purple-200 hover:border-[#9575cd] hover:bg-purple-100' 
+                                                        : 'bg-[#9575cd] text-white border-[#9575cd] hover:bg-[#7e57c2] hover:shadow-md'
+                                                    }`}
+                                                >
+                                                    {hasTests ? <Settings2 size={16}/> : <Settings size={16}/>}
+                                                    {hasTests ? 'Update Configuration' : 'Configure Tests'}
+                                                </button>
+                                            ) : (
+                                                <div className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed">
+                                                    <Lock size={16}/> View Only
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
                     ) : (
-                        // --- LIST VIEW ---
                         <table className="w-full text-left text-sm border-collapse">
                             <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 sticky top-0 z-10">
                                 <tr>
@@ -216,18 +218,21 @@ export default function PackagesPage() {
                                                 </div>
                                             </td>
                                             <td className="py-4 px-6 text-right">
-                                                {/* Action Button - Reverted to default purple */}
-                                                <button 
-                                                    onClick={() => handleOpenModal(pkg)}
-                                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm border ${
-                                                        hasTests 
-                                                        ? 'bg-purple-50 text-[#9575cd] border-purple-200 hover:border-[#9575cd] hover:bg-purple-100' 
-                                                        : 'bg-[#9575cd] text-white border-[#9575cd] hover:bg-[#7e57c2] hover:shadow-md'
-                                                    }`}
-                                                >
-                                                    {hasTests ? <Settings2 size={14}/> : <Settings size={14}/>}
-                                                    {hasTests ? 'Update Configuration' : 'Configure Tests'}
-                                                </button>
+                                                {canPerform('Edit') ? (
+                                                    <button 
+                                                        onClick={() => handleOpenModal(pkg)}
+                                                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-sm border ${
+                                                            hasTests 
+                                                            ? 'bg-purple-50 text-[#9575cd] border-purple-200 hover:border-[#9575cd] hover:bg-purple-100' 
+                                                            : 'bg-[#9575cd] text-white border-[#9575cd] hover:bg-[#7e57c2] hover:shadow-md'
+                                                        }`}
+                                                    >
+                                                        {hasTests ? <Settings2 size={14}/> : <Settings size={14}/>}
+                                                        {hasTests ? 'Update Configuration' : 'Configure Tests'}
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-slate-400 text-xs font-bold italic">View Only</span>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -238,7 +243,6 @@ export default function PackagesPage() {
                 </div>
             </div>
 
-            {/* Package Cart Modal */}
             <PackageCartModal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
