@@ -3,7 +3,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
+import { requireAuth } from '@/lib/server-auth'; 
 
 interface TestResultItem {
   billItemId: number;
@@ -14,10 +14,10 @@ interface TestResultItem {
 
 export async function getSignatureUsers() {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         const users = await prisma.user.findMany({
             where: { 
-                organizationId: orgId, // 🚨 Filter to current lab
+                organizationId: orgId, 
                 isActive: true, 
                 signatureUrl: { not: null },
                 isBillingOnly: false 
@@ -32,9 +32,9 @@ export async function getSignatureUsers() {
 
 export async function getPendingWorklist(search?: string) {
   try {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const where: any = {
-      organizationId: orgId, // 🚨 Filter to current lab
+      organizationId: orgId, 
       items: {
         some: {
           status: { not: "Printed" } 
@@ -76,11 +76,11 @@ export async function getPendingWorklist(search?: string) {
 
 export async function getResultEntryData(billId: number) {
   try {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     if (!billId) throw new Error("Missing Bill ID");
 
     const bill = await prisma.bill.findUnique({
-      where: { id: billId, organizationId: orgId }, // 🚨 Security check
+      where: { id: billId, organizationId: orgId }, 
       include: {
         patient: true,
         doctor: true,
@@ -111,9 +111,10 @@ export async function getResultEntryData(billId: number) {
                 }
               }
             },
-            results: {
-                include: { parameter: { include: { ranges: true } } }
-            }
+            // 🚨 MASSIVE SPEED BOOST: Removed redundant deep parameter inclusion here. 
+            // The frontend already gets parameter data from the 'test' object above. 
+            // This prevents a Cartesian explosion in the SQL query!
+            results: true
           }
         }
       }
@@ -133,57 +134,64 @@ export async function getResultEntryData(billId: number) {
 
 export async function saveTestResults(billId: number, results: TestResultItem[], status: string = 'Entered', sig1Id?: number | null, sig2Id?: number | null) {
   try {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
 
+    const billItemIds = Array.from(new Set(results.map(r => r.billItemId)));
+
+    // 🚨 MASSIVE SPEED BOOST: Replaced the N+1 loop with a single Transaction block.
+    // Fetch all existing results at once
+    const existingResults = await prisma.testResult.findMany({
+        where: { organizationId: orgId, billItemId: { in: billItemIds } }
+    });
+
+    const existingMap = new Map();
+    existingResults.forEach(r => {
+        const paramKey = r.parameterId === null ? 'null' : r.parameterId;
+        existingMap.set(`${r.billItemId}_${paramKey}`, r);
+    });
+
+    const transactions = [];
+
+    // Queue up result creates/updates
     for (const res of results) {
       const paramIdToUse = res.parameterId === undefined ? null : res.parameterId;
-
-      const existing = await prisma.testResult.findFirst({
-        where: {
-          organizationId: orgId, // 🚨 Scope to current lab
-          billItemId: res.billItemId,
-          parameterId: paramIdToUse
-        }
-      });
+      const key = `${res.billItemId}_${paramIdToUse === null ? 'null' : paramIdToUse}`;
+      const existing = existingMap.get(key);
 
       if (existing) {
-        await prisma.testResult.update({
+        transactions.push(prisma.testResult.update({
           where: { id: existing.id },
-          data: {
-            resultValue: res.value,
-            flag: res.flag, 
-            updatedAt: new Date()
-          }
-        });
+          data: { resultValue: res.value, flag: res.flag, updatedAt: new Date() }
+        }));
       } else {
-        await prisma.testResult.create({
+        transactions.push(prisma.testResult.create({
           data: {
-            organizationId: orgId, // 🚨 Critical for SaaS! Fixes Vercel build
+            organizationId: orgId,
             billItemId: res.billItemId,
             parameterId: paramIdToUse,
             resultValue: res.value,
             flag: res.flag
           }
-        });
+        }));
       }
     }
 
-    const billItemIds = Array.from(new Set(results.map(r => r.billItemId)));
-    
+    // Queue up status updates
     for (const itemId of billItemIds) {
-      await prisma.billItem.update({
+      transactions.push(prisma.billItem.update({
         where: { id: itemId },
         data: { status: status }
-      });
+      }));
     }
 
-    await prisma.bill.update({
+    // Queue up bill approval
+    transactions.push(prisma.bill.update({
         where: { id: billId },
-        data: {
-            approvedBy1Id: sig1Id,
-            approvedBy2Id: sig2Id
-        }
-    });
+        data: { approvedBy1Id: sig1Id, approvedBy2Id: sig2Id }
+    }));
+
+    // 🚨 Execute EVERYTHING in a single database round-trip
+    await prisma.$transaction(transactions);
 
     revalidatePath('/results/entry');
     return { success: true, message: `Results saved as ${status}` };
@@ -210,9 +218,9 @@ export async function saveTestNote(billItemId: number, note: string) {
 
 export async function checkHistoryAvailability(patientId: number, parameterIds: number[], excludeBillId?: number) {
   try {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const whereClause: any = {
-        organizationId: orgId, // 🚨 Scope history to current lab
+        organizationId: orgId, 
         parameterId: { in: parameterIds },
         billItem: {
           bill: {
@@ -242,10 +250,10 @@ export async function checkHistoryAvailability(patientId: number, parameterIds: 
 
 export async function getParameterHistory(patientId: number, parameterId: number) {
   try {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const history = await prisma.testResult.findMany({
       where: {
-        organizationId: orgId, // 🚨 Scope history to current lab
+        organizationId: orgId, 
         parameterId: parameterId,
         billItem: {
           bill: {
@@ -288,7 +296,7 @@ export async function getParameterHistory(patientId: number, parameterId: number
 
 export async function clearAllEntryData() {
   try {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     await prisma.$transaction([
       prisma.testResult.deleteMany({ where: { organizationId: orgId } }), 
       prisma.payment.deleteMany({ where: { organizationId: orgId } }),
@@ -306,7 +314,7 @@ export async function clearAllEntryData() {
 
 export async function getDeltaCheckData(billId: number, patientId: number) {
   try {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     
     // 1. Get current bill results
     const currentResults = await prisma.testResult.findMany({
@@ -325,7 +333,7 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
     // 2. Get all previous results for these parameters for this patient
     const previousResults = await prisma.testResult.findMany({
       where: {
-        organizationId: orgId, // 🚨 Limit history scope
+        organizationId: orgId, 
         parameterId: { in: parameterIds },
         billItem: {
           bill: {
