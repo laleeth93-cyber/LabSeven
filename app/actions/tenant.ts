@@ -1,24 +1,22 @@
-// --- BLOCK app/actions/tenant.ts OPEN ---
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/server-auth";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const API_KEY = process.env.INTERNAL_API_KEY || 'labseven_secret_key_2025';
 
 export async function getTenantFeatures() {
     try {
         const { orgId } = await requireAuth();
         
-        // Master HQ always sees everything!
-        if (orgId === 1) return { success: true, hasSensitivity: true }; 
-        
-        const org = await prisma.organization.findUnique({
-            where: { id: orgId },
-            select: { hasSensitivity: true }
+        const res = await fetch(`${BACKEND_URL}/api/tenant/features?orgId=${orgId}`, {
+            method: 'GET',
+            headers: { 'x-api-key': API_KEY },
+            cache: 'no-store'
         });
         
-        return { success: true, hasSensitivity: org?.hasSensitivity || false };
+        return await res.json();
     } catch (error) {
         return { success: false, hasSensitivity: false };
     }
 }
-// --- BLOCK app/actions/tenant.ts CLOSE ---

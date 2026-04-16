@@ -1,24 +1,22 @@
-// --- BLOCK app/actions/reports.ts OPEN ---
 "use server";
 
-import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
+import { requireAuth } from '@/lib/server-auth';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const API_KEY = process.env.INTERNAL_API_KEY || "labseven_secret_key_2025";
 
 export async function getReportSettings() {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth();
         
-        let settings = await prisma.reportSettings.findFirst({
-            where: { organizationId: orgId } // 🚨 Filter to current lab
+        const response = await fetch(`${BACKEND_URL}/api/report-settings?orgId=${orgId}`, {
+            method: 'GET',
+            headers: { 'x-api-key': API_KEY },
+            cache: 'no-store'
         });
-        
-        if (!settings) { 
-            settings = await prisma.reportSettings.create({ 
-                data: { organizationId: orgId } // 🚨 Tag to current lab
-            }); 
-        }
-        return { success: true, data: settings };
+
+        return await response.json();
     } catch (error: any) {
         return { success: false, message: error.message };
     }
@@ -26,66 +24,25 @@ export async function getReportSettings() {
 
 export async function updateReportSettings(data: any) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth();
         
-        const settings = await prisma.reportSettings.findFirst({
-            where: { organizationId: orgId } // 🚨 Filter to current lab
+        const response = await fetch(`${BACKEND_URL}/api/report-settings`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': API_KEY
+            },
+            body: JSON.stringify({ ...data, orgId })
         });
-        
-        const payload = {
-            doc1Name: data.doc1Name, doc1Designation: data.doc1Designation, doc2Name: data.doc2Name, doc2Designation: data.doc2Designation,
-            marginTop: parseInt(data.marginTop) || 120, marginBottom: parseInt(data.marginBottom) || 80,
-            marginLeft: parseInt(data.marginLeft) || 40, marginRight: parseInt(data.marginRight) || 40,
-            marginSettings: data.marginSettings,
-            tableStyle: data.tableStyle, fontFamily: data.fontFamily, fontSize: data.fontSize, rowPadding: data.rowPadding, labelBold: data.labelBold, dataBold: data.dataBold,
-            leftColFields: data.leftColFields, rightColFields: data.rightColFields, leftColWidth: data.leftColWidth || "35 65", rightColWidth: data.rightColWidth || "35 65", headerQrCode: data.headerQrCode,
-            showMethodCol: data.showMethodCol, methodDisplayStyle: data.methodDisplayStyle, showUnitCol: data.showUnitCol, showRefRangeCol: data.showRefRangeCol, highlightAbnormal: data.highlightAbnormal, stripedRows: data.stripedRows,
-            bodyTableStyle: data.bodyTableStyle, bodyFontFamily: data.bodyFontFamily, bodyFontSize: data.bodyFontSize, bodyRowHeight: data.bodyRowHeight, bodyColPadding: data.bodyColPadding,
-            bodyHeaderBgColor: data.bodyHeaderBgColor, bodyHeaderTextColor: data.bodyHeaderTextColor, bodyResultAlign: data.bodyResultAlign,
-            showDepartmentName: data.showDepartmentName, departmentNameSize: data.departmentNameSize, testNameAlignment: data.testNameAlignment, testNameUnderline: data.testNameUnderline, testNameSize: data.testNameSize, gridLineThickness: data.gridLineThickness,
-            
-            testColumnWidth: data.testColumnWidth, 
-            colWidthParam: data.colWidthParam,
-            colWidthResult: data.colWidthResult,
-            colWidthUnit: data.colWidthUnit,
-            colWidthRef: data.colWidthRef,
-            colWidthMethod: data.colWidthMethod,
 
-            subheadingColor: data.subheadingColor, subheadingSize: data.subheadingSize,
-            footerStyle: data.footerStyle, showQrCode: data.showQrCode, showBarcode: data.showBarcode, showPageNumbers: data.showPageNumbers, showEndOfReport: data.showEndOfReport,
-            qrPlacement: data.qrPlacement, qrText: data.qrText, barcodeText: data.barcodeText,
-            
-            sigSize: parseInt(data.sigSize) || 40,
-            sigSpacing: parseInt(data.sigSpacing) || 4,
-            docNameSize: parseInt(data.docNameSize) || 10,
-            docDesigSize: parseInt(data.docDesigSize) || 8,
-            docNameSpacing: parseInt(data.docNameSpacing) || 2,
-            sigAlignment: data.sigAlignment || 'center',
+        const result = await response.json();
 
-            letterheadStyle: data.letterheadStyle, paperSize: data.paperSize, printOrientation: data.printOrientation,
-            customHeader1: data.customHeader1, customHeader2: data.customHeader2, customHeader3: data.customHeader3, customHeader4: data.customHeader4,
-            
-            deltaSettings: data.deltaSettings
-        };
-
-        if (settings) {
-            await prisma.reportSettings.update({
-                where: { id: settings.id },
-                data: payload
-            });
-        } else {
-            await prisma.reportSettings.create({
-                data: {
-                    ...payload,
-                    organizationId: orgId // 🚨 Tag to current lab
-                }
-            });
+        if (result.success) {
+            revalidatePath('/reports');
         }
-        
-        revalidatePath('/reports');
-        return { success: true, message: "Settings saved successfully!" };
+
+        return result;
     } catch (error: any) {
         return { success: false, message: error.message };
     }
 }
-// --- BLOCK app/actions/reports.ts CLOSE ---

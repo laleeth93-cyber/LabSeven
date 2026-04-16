@@ -1,0 +1,29 @@
+{
+  "name": "labseven-backend",
+  "version": "1.0.0",
+  "description": "Standalone Node.js Backend for LabSeven",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon --watch src --ext ts,json --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcrypt": "^6.0.0",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "puppeteer": "^24.41.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "latest",
+    "@types/express": "latest",
+    "@types/node": "latest",
+    "nodemon": "latest",
+    "prisma": "^5.22.0",
+    "ts-node": "latest",
+    "typescript": "latest"
+  }
+}

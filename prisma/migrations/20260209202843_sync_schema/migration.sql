@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "Test" ALTER COLUMN "price" SET DEFAULT 0,
-ALTER COLUMN "updatedAt" DROP DEFAULT;

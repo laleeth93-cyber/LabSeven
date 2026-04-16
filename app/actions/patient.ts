@@ -1,106 +1,91 @@
-// --- BLOCK app/actions/patient.ts OPEN ---
-'use server'
+// --- BLOCK restructure/app/actions/patient.ts OPEN ---
+"use server";
 
-import { prisma } from '@/lib/prisma'
-import { revalidatePath } from 'next/cache'
-import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
+import { revalidatePath } from 'next/cache';
+import { requireAuth } from '@/lib/server-auth';
 
-// 1. SEARCH EXISTING PATIENTS
-export async function searchPatients(query: string) {
-  if (!query || query.length < 2) return [];
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const API_KEY = process.env.BACKEND_API_KEY || 'labseven_secure_backend_key_2026';
 
-  try {
-    const { orgId } = await requireAuth(); // 🚨 USING THE GATEKEEPER
-    const patients = await prisma.patient.findMany({
-      where: {
-        organizationId: orgId, // 🚨 Filter to current lab
-        OR: [
-          { firstName: { contains: query, mode: 'insensitive' } },
-          { phone: { contains: query, mode: 'insensitive' } },
-          { patientId: { contains: query, mode: 'insensitive' } }
-        ]
-      },
-      take: 10,
-      orderBy: { firstName: 'asc' }
-    });
-    return patients;
-  } catch (error) {
-    console.error("Search Error:", error);
-    return [];
-  }
-}
+const getHeaders = (orgId: number) => ({
+    'Content-Type': 'application/json',
+    'x-org-id': orgId.toString(),
+    'x-api-key': API_KEY
+});
 
-// 2. REGISTER / UPDATE PATIENT
-export async function registerPatient(data: any) {
-  try {
-    const { orgId } = await requireAuth(); // 🚨 USING THE GATEKEEPER
-
-    // 🚨 Check if patient with this ID already exists FOR THIS LAB
-    const existing = await prisma.patient.findUnique({
-      where: { 
-        organizationId_patientId: { 
-          organizationId: orgId, 
-          patientId: data.patientId 
-        } 
-      }
-    });
-
-    let result;
-
-    if (existing) {
-      // UPDATE existing patient
-      console.log("Updating existing patient:", data.patientId);
-      result = await prisma.patient.update({
-        where: { 
-          organizationId_patientId: { 
-            organizationId: orgId, 
-            patientId: data.patientId 
-          } 
-        },
-        data: {
-          designation: data.prefix || 'Mr.',
-          firstName: data.firstName,
-          lastName: data.lastName,
-          gender: data.gender,
-          ageY: parseInt(data.age?.Y) || 0,
-          ageM: parseInt(data.age?.M) || 0,
-          ageD: parseInt(data.age?.D) || 0,
-          phone: data.phone,
-          email: data.email,
-          address: data.address,
-          referralType: data.referralType || "Self",
-          refDoctor: data.refDoctor || "Self", 
-        }
-      });
-    } else {
-      // CREATE new patient
-      console.log("Creating new patient:", data.patientId);
-      result = await prisma.patient.create({
-        data: {
-          organizationId: orgId, // 🚨 Critical: Attach to lab
-          patientId: data.patientId, 
-          designation: data.prefix || 'Mr.',
-          firstName: data.firstName,
-          lastName: data.lastName || '',
-          gender: data.gender || 'male',
-          ageY: parseInt(data.age?.Y) || 0,
-          ageM: parseInt(data.age?.M) || 0,
-          ageD: parseInt(data.age?.D) || 0,
-          phone: data.phone || '0000000000',
-          email: data.email || null,
-          address: data.address || null,
-          referralType: data.referralType || "Self",
-          refDoctor: data.refDoctor || "Self", 
-        }
-      });
+export async function generatePatientId() {
+    try {
+        const { orgId } = await requireAuth();
+        const res = await fetch(`${BACKEND_URL}/api/patients/generate-id`, { headers: getHeaders(orgId), cache: 'no-store' });
+        const result = await res.json();
+        return result.data;
+    } catch (error) {
+        return 'PT-0001';
     }
-
-    revalidatePath('/');
-    return { success: true, message: "Patient Saved Successfully!", patient: result };
-
-  } catch (error) {
-    console.error("Database Error:", error);
-    return { success: false, message: "Failed to save. Check inputs." };
-  }
 }
-// --- BLOCK app/actions/patient.ts CLOSE ---
+
+export async function getPatients() {
+    try {
+        const { orgId } = await requireAuth();
+        const res = await fetch(`${BACKEND_URL}/api/patients`, { headers: getHeaders(orgId), cache: 'no-store' });
+        return await res.json();
+    } catch (error) {
+        return { success: false, message: "Failed to load patients.", data: [] };
+    }
+}
+
+export async function getPatientById(id: number) {
+    try {
+        const { orgId } = await requireAuth();
+        const res = await fetch(`${BACKEND_URL}/api/patients/${id}`, { headers: getHeaders(orgId), cache: 'no-store' });
+        return await res.json();
+    } catch (error) {
+        return { success: false, message: "Failed to fetch patient" };
+    }
+}
+
+export async function createPatient(data: any) {
+    try {
+        const { orgId } = await requireAuth();
+        const res = await fetch(`${BACKEND_URL}/api/patients`, {
+            method: 'POST', headers: getHeaders(orgId), body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.success) revalidatePath('/patients');
+        return result;
+    } catch (error: any) {
+        return { success: false, message: error.message || "Failed to create patient." };
+    }
+}
+
+export async function updatePatient(id: number, data: any) {
+    try {
+        const { orgId } = await requireAuth();
+        const res = await fetch(`${BACKEND_URL}/api/patients/${id}`, {
+            method: 'PUT', headers: getHeaders(orgId), body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.success) revalidatePath('/patients');
+        return result;
+    } catch (error: any) {
+        return { success: false, message: error.message || "Failed to update patient." };
+    }
+}
+
+export async function savePatient(data: any) {
+    if (data.id) return updatePatient(data.id, data);
+    return createPatient(data);
+}
+
+export async function deletePatient(id: number) {
+    try {
+        const { orgId } = await requireAuth();
+        const res = await fetch(`${BACKEND_URL}/api/patients/${id}`, { method: 'DELETE', headers: getHeaders(orgId) });
+        const result = await res.json();
+        if (result.success) revalidatePath('/patients');
+        return result;
+    } catch (error) {
+        return { success: false, message: "Failed to delete patient." };
+    }
+}
+// --- BLOCK restructure/app/actions/patient.ts CLOSE ---

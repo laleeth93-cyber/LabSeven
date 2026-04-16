@@ -1,14 +1,14 @@
-// --- BLOCK app/actions/settings.ts OPEN ---
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { comparePassword, hashPassword } from "@/lib/auth-utils";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+const API_KEY = process.env.INTERNAL_API_KEY || "labseven_secret_key_2025";
 
 export async function changeUserPassword(currentPass: string, newPass: string) {
     try {
-        // 1. Verify who is making the request
+        // 1. Verify who is making the request using NextAuth
         const session = await getServerSession(authOptions);
         if (!session?.user || !(session.user as any).id) {
             return { success: false, message: "Unauthorized. Please log in again." };
@@ -16,34 +16,20 @@ export async function changeUserPassword(currentPass: string, newPass: string) {
 
         const userId = parseInt((session.user as any).id);
 
-        // 2. Fetch the user from the database
-        const user = await prisma.user.findUnique({
-            where: { id: userId }
+        // 2. Forward the secure request to the Node engine
+        const response = await fetch(`${BACKEND_URL}/api/settings/change-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': API_KEY
+            },
+            body: JSON.stringify({ userId, currentPass, newPass })
         });
 
-        if (!user) {
-            return { success: false, message: "User account not found." };
-        }
-
-        // 3. Verify their current password is correct
-        const isCorrect = await comparePassword(currentPass, user.password);
-        if (!isCorrect) {
-            return { success: false, message: "Incorrect current password." };
-        }
-
-        // 4. Hash the new password and save it
-        const hashedNewPassword = await hashPassword(newPass);
-
-        await prisma.user.update({
-            where: { id: userId },
-            data: { password: hashedNewPassword }
-        });
-
-        return { success: true, message: "Password updated successfully!" };
+        return await response.json();
 
     } catch (error) {
         console.error("Password Change Error:", error);
         return { success: false, message: "An error occurred while updating your password." };
     }
 }
-// --- BLOCK app/actions/settings.ts CLOSE ---
