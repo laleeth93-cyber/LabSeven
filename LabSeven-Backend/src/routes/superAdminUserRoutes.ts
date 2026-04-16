@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs'; // ✅ Fixed import
 
 const router = Router();
 const prisma = new PrismaClient();

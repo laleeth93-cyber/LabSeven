@@ -61,8 +61,8 @@ router.put('/:testId', async (req, res) => {
 
         payload.isConfigured = true;
 
-        // 🚨 High-Speed Database Transaction
-        await prisma.$transaction(async (tx) => {
+        // 🚨 High-Speed Database Transaction - FIXED TYPE HERE
+        await prisma.$transaction(async (tx: any) => {
             await tx.test.update({
                 where: { id: testId },
                 data: payload

@@ -1,4 +1,3 @@
-// --- BLOCK LabSeven-Backend/src/routes/authorizationRoutes.ts OPEN ---
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 
@@ -43,10 +42,9 @@ router.post('/users', async (req, res) => {
                 organizationId: orgId, 
                 name: data.name, 
                 email: data.email,
-                // 🚨 FIXED: Added username (defaults to email if not provided)
                 username: data.username || data.email, 
                 password: data.password || 'defaultPassword123!', 
-                role: data.role || 'Staff', 
+                roleId: typeof data.role === 'number' ? data.role : undefined, 
                 designation: data.designation || null,
                 isActive: data.isActive ?? true, 
                 isBillingOnly: data.isBillingOnly || false,
@@ -72,9 +70,8 @@ router.put('/users/:id', async (req, res) => {
             data: {
                 name: data.name, 
                 email: data.email, 
-                // 🚨 FIXED: Update username if provided
                 username: data.username || data.email,
-                role: data.role,
+                roleId: typeof data.role === 'number' ? data.role : undefined,
                 designation: data.designation || null, 
                 isActive: data.isActive,
                 isBillingOnly: data.isBillingOnly, 
@@ -105,7 +102,6 @@ router.delete('/users/:id', async (req, res) => {
 router.get('/roles', async (req, res) => {
     try {
         const orgId = getOrgId(req);
-        // Fallback for role fetching if you have a roles table, otherwise return static list
         const roles = await prisma.role?.findMany({ where: { organizationId: orgId } }) || [];
         res.json({ success: true, data: roles });
     } catch (error) {
@@ -114,4 +110,3 @@ router.get('/roles', async (req, res) => {
 });
 
 export default router;
-// --- BLOCK LabSeven-Backend/src/routes/authorizationRoutes.ts CLOSE ---

@@ -1,6 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt'; // Ensure 'bcrypt' or 'bcryptjs' is installed in the backend package.json
+import bcrypt from 'bcryptjs'; 
 
 const router = express.Router();
 const prisma = new PrismaClient();

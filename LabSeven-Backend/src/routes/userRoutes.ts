@@ -1,4 +1,3 @@
-// --- BLOCK LabSeven-Backend/src/routes/userRoutes.ts OPEN ---
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 
@@ -64,16 +63,14 @@ router.post('/', async (req, res) => {
         });
         if (existingEmail) return res.status(400).json({ success: false, message: "Email already in use." });
 
-        // Note: Password hashing should ideally happen here using bcrypt if you aren't using NextAuth's built-in adapters.
-        // For this migration, we mirror your existing data structure.
         const newUser = await prisma.user.create({
             data: {
                 organizationId: orgId,
                 username: data.username,
                 name: data.name,
                 email: data.email,
-                password: data.password || 'defaultPassword123!', // Ensure frontend sends hashed or backend hashes it
-                role: data.role || 'Staff',
+                password: data.password || 'defaultPassword123!', 
+                roleId: typeof data.role === 'number' ? data.role : undefined,
                 designation: data.designation || null,
                 isActive: data.isActive ?? true,
                 isBillingOnly: data.isBillingOnly || false,
@@ -111,7 +108,7 @@ router.put('/:id', async (req, res) => {
             data: {
                 name: data.name,
                 email: data.email,
-                role: data.role,
+                roleId: typeof data.role === 'number' ? data.role : undefined,
                 designation: data.designation || null,
                 isActive: data.isActive,
                 isBillingOnly: data.isBillingOnly,
@@ -162,4 +159,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 export default router;
-// --- BLOCK LabSeven-Backend/src/routes/userRoutes.ts CLOSE ---
