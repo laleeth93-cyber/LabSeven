@@ -22,7 +22,7 @@ export default async function SubscribedLabsPage() {
   });
 
   const totalSubscribers = labs.length;
-  const subscriberBills = labs.reduce((sum, lab) => sum + lab._count.bills, 0);
+  const subscriberBills = labs.reduce((sum: number, lab: any) => sum + lab._count.bills, 0);
 
   return (
     <div className="w-full max-w-[100vw] min-h-screen bg-slate-50 p-4 md:p-6 font-sans overflow-x-hidden">

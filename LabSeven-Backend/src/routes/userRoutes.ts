@@ -69,6 +69,7 @@ router.post('/', async (req, res) => {
         const newUser = await prisma.user.create({
             data: {
                 organizationId: orgId,
+                username: data.username,
                 name: data.name,
                 email: data.email,
                 password: data.password || 'defaultPassword123!', // Ensure frontend sends hashed or backend hashes it

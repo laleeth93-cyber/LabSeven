@@ -53,8 +53,7 @@ router.post('/', async (req, res) => {
                 type: data.type || 'External', // Usually 'Internal', 'External', 'Outsource'
                 phone: data.phone || null,
                 email: data.email || null,
-                address: data.address || null,
-                commissionPercent: data.commissionPercent ? parseFloat(data.commissionPercent) : 0,
+                commission: data.commissionPercent ? parseFloat(data.commissionPercent) : 0,
                 isActive: data.isActive ?? true
             }
         });
@@ -86,8 +85,7 @@ router.put('/:id', async (req, res) => {
                 type: data.type,
                 phone: data.phone || null,
                 email: data.email || null,
-                address: data.address || null,
-                commissionPercent: data.commissionPercent ? parseFloat(data.commissionPercent) : 0,
+                commission: data.commissionPercent ? parseFloat(data.commissionPercent) : 0,
                 isActive: data.isActive
             }
         });

@@ -51,13 +51,13 @@ export default async function SuperAdminPage() {
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-center">
             <p className="text-xs font-bold text-slate-500 uppercase">Active Subs</p>
             <p className="text-2xl font-black text-emerald-600 mt-1">
-              {labs.filter(l => l.isActive && l.id !== 1).length}
+              {labs.filter((l: any) => l.isActive && l.id !== 1).length}
             </p>
           </div>
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-center">
             <p className="text-xs font-bold text-slate-500 uppercase">Total Bills Generated</p>
             <p className="text-2xl font-black text-slate-800 mt-1">
-              {labs.reduce((acc, lab) => acc + lab._count.bills, 0)}
+              {labs.reduce((acc: number, lab: any) => acc + lab._count.bills, 0)}
             </p>
           </div>
         </div>
