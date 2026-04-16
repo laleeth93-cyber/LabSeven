@@ -145,7 +145,7 @@ export async function assignPermissions(roleId: number, permissionIds: number[])
 }
 
 // --- DUMMY STUBS FOR VERCEL BUILD ---
-export async function saveUserPermissions(data: any) { return { success: false }; }
-export async function saveUserSignatureDetails(data: any) { return { success: false }; }
-export async function toggleUserStatus(id: number, status: boolean) { return { success: false }; }
-export async function resetUserPassword(id: number) { return { success: false }; }
+export async function saveUserPermissions(data: any) { return { success: false, message: 'Not available in this build.' }; }
+export async function saveUserSignatureDetails(data: any) { return { success: false, message: 'Not available in this build.' }; }
+export async function toggleUserStatus(id: number, status: boolean) { return { success: false, message: 'Not available in this build.' }; }
+export async function resetUserPassword(id: number, newPassword: string) { return { success: false, message: 'Not available in this build.' }; }

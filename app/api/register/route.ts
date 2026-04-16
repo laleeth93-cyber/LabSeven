@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const hashedPassword = await hashPassword(password);
 
     // 4. DATABASE TRANSACTION: Create the Lab AND the User together
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       
       // A. Create the Organization (Tenant)
       const newOrg = await tx.organization.create({

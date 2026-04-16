@@ -103,5 +103,5 @@ export async function deletePackage(id: number) {
 }
 
 // --- DUMMY STUBS FOR VERCEL BUILD ---
-export async function savePackageTests(pkgId: number, tests: any[]) { return { success: false }; }
-export async function getAvailableTestsForPackage(pkgId: number) { return []; }
+export async function savePackageTests(pkgId: number, tests: any[]) { return { success: false, message: 'Not available in this build.' }; }
+export async function getAvailableTestsForPackage(pkgId?: number) { return { success: false, data: [] as any[], message: 'Not available in this build.' }; }

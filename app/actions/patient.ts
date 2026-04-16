@@ -89,5 +89,5 @@ export async function deletePatient(id: number) {
 }
 
 // --- DUMMY STUBS FOR VERCEL BUILD ---
-export async function registerPatient(data: any) { return { success: false }; }
+export async function registerPatient(data: any): Promise<any> { return { success: false, patient: null, message: 'Not available in this build.' }; }
 export async function searchPatients(query: string) { return []; }

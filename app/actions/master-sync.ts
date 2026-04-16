@@ -66,7 +66,9 @@ export async function syncMasterLibraryToLab(targetOrgId: number) {
         const targetParams = await prisma.parameter.findMany({ where: { organizationId: targetOrgId } });
         
         const targetParamCodeMap = new Map<string, number>(
-            targetParams.filter(p => p.code !== null).map(p => [p.code as string, p.id])
+            targetParams
+                .filter((p: any) => p.code !== null)
+                .map((p: any) => [p.code as string, p.id])
         );
         const paramMap = new Map<number, number>();
 
@@ -87,7 +89,7 @@ export async function syncMasterLibraryToLab(targetOrgId: number) {
                 await prisma.parameterRange.deleteMany({ where: { parameterId: existingParamId } });
                 if (ranges && ranges.length > 0) {
                     await prisma.parameterRange.createMany({
-                        data: ranges.map(r => {
+                        data: ranges.map((r: any) => {
                             const { id, parameterId, organizationId, createdAt, updatedAt, ...rData } = r;
                             return { ...rData, parameterId: existingParamId, organizationId: targetOrgId };
                         })
@@ -99,7 +101,7 @@ export async function syncMasterLibraryToLab(targetOrgId: number) {
                         ...pData,
                         organizationId: targetOrgId,
                         ranges: {
-                            create: ranges.map(r => {
+                            create: ranges.map((r: any) => {
                                 const { id, parameterId, organizationId, createdAt, updatedAt, ...rData } = r;
                                 return { ...rData, organizationId: targetOrgId };
                             })
@@ -118,7 +120,9 @@ export async function syncMasterLibraryToLab(targetOrgId: number) {
         const targetTests = await prisma.test.findMany({ where: { organizationId: targetOrgId } });
         
         const targetTestCodeMap = new Map<string, number>(
-            targetTests.filter(t => t.code !== null).map(t => [t.code as string, t.id])
+            targetTests
+                .filter((t: any) => t.code !== null)
+                .map((t: any) => [t.code as string, t.id])
         );
 
         const testIdMap = new Map<number, number>();
@@ -165,7 +169,7 @@ export async function syncMasterLibraryToLab(targetOrgId: number) {
             // 🚨 Insert the exact Master Formats/Headings/Formulas into the Test Config
             if (parameters && parameters.length > 0) {
                 await prisma.testParameter.createMany({
-                    data: parameters.map(tp => ({
+                    data: parameters.map((tp: any) => ({
                         organizationId: targetOrgId,
                         testId: targetTestId,
                         parameterId: tp.parameterId ? paramMap.get(tp.parameterId) : null,
@@ -191,11 +195,11 @@ export async function syncMasterLibraryToLab(targetOrgId: number) {
                 await prisma.packageTest.deleteMany({ where: { packageId: targetPackageId } });
                 await prisma.packageTest.createMany({
                     data: mt.packageTests
-                        .map(pt => ({
+                        .map((pt: any) => ({
                             packageId: targetPackageId,
                             testId: testIdMap.get(pt.testId) as number
                         }))
-                        .filter(pt => pt.testId !== undefined)
+                        .filter((pt: any) => pt.testId !== undefined)
                 });
             }
         }
