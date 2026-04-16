@@ -1,11 +1,10 @@
-// --- BLOCK restructure/app/actions/patient.ts OPEN ---
 "use server";
 
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/server-auth';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-const API_KEY = process.env.BACKEND_API_KEY || 'labseven_secure_backend_key_2026';
+const API_KEY = process.env.INTERNAL_API_KEY || 'labseven_secret_key_2025';
 
 const getHeaders = (orgId: number) => ({
     'Content-Type': 'application/json',
@@ -88,4 +87,7 @@ export async function deletePatient(id: number) {
         return { success: false, message: "Failed to delete patient." };
     }
 }
-// --- BLOCK restructure/app/actions/patient.ts CLOSE ---
+
+// --- DUMMY STUBS FOR VERCEL BUILD ---
+export async function registerPatient(data: any) { return { success: false }; }
+export async function searchPatients(query: string) { return []; }

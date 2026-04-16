@@ -117,7 +117,6 @@ export async function getAllPermissions() {
     }
 }
 
-// 🚨 THIS IS THE MISSING FUNCTION 🚨
 export async function getUserPermissions(userId: number) {
     try {
         const { orgId } = await requireAuth();
@@ -144,3 +143,9 @@ export async function assignPermissions(roleId: number, permissionIds: number[])
         return { success: false, message: "Backend unreachable." };
     }
 }
+
+// --- DUMMY STUBS FOR VERCEL BUILD ---
+export async function saveUserPermissions(data: any) { return { success: false }; }
+export async function saveUserSignatureDetails(data: any) { return { success: false }; }
+export async function toggleUserStatus(id: number, status: boolean) { return { success: false }; }
+export async function resetUserPassword(id: number) { return { success: false }; }

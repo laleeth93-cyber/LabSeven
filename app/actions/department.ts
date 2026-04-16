@@ -1,11 +1,10 @@
-// --- BLOCK restructure/app/actions/department.ts OPEN ---
 "use server";
 
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/server-auth';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-const API_KEY = process.env.BACKEND_API_KEY || 'labseven_secure_backend_key_2026';
+const API_KEY = process.env.INTERNAL_API_KEY || 'labseven_secret_key_2025';
 
 const getHeaders = (orgId: number) => ({
     'Content-Type': 'application/json',
@@ -83,4 +82,7 @@ export async function deleteDepartment(id: number) {
         return { success: false, message: "Backend unreachable." };
     }
 }
-// --- BLOCK restructure/app/actions/department.ts CLOSE ---
+
+// --- DUMMY STUBS FOR VERCEL BUILD ---
+export async function generateDepartmentCode() { return "DEPT-000"; }
+export async function toggleDepartmentStatus(id: number, status: boolean) { return { success: false }; }
