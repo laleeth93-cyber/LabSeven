@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Settings, X, Type, ToggleLeft } from 'lucide-react';
-import { FieldData } from '../DashboardClient'; // 🚨 FIXED IMPORT PATH
+import type { FieldData } from '@/app/registration/NewRegistration';
 
 interface ConfigureFieldModalProps {
   isOpen: boolean;

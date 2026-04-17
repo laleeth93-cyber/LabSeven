@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { SlidersHorizontal, X, Search, Settings } from 'lucide-react';
 import ConfigureFieldModal from '@/app/components/ConfigureFieldModal';
-import { FieldData } from '../DashboardClient'; // 🚨 FIXED IMPORT PATH
+import type { FieldData } from './NewRegistration';
 
 const categories = [
   "Basic Info", "Vitals", "Contact Info", "Identification", 
