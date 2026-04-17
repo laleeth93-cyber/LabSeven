@@ -1,64 +1,134 @@
-// --- BLOCK restructure/app/actions/billing.ts OPEN ---
+// --- BLOCK app/actions/billing.ts OPEN ---
 "use server";
 
+import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/server-auth';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-const API_KEY = process.env.BACKEND_API_KEY || 'labseven_secure_backend_key_2026';
-
-const getHeaders = (orgId: number) => ({
-    'Content-Type': 'application/json',
-    'x-org-id': orgId.toString(),
-    'x-api-key': API_KEY
-});
-
 // 1. SEARCH TESTS
 export async function searchTests(query: string) {
-    if (!query || query.length < 2) return [];
+  if (!query || query.length < 2) return [];
 
-    try {
-        const { orgId } = await requireAuth();
-        
-        const url = new URL(`${BACKEND_URL}/api/billing/search`);
-        url.searchParams.append('q', query);
+  try {
+    const { orgId } = await requireAuth();
 
-        const response = await fetch(url.toString(), {
-            method: 'GET',
-            headers: getHeaders(orgId),
-            cache: 'no-store'
-        });
-
-        if (!response.ok) return [];
-        return await response.json();
-    } catch (error) {
-        console.error("Frontend failed to reach search API:", error);
-        return [];
-    }
+    const tests = await prisma.test.findMany({
+      where: {
+        organizationId: orgId, 
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } }, 
+          { code: { contains: query, mode: 'insensitive' } }  
+        ],
+        isActive: true
+      },
+      include: {
+        outsourceLab: true 
+      },
+      take: 10, 
+    });
+    return tests;
+  } catch (error) {
+    console.error("Search Error:", error);
+    return [];
+  }
 }
 
 // 2. CREATE BILL
 export async function createBill(data: any) {
-    try {
-        const { orgId } = await requireAuth();
-
-        const response = await fetch(`${BACKEND_URL}/api/billing/create`, {
-            method: 'POST',
-            headers: getHeaders(orgId),
-            body: JSON.stringify(data)
+  try {
+    const { orgId } = await requireAuth();
+    const billNumber = data.billNumber || `INV-${Date.now()}`;
+    
+    // 🚨 THE FIX: Use Number() instead of parseInt() so hyphenated strings correctly trigger the lookup!
+    let patientDbId = Number(data.patientId); 
+    
+    if (isNaN(patientDbId)) {
+        const pt = await prisma.patient.findUnique({
+           where: { organizationId_patientId: { organizationId: orgId, patientId: data.patientId } }
         });
-
-        const result = await response.json();
-
-        if (result.success) {
-            revalidatePath('/list');
-            revalidatePath('/');
-        }
-
-        return result;
-    } catch (error: any) {
-        console.error("Frontend failed to connect to backend for billing:", error);
-        return { success: false, message: "Backend Server Unreachable" };
+        if (!pt) throw new Error("Patient not found in this laboratory.");
+        patientDbId = pt.id;
     }
+
+    let finalItemsToSave: { organizationId: number, testId: number, price: number, isUrgent: boolean }[] = [];
+    
+    const itemIds = data.items.map((i: any) => i.testId);
+    const dbTests = await prisma.test.findMany({
+        where: { id: { in: itemIds }, organizationId: orgId }, 
+        include: { packageTests: true } 
+    });
+
+    for (const submittedItem of data.items) {
+        const dbTest = dbTests.find(t => t.id === submittedItem.testId);
+        
+        if (dbTest && dbTest.type === 'Package') {
+             if (dbTest.packageTests && dbTest.packageTests.length > 0) {
+                 dbTest.packageTests.forEach((pkgTest, index) => {
+                     finalItemsToSave.push({
+                         organizationId: orgId, 
+                         testId: pkgTest.testId,
+                         price: index === 0 ? submittedItem.price : 0, 
+                         isUrgent: false
+                     });
+                 });
+             } else {
+                 finalItemsToSave.push({ organizationId: orgId, testId: submittedItem.testId, price: submittedItem.price, isUrgent: false });
+             }
+        } else {
+             finalItemsToSave.push({ organizationId: orgId, testId: submittedItem.testId, price: submittedItem.price, isUrgent: false });
+        }
+    }
+
+    // SMART DOCTOR LINKING 
+    let doctorId: number | undefined = undefined;
+    if (data.referredBy && data.referredBy !== 'Self') {
+        const doc = await prisma.doctor.findFirst({
+            where: { name: data.referredBy, organizationId: orgId } 
+        });
+        if (doc) doctorId = doc.id;
+    }
+
+    const newBill = await prisma.bill.create({
+      data: {
+        organizationId: orgId, 
+        billNumber: billNumber,
+        patientId: patientDbId, 
+        doctorId: doctorId || null, 
+        date: new Date(data.date),
+        subTotal: data.subTotal,
+        discountPercent: data.discountPercent,
+        discountAmount: data.discountAmount,
+        discountReason: data.discountReason || null,
+        netAmount: data.netAmount,
+        paidAmount: data.paidAmount,
+        dueAmount: data.dueAmount,
+        isFullyPaid: data.dueAmount <= 0,
+        
+        items: {
+          create: finalItemsToSave 
+        },
+        
+        // Only create a payment record if they actually paid something
+        ...(data.paidAmount > 0 && {
+            payments: {
+              create: {
+                organizationId: orgId,
+                amount: data.paidAmount,
+                mode: data.paymentMode || 'Cash',
+                date: new Date()
+              }
+            }
+        })
+      }
+    });
+
+    revalidatePath('/list');
+    revalidatePath('/');
+
+    return { success: true, billNumber: newBill.billNumber };
+  } catch (error) {
+    console.error("Create Bill Error:", error);
+    return { success: false, message: "Failed to save bill" };
+  }
 }
-// --- BLOCK restructure/app/actions/billing.ts CLOSE ---
+// --- BLOCK app/actions/billing.ts CLOSE ---

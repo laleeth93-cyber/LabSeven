@@ -1,9 +1,9 @@
-// --- BLOCK app/list/page.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, AlertCircle, Trash2, Lock } from 'lucide-react';
+import useSWR from 'swr'; // 🚨 IMPORT SWR CACHING LIBRARY
 
 import ListTable from './components/ListTable';
 import ListHeader from './components/ListHeader'; 
@@ -18,7 +18,6 @@ import InvoiceModal from '@/app/registration/InvoiceModal';
 import EditPatientModal from './components/EditPatientModal';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 
-// 🚨 1. IMPORT FAST HOOK
 import { usePermissions } from '@/app/context/PermissionContext';
 import { getPendingWorklist } from '@/app/actions/result-entry'; 
 import { deleteBill } from '@/app/actions/patient-list';
@@ -26,11 +25,8 @@ import { deleteBill } from '@/app/actions/patient-list';
 export default function PatientListPage() {
     const router = useRouter();
 
-    // 🚨 2. USE HOOK FOR INSTANT RBAC
     const { orgId, permissions, userRole, permsLoaded } = usePermissions();
 
-    const [bills, setBills] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
 
@@ -62,6 +58,22 @@ export default function PatientListPage() {
         return permissions.some(p => p.module === 'Patient List' && p.action === action);
     };
 
+    // 🚨 IMPLEMENT SWR CACHING
+    const { data: fetchRes, isLoading, mutate: refreshBills } = useSWR(
+        (permsLoaded && canSee('Patient List')) ? 'pending-worklist' : null,
+        async () => {
+            const res = await getPendingWorklist();
+            return res;
+        },
+        {
+            revalidateOnFocus: false, // Prevents aggressive refetching when switching browser tabs
+            keepPreviousData: true    // Keeps the old list visible while silently fetching the new one
+        }
+    );
+
+    // Extract bills from SWR cache
+    const bills = fetchRes?.success && fetchRes?.data ? fetchRes.data : [];
+
     useEffect(() => {
         const savedView = localStorage.getItem('patientListViewPref');
         if (savedView === 'list' || savedView === 'grid') {
@@ -76,7 +88,7 @@ export default function PatientListPage() {
 
     const uniqueDoctors = useMemo(() => {
         const docs = new Set<string>();
-        bills.forEach(b => {
+        bills.forEach((b: any) => {
             const ref = b.patient?.refDoctor;
             if (ref && ref !== 'Self') {
                 let doc = ref;
@@ -107,30 +119,8 @@ export default function PatientListPage() {
     const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
-        if(permsLoaded && canSee('Patient List')) fetchBills();
-    }, [dateRange, permsLoaded]);
-
-    useEffect(() => {
         setCurrentPage(1);
     }, [searchQuery, activeFilter, advFilters, sortOrder, dateRange]);
-
-    // 🚨 3. BULLETPROOF LOADING
-    const fetchBills = async () => {
-        setIsLoading(true);
-        try {
-            const res = await getPendingWorklist(); 
-            if (res && res.success && res.data) {
-                setBills(res.data);
-            } else {
-                setBills([]);
-            }
-        } catch (error) {
-            console.error("Failed to fetch bills", error);
-            setBills([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     const getDocName = (refStr: string) => {
         if (!refStr || refStr.toLowerCase() === 'self') return 'Self';
@@ -153,7 +143,7 @@ export default function PatientListPage() {
 
         if (searchQuery) {
             const lowerSearch = searchQuery.toLowerCase();
-            filtered = filtered.filter(bill => 
+            filtered = filtered.filter((bill: any) => 
                 bill.patient?.firstName?.toLowerCase().includes(lowerSearch) ||
                 bill.patient?.lastName?.toLowerCase().includes(lowerSearch) ||
                 bill.billNumber?.toLowerCase().includes(lowerSearch) ||
@@ -163,7 +153,7 @@ export default function PatientListPage() {
         }
 
         if (activeFilter !== 'All') {
-            filtered = filtered.filter(bill => {
+            filtered = filtered.filter((bill: any) => {
                 const items = bill.items || [];
                 if (items.length === 0) return false;
                 if (activeFilter === 'Pending') return items.some((i: any) => i.status === 'Pending');
@@ -175,7 +165,7 @@ export default function PatientListPage() {
         }
 
         if (advFilters.statusFilter !== 'All') {
-            filtered = filtered.filter(bill => {
+            filtered = filtered.filter((bill: any) => {
                 const items = bill.items || [];
                 if (advFilters.statusFilter === 'Pending') return items.some((i: any) => i.status === 'Pending');
                 if (advFilters.statusFilter === 'Partial') return items.some((i: any) => i.status === 'Entered');
@@ -184,18 +174,18 @@ export default function PatientListPage() {
             });
         }
         if (advFilters.refDocFilter !== 'All') {
-            filtered = filtered.filter(bill => getDocName(bill.patient?.refDoctor) === advFilters.refDocFilter);
+            filtered = filtered.filter((bill: any) => getDocName(bill.patient?.refDoctor) === advFilters.refDocFilter);
         }
         if (advFilters.isUrgentFilter) {
-            filtered = filtered.filter(bill => bill.items?.some((i: any) => i.isUrgent));
+            filtered = filtered.filter((bill: any) => bill.items?.some((i: any) => i.isUrgent));
         }
         if (advFilters.testSearch) {
             const lowerTest = advFilters.testSearch.toLowerCase();
-            filtered = filtered.filter(bill => bill.items?.some((i: any) => i.test?.name?.toLowerCase().includes(lowerTest)));
+            filtered = filtered.filter((bill: any) => bill.items?.some((i: any) => i.test?.name?.toLowerCase().includes(lowerTest)));
         }
 
         if (dateRange.from && dateRange.to) {
-            filtered = filtered.filter(bill => {
+            filtered = filtered.filter((bill: any) => {
                 const billDate = new Date(bill.date);
                 const bDate = new Date(billDate.getFullYear(), billDate.getMonth(), billDate.getDate());
                 const from = dateRange.from ? new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate()) : null;
@@ -248,7 +238,6 @@ export default function PatientListPage() {
     const handleOpenRefund = (bill: any) => { setSelectedBill(bill); setIsRefundOpen(true); };
     const handleOpenAudit = (bill: any) => { setSelectedBill(bill); setIsAuditOpen(true); };
     
-    // 🚨 4. SECURE EDIT & DELETE ACTIONS
     const handleEditBill = (bill: any) => {
         if (!canPerform('Edit')) return alert("You do not have permission to edit patient records.");
         setSelectedBill(bill);
@@ -269,7 +258,7 @@ export default function PatientListPage() {
             if (res.success) {
                 setIsDeleteModalOpen(false);
                 setBillToDelete(null);
-                fetchBills(); 
+                refreshBills(); // 🚨 TRIGGER BACKGROUND REFRESH INSTEAD OF WATERFALL
             } else {
                 alert(`Failed to delete bill: ${res.message}`);
             }
@@ -348,15 +337,17 @@ export default function PatientListPage() {
             {isCultureReportOpen && selectedBill && <CultureReportModal isOpen={isCultureReportOpen} onClose={() => { setIsCultureReportOpen(false); setSelectedBill(null); }} bill={selectedBill} />}
             {isSmartReportOpen && selectedBill && <SmartReportModal isOpen={isSmartReportOpen} onClose={() => { setIsSmartReportOpen(false); setSelectedBill(null); }} bill={selectedBill} />}
             {isAuditOpen && selectedBill && <AuditLogModal isOpen={isAuditOpen} onClose={() => { setIsAuditOpen(false); setSelectedBill(null); }} auditBill={selectedBill} />}
-            {isRefundOpen && selectedBill && <RefundModal isOpen={isRefundOpen} onClose={() => { setIsRefundOpen(false); setSelectedBill(null); }} refundBill={selectedBill} onSuccess={fetchBills} />}
-            {isClearDueOpen && selectedBill && <ClearDueModal isOpen={isClearDueOpen} onClose={() => { setIsClearDueOpen(false); setSelectedBill(null); }} dueBill={selectedBill} onSuccess={fetchBills} />}
+            
+            {/* 🚨 REPLACED fetchBills with refreshBills FOR AUTO UPDATE */}
+            {isRefundOpen && selectedBill && <RefundModal isOpen={isRefundOpen} onClose={() => { setIsRefundOpen(false); setSelectedBill(null); }} refundBill={selectedBill} onSuccess={refreshBills} />}
+            {isClearDueOpen && selectedBill && <ClearDueModal isOpen={isClearDueOpen} onClose={() => { setIsClearDueOpen(false); setSelectedBill(null); }} dueBill={selectedBill} onSuccess={refreshBills} />}
             
             {isEditOpen && selectedBill && (
                 <EditPatientModal 
                     isOpen={isEditOpen} 
                     onClose={() => { setIsEditOpen(false); setSelectedBill(null); }} 
                     editBill={selectedBill} 
-                    onSuccess={fetchBills} 
+                    onSuccess={refreshBills} 
                 />
             )}
 
@@ -386,4 +377,3 @@ export default function PatientListPage() {
         </React.Fragment>
     );
 }
-// --- BLOCK app/list/page.tsx CLOSE ---

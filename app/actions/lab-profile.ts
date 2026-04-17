@@ -1,22 +1,24 @@
+// --- BLOCK app/actions/lab-profile.ts OPEN ---
 "use server";
 
+import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '@/lib/server-auth';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-const API_KEY = process.env.INTERNAL_API_KEY || "labseven_secret_key_2025";
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
 export async function getLabProfile() {
     try {
-        const { orgId } = await requireAuth(); // Still secure the request locally
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
 
-        const response = await fetch(`${BACKEND_URL}/api/lab-profile?orgId=${orgId}`, {
-            method: 'GET',
-            headers: { 'x-api-key': API_KEY },
-            cache: 'no-store'
+        let profile = await prisma.labProfile.findFirst({
+            where: { organizationId: orgId } // 🚨 Filter by current lab
         });
-
-        return await response.json();
+        
+        if (!profile) { 
+            profile = await prisma.labProfile.create({ 
+                data: { organizationId: orgId } // 🚨 Attach to current lab
+            }); 
+        }
+        return { success: true, data: profile };
     } catch (error: any) {
         return { success: false, message: error.message };
     }
@@ -24,28 +26,42 @@ export async function getLabProfile() {
 
 export async function updateLabProfile(data: any) {
     try {
-        const { orgId } = await requireAuth();
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
 
-        const response = await fetch(`${BACKEND_URL}/api/lab-profile`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': API_KEY
-            },
-            body: JSON.stringify({ ...data, orgId })
+        const profile = await prisma.labProfile.findFirst({
+            where: { organizationId: orgId } // 🚨 Filter by current lab
         });
 
-        const result = await response.json();
+        const payload = {
+            name: data.name, 
+            tagline: data.tagline, 
+            address: data.address, 
+            phone: data.phone, 
+            email: data.email, 
+            website: data.website, 
+            logoUrl: data.logoUrl
+        };
 
-        // Still handle Next.js UI cache invalidation here
-        if (result.success) {
-            revalidatePath('/lab-profile');
-            revalidatePath('/reports');
-            revalidatePath('/list');
+        if (profile) {
+            await prisma.labProfile.update({
+                where: { id: profile.id },
+                data: payload
+            });
+        } else {
+            await prisma.labProfile.create({
+                data: {
+                    ...payload,
+                    organizationId: orgId // 🚨 Attach to current lab
+                }
+            });
         }
-
-        return result;
+        
+        revalidatePath('/lab-profile');
+        revalidatePath('/reports');
+        revalidatePath('/list');
+        return { success: true, message: "Lab Profile saved successfully!" };
     } catch (error: any) {
         return { success: false, message: error.message };
     }
 }
+// --- BLOCK app/actions/lab-profile.ts CLOSE ---

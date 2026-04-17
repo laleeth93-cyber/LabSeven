@@ -1,0 +1,855 @@
+// --- BLOCK prisma/schema.prisma OPEN ---
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 0. THE SAAS ROOT: ORGANIZATION
+// ==========================================
+
+model Organization {
+  id          Int      @id @default(autoincrement())
+  name        String   // e.g., "City Path Labs"
+  email       String?  @unique
+  phone       String?
+  address     String?
+  plan        String   @default("Free Trial")
+  subscriptionEndsAt DateTime?
+  isActive    Boolean  @default(true)
+  
+  // 🚨 NEW SENSITIVITY TOGGLE FLAG
+  hasSensitivity Boolean @default(false) 
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // SaaS Relationships (Links to all lab data)
+  users                     User[]
+  patients                  Patient[]
+  bills                     Bill[]
+  billItems                 BillItem[]
+  testResults               TestResult[]
+  payments                  Payment[]
+  doctors                   Doctor[]
+  tests                     Test[]
+  testParameters            TestParameter[]
+  parameters                Parameter[]
+  parameterRanges           ParameterRange[]
+  departments               Department[]
+  specimens                 Specimen[]
+  vacutainers               Vacutainer[]
+  methods                   Method[]
+  uoms                      UOM[]
+  operators                 Operator[]
+  labLists                  LabList[]
+  labProfiles               LabProfile[]
+  reportSettings            ReportSettings[]
+  roles                     Role[]
+  organisms                 Organism[]
+  antibiotics               Antibiotic[]
+  antibioticClasses         AntibioticClass[]
+  antibioticInterpretations AntibioticInterpretation[]
+  susceptibilityInfos       SusceptibilityInfo[]
+}
+
+// ==========================================
+// 1. PATIENT & BILLING MODELS
+// ==========================================
+
+model Patient {
+  id              Int      @id @default(autoincrement())
+  patientId       String   
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  designation   String?
+  firstName     String
+  lastName      String
+  gender        String
+  
+  ageY          Int?     @default(0)
+  ageM          Int?     @default(0)
+  ageD          Int?     @default(0)
+
+  weight        String?
+  height        String?
+  phone         String
+  email         String?
+  address       String?  @db.Text
+
+  aadhaar       String?
+  uhid          String?
+  passport      String?
+  referralType  String?
+  refDoctor     String?
+  collectionAt  String?
+  bills         Bill[]
+
+  @@unique([organizationId, patientId])
+}
+
+model Bill {
+  id              Int      @id @default(autoincrement())
+  billNumber      String   
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  date          DateTime @default(now())
+  
+  patientId     Int
+  patient       Patient  @relation(fields: [patientId], references: [id])
+
+  doctorId      Int?
+  doctor        Doctor?  @relation(fields: [doctorId], references: [id])
+
+  approvedBy1Id Int?
+  approvedBy1   User?    @relation("BillApprovedBy1", fields: [approvedBy1Id], references: [id])
+
+  approvedBy2Id Int?
+  approvedBy2   User?    @relation("BillApprovedBy2", fields: [approvedBy2Id], references: [id])
+
+  subTotal        Float
+  discountPercent Float?
+  discountAmount  Float?
+  discountReason  String?
+  
+  netAmount       Float
+  paidAmount      Float
+  dueAmount       Float
+  isFullyPaid     Boolean  @default(false)
+  
+  isDeleted       Boolean  @default(false) 
+  
+  items         BillItem[]
+  payments      Payment[]
+
+  @@unique([organizationId, billNumber])
+}
+
+model BillItem {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  billId          Int
+  bill            Bill    @relation(fields: [billId], references: [id])
+ 
+  testId          Int
+  test            Test    @relation(fields: [testId], references: [id])
+  
+  price           Float
+  isUrgent        Boolean @default(false)
+  
+  status          String  @default("Pending") 
+  notes           String? @db.Text
+
+  results         TestResult[]
+}
+
+model TestResult {
+  id              Int       @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  billItemId      Int
+  billItem        BillItem  @relation(fields: [billItemId], references: [id], onDelete: Cascade)
+  
+  parameterId     Int?
+  parameter       Parameter? @relation(fields: [parameterId], references: [id])
+  
+  resultValue     String?
+  flag            String?
+  remarks         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+}
+
+model Payment {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  billId          Int
+  bill            Bill     @relation(fields: [billId], references: [id])
+  
+  mode          String
+  amount        Float
+  transactionId String?
+  date          DateTime @default(now())
+}
+
+model Doctor {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  type           String   @default("Doctor") 
+  name           String
+  code           String?
+  hospital       String?
+  degree         String?
+  commission     Float?   @default(0)
+  contactPerson  String?
+  phone          String?
+  email          String?
+  specialization String?
+  clinicName     String?
+  isActive       Boolean  @default(true)
+  
+  user           User?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  bills          Bill[] 
+  outsourcedTests Test[]  @relation("TestOutsourceLab")
+}
+
+// ==========================================
+// 2. TEST CONFIGURATION MODELS
+// ==========================================
+
+model Test {
+  id              Int      @id @default(autoincrement())
+  code            String   
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  name          String
+  displayName   String?
+  price         Float    @default(0)
+  
+  departmentId  Int?
+  department    Department? @relation(fields: [departmentId], references: [id])
+  
+  methodId      Int?
+  method        Method?     @relation(fields: [methodId], references: [id])
+
+  specimenId    Int?
+  specimen      Specimen?   @relation(fields: [specimenId], references: [id])
+
+  vacutainerId  Int?
+  vacutainer    Vacutainer? @relation(fields: [vacutainerId], references: [id])
+
+  gender        String?  @default("Both")
+  type          String   @default("Test") 
+  description   String?
+  sampleVolume  String?  
+  barcodeCopies Int?     @default(1)
+  
+  minDays       Int?     @default(0)
+  minHours      Int?     @default(0)
+  minMinutes    Int?     @default(0)
+  maxDays       Int?     @default(0)
+  maxHours      Int?     @default(0)
+  maxMinutes    Int?     @default(0)
+
+  resultType      String?  @default("Parameter") 
+  template        String?  @default("Default")   
+  instructions    String?  @db.Text
+  
+  isInterpretationNeeded Boolean @default(false)
+  interpretation  String?  @db.Text 
+  
+  reportTitle     String?
+  colCaption1     String?
+  colCaption2     String?
+  colCaption3     String?
+  colCaption4     String?
+  colCaption5     String?
+  labEquiName     String?
+  isFormulaNeeded Boolean  @default(false)
+  isCountNeeded   Boolean  @default(false)
+  targetCount     Int?
+  lmpRequired     Boolean  @default(false)
+  idRequired      Boolean  @default(false)
+  consentRequired Boolean  @default(false)
+  printNextPage   Boolean  @default(false) 
+  billingOnly     Boolean  @default(false)
+  
+  isCulture       Boolean  @default(false)
+  cultureColumns  String?  @db.Text 
+  
+  isOutsourced    Boolean  @default(false)
+  outsourceLabId  Int?
+  outsourceLab    Doctor?  @relation("TestOutsourceLab", fields: [outsourceLabId], references: [id])
+
+  isConfigured    Boolean  @default(false)
+  isActive        Boolean  @default(true)
+
+  normalRange   String?
+  units         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  billItems     BillItem[]
+  parameters    TestParameter[]
+
+  packageTests    PackageTest[] @relation("PackageToTests")
+  partOfPackages  PackageTest[] @relation("TestInPackages")
+
+  @@unique([organizationId, code])
+}
+
+model PackageTest {
+  id          Int      @id @default(autoincrement())
+  packageId   Int
+  testId      Int
+
+  package     Test     @relation("PackageToTests", fields: [packageId], references: [id], onDelete: Cascade)
+  test        Test     @relation("TestInPackages", fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, testId])
+}
+
+model TestParameter {
+  id              Int       @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  testId          Int
+  test            Test      @relation(fields: [testId], references: [id], onDelete: Cascade)
+  
+  parameterId     Int?
+  parameter       Parameter? @relation(fields: [parameterId], references: [id], onDelete: Cascade)
+  
+  order           Int       @default(0)
+  
+  isHeading       Boolean   @default(false)
+  headingText     String?
+  isCultureField  Boolean   @default(false)
+
+  isActive        Boolean   @default(true)
+  formula         String?
+  isCountDependent Boolean  @default(false)
+}
+
+// ==========================================
+// 3. PARAMETER CONFIGURATION
+// ==========================================
+
+model Parameter {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  name          String
+  displayName   String?
+  code          String?  
+  department    String?  @default("HEMATOLOGY")
+  
+  price         Float?   @default(0)
+  unit          String?
+  method        String?
+  
+  inputType     String   @default("Numerical") 
+  decimals      Int?     @default(2)
+  
+  resultAlignment String? @default("Beside")
+  isMultiValue    Boolean @default(false)
+  options         String[]
+
+  reportTitle    String?
+  colCaption1    String?
+  colCaption2    String?
+  colCaption3    String?
+  colCaption4    String?
+  colCaption5    String?
+
+  isFormula      Boolean   @default(false)
+  billingOnly    Boolean   @default(false)
+  
+  gender        String?  @default("Both")
+  minAge        Int?     @default(0)
+  maxAge        Int?     @default(100)
+  ageUnit       String?  @default("Years")
+
+  minVal        Float?
+  maxVal        Float?
+  criticalLow   Float?
+  criticalHigh  Float?
+
+  lowMessage    String?
+  highMessage   String?
+  panicMessage  String?
+  interpretation String? @db.Text
+  
+  isActive      Boolean  @default(true)
+  
+  ranges        ParameterRange[]
+  tests         TestParameter[]
+  results       TestResult[] 
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+model ParameterRange {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  parameterId     Int
+  parameter       Parameter @relation(fields: [parameterId], references: [id], onDelete: Cascade)
+
+  gender        String   @default("Both")
+  minAge        Int      @default(0)
+  maxAge        Int      @default(100)
+  minAgeUnit    String   @default("Years")
+  maxAgeUnit    String   @default("Years")
+  
+  normalOperator  String  @default("Between")
+  lowRange      Float?
+  highRange     Float?
+  normalRange   String?
+
+  normalValue   String?
+  abnormalValue String?
+  criticalOperator String  @default("Between")
+  criticalLow      Float?
+  criticalHigh     Float?
+  criticalValue    String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+}
+
+// ==========================================
+// 4. LABORATORY MASTERS
+// ==========================================
+
+model Department {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code          String   
+  name          String
+  description   String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+  tests         Test[]
+
+  @@unique([organizationId, code])
+}
+
+model Specimen {
+  id              Int     @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code      String  
+  name      String
+  type      String?
+  container String?
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  tests     Test[]
+
+  @@unique([organizationId, code])
+}
+
+model Vacutainer {
+  id              Int     @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code      String  
+  name      String
+  color     String?
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  tests     Test[]
+
+  @@unique([organizationId, code])
+}
+
+model Method {
+  id              Int     @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code      String  
+  name      String
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  tests     Test[]
+
+  @@unique([organizationId, code])
+}
+
+model UOM {
+  id              Int     @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code      String  
+  name      String
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+model Operator {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code      String  
+  name      String
+  symbol    String?
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+model LabList {
+  id              Int     @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code      String  
+  name      String
+  values    String?
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+// ==========================================
+// 5. SETTINGS & CONFIGURATION
+// ==========================================
+
+model LabProfile {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  name      String   @default("Lab Seven")
+  tagline   String?
+  address   String   @default("123 Health Avenue, Medical District")
+  phone     String   @default("+1 234 567 890")
+  email     String?
+  website   String?
+  logoUrl   String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model ReportSettings {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  doc1Name        String?  @default("Dr. John Doe")
+  doc1Designation String?  @default("Chief Pathologist")
+  doc1SignUrl     String?
+  doc2Name        String?
+  doc2Designation String?
+  doc2SignUrl     String?
+  marginTop       Int      @default(120)
+  marginBottom    Int      @default(80)
+  marginLeft      Int      @default(40)
+  marginRight     Int      @default(40)
+
+  marginSettings  String?  @db.Text
+
+  tableStyle      String   @default("grid")
+  fontFamily      String   @default("font-sans")
+  fontSize        String   @default("text-xs")
+  rowPadding      String   @default("py-1.5")
+  labelBold       Boolean  @default(true)
+  dataBold        Boolean  @default(false)
+  leftColFields   String?  @db.Text
+  rightColFields  String?  @db.Text
+  leftColWidth    String   @default("35 65")
+  rightColWidth   String   @default("35 65")
+  headerQrCode    Boolean  @default(false)
+
+  showMethodCol       Boolean  @default(true)
+  methodDisplayStyle  String   @default("column")
+  showUnitCol         Boolean  @default(true)
+  showRefRangeCol     Boolean  @default(true)
+  highlightAbnormal   Boolean  @default(true)
+  stripedRows         Boolean  @default(false)
+  
+  testColumnWidth     String   @default("auto") 
+  
+  colWidthParam       String?
+  colWidthResult      String?
+  colWidthUnit        String?
+  colWidthRef         String?
+  colWidthMethod      String?
+  bodyTableStyle      String   @default("horizontal")
+  bodyFontFamily      String   @default("font-sans")
+  bodyFontSize        String   @default("text-sm")
+  bodyRowHeight       String   @default("py-2")
+  bodyColPadding      String   @default("px-2")
+  bodyHeaderBgColor   String   @default("bg-slate-50")
+  bodyHeaderTextColor String   @default("text-slate-800")
+  bodyResultAlign     String   @default("text-left")
+
+  showDepartmentName  Boolean  @default(true)
+  departmentNameSize  String   @default("text-sm")
+  testNameAlignment   String   @default("text-center")
+  testNameUnderline   Boolean  @default(true)
+  testNameSize        String   @default("text-base")
+  gridLineThickness   String   @default("1")
+  
+  subheadingColor     String   @default("#5e35b1")
+  subheadingSize      String   @default("text-sm")
+
+  footerStyle         String   @default("style1")
+  sigSize             Int      @default(40)
+  sigSpacing          Int      @default(4)
+  docNameSize         Int      @default(10)
+  docDesigSize        Int      @default(8)
+  docNameSpacing      Int      @default(2)
+  sigAlignment        String   @default("center")
+
+  showQrCode          Boolean  @default(true)
+  showBarcode         Boolean  @default(false)
+  showPageNumbers     Boolean  @default(true)
+  showEndOfReport     Boolean  @default(true)
+  qrPlacement         String   @default("footer")
+  qrText              String   @default("Scan to validate")
+  barcodeText         String   @default("none")
+
+  letterheadStyle     String   @default("none")
+  paperSize           String   @default("A4")
+  printOrientation    String   @default("portrait")
+
+  customHeader1       String?  @db.Text
+  customHeader2       String?  @db.Text
+  customHeader3       String?  @db.Text
+  customHeader4       String?  @db.Text
+
+  deltaSettings       String?  @db.Text
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+}
+
+// ==========================================
+// 6. AUTHORIZATION & USERS (Internal Staff)
+// ==========================================
+
+model User {
+  id              Int      @id @default(autoincrement())
+  username        String   @unique
+  password        String   
+  name            String
+  email           String?  @unique
+  phone           String?
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  degree       String?
+  signName     String?
+  designation  String?  
+  regNumber    String?  
+  signText1    String?
+  signText2    String?  
+  signatureUrl String?  @db.Text 
+  isDefaultSignature Boolean @default(false)
+
+  allowConcession Boolean @default(false)
+  concessionLimit Float?   @default(0)
+
+  isBillingOnly   Boolean @default(false)
+
+  roleId      Int?
+  role        Role?    @relation(fields: [roleId], references: [id])
+
+  doctorId    Int?     @unique 
+  doctor      Doctor?  @relation(fields: [doctorId], references: [id])
+
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  permissions UserPermission[]
+
+  approvedBills1 Bill[] @relation("BillApprovedBy1")
+  approvedBills2 Bill[] @relation("BillApprovedBy2")
+}
+
+model Role {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  name        String   
+  description String?
+  users       User[]
+  permissions RolePermission[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@unique([organizationId, name])
+}
+
+model Permission {
+  id          Int      @id @default(autoincrement())
+  module      String   
+  action      String   
+  description String?
+  roles       RolePermission[]
+  users       UserPermission[] 
+
+  @@unique([module, action])
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId Int
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@unique([roleId, permissionId])
+}
+
+model UserPermission {
+  id              Int        @id @default(autoincrement())
+  userId       Int
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissionId Int
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@unique([userId, permissionId])
+}
+
+// ==========================================
+// 7. MICROBIOLOGY MASTERS
+// ==========================================
+
+model Organism {
+  id              Int         @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code        String       
+  name        String
+  isActive    Boolean      @default(true)
+  antibiotics Antibiotic[] 
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+model Antibiotic {
+  id              Int          @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code        String       
+  name        String
+  group       String?
+  isActive    Boolean      @default(true)
+  organisms   Organism[]   
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+model AntibioticClass {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code      String   
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+model AntibioticInterpretation {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code      String   
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+model SusceptibilityInfo {
+  id              Int      @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  code      String   
+  name      String   
+  details   String?  @db.Text 
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([organizationId, code])
+}
+
+model OtpCode {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  purpose   String   // Will be 'REGISTER' or 'RESET_PASSWORD'
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email, otp])
+}
+// --- BLOCK prisma/schema.prisma CLOSE ---

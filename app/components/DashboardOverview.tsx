@@ -1,4 +1,3 @@
-// --- app/components/DashboardOverview.tsx Block Open ---
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -6,7 +5,7 @@ import {
     getKPIs, getRevenueData, getPatientData, getTestTrendData, 
     getTestStatusData, getTopTestsData, getTopReferralsData, 
     getOutsourceData, getReferralList, getSpecificReferralTrendData,
-    getSelfVsReferralData // Imported our new action here!
+    getSelfVsReferralData 
 } from '@/app/actions/dashboard';
 import { Loader2, TrendingUp, Users, Activity, AlertCircle, Building2, Calendar, Stethoscope, TestTube, ChevronDown, Search, FileText, UserPlus } from 'lucide-react';
 import { 
@@ -15,9 +14,19 @@ import {
 } from 'recharts';
 import DateRangeFilter from '@/app/results/entry/components/DateRangeFilter';
 
+// --- HELPER: GET STRICT START AND END OF TODAY ---
+const getTodayRange = () => {
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+    const to = new Date();
+    to.setHours(23, 59, 59, 999);
+    return { from, to };
+};
+
 // --- MODULAR WIDGET COMPONENT ---
-function ChartWidget({ title, icon: Icon, fetcher, renderChart }: any) {
-    const [dateRange, setDateRange] = useState<{from: Date | null, to: Date | null}>({ from: null, to: null });
+function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "end" }: any) {
+    // 🚨 FIX 1: Initialize strictly to Today instead of null
+    const [dateRange, setDateRange] = useState<{from: Date | null, to: Date | null}>(getTodayRange());
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -42,8 +51,9 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart }: any) {
                 <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                     <Icon size={16} className="text-[#9575cd] shrink-0"/> {title}
                 </h3>
-                <div className="w-full xl:w-[240px] z-20">
-                    <DateRangeFilter onFilterChange={(range) => setDateRange({ from: range.from, to: range.to })} />
+                {/* 🚨 FIX 2: CSS and Prop overrides to align left side widgets properly */}
+                <div className={`w-full xl:w-[240px] z-20 ${alignPopover === 'left' ? '[&>div>div]:!left-0 [&>div>div]:!right-auto origin-top-left' : ''}`}>
+                    <DateRangeFilter align={alignPopover === 'left' ? 'start' : 'end'} onFilterChange={(range) => setDateRange({ from: range.from, to: range.to })} />
                 </div>
             </div>
             
@@ -66,7 +76,8 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart }: any) {
 
 // --- SPECIFIC REFERRAL WIDGET ---
 function SpecificReferralWidget() {
-    const [dateRange, setDateRange] = useState<{from: Date | null, to: Date | null}>({ from: null, to: null });
+    // 🚨 FIX 1: Initialize to Today
+    const [dateRange, setDateRange] = useState<{from: Date | null, to: Date | null}>(getTodayRange());
     const [referrals, setReferrals] = useState<string[]>([]);
     const [selectedRef, setSelectedRef] = useState<string>('');
     const [data, setData] = useState<any>(null);
@@ -179,7 +190,8 @@ function SpecificReferralWidget() {
 export default function DashboardOverview() {
     
     // KPI Section State
-    const [kpiRange, setKpiRange] = useState<{from: Date | null, to: Date | null}>({ from: null, to: null });
+    // 🚨 FIX 1: Initialize to Today
+    const [kpiRange, setKpiRange] = useState<{from: Date | null, to: Date | null}>(getTodayRange());
     const [kpiData, setKpiData] = useState<any>(null);
     const [kpiLoading, setKpiLoading] = useState(true);
 
@@ -301,10 +313,11 @@ export default function DashboardOverview() {
                 <SpecificReferralWidget />
             </div>
 
-            {/* CHARTS GRID 2 - NOW HAS 4 COLUMNS TO INCLUDE SELF VS REFERRAL */}
+            {/* CHARTS GRID 2 - 4 COLUMNS */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
                 <ChartWidget 
                     title="Top Referring Entities" icon={Stethoscope} fetcher={getTopReferralsData} 
+                    alignPopover="left" // 🚨 FIX 2: Added popover alignment constraint
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 0 }}>
@@ -322,9 +335,9 @@ export default function DashboardOverview() {
                     )}
                 />
                 
-                {/* NEW SELF VS REFERRAL CHART WIDGET */}
                 <ChartWidget 
                     title="Self vs Referred" icon={UserPlus} fetcher={getSelfVsReferralData} 
+                    alignPopover="left" // 🚨 FIX 2: Added to the second column as well for safety
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -372,4 +385,3 @@ export default function DashboardOverview() {
         </div>
     );
 }
-// --- app/components/DashboardOverview.tsx Block Close ---

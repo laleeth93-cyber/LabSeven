@@ -1,107 +1,87 @@
+// --- BLOCK app/actions/packages.ts OPEN ---
 "use server";
 
+import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '@/lib/server-auth';
+import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-const API_KEY = process.env.INTERNAL_API_KEY || 'labseven_secret_key_2025';
-
-const getHeaders = (orgId: number) => ({
-    'Content-Type': 'application/json',
-    'x-org-id': orgId.toString(),
-    'x-api-key': API_KEY
-});
-
-export async function generateNextPackageCode() {
-    try {
-        const { orgId } = await requireAuth();
-        const res = await fetch(`${BACKEND_URL}/api/packages/generate-code`, { headers: getHeaders(orgId), cache: 'no-store' });
-        const result = await res.json();
-        return result.data;
-    } catch (error) {
-        return 'PKG-0001';
-    }
-}
-
+// Fetch all packages (Tests where type === 'Package')
 export async function getPackages() {
     try {
-        const { orgId } = await requireAuth();
-        const res = await fetch(`${BACKEND_URL}/api/packages`, { headers: getHeaders(orgId), cache: 'no-store' });
-        return await res.json();
-    } catch (error) {
-        return { success: false, message: "Failed to load packages.", data: [] };
-    }
-}
-
-export async function getPackage(id: number) {
-    try {
-        const { orgId } = await requireAuth();
-        const res = await fetch(`${BACKEND_URL}/api/packages/${id}`, { headers: getHeaders(orgId), cache: 'no-store' });
-        return await res.json();
-    } catch (error) {
-        return { success: false, message: "Failed to fetch package" };
-    }
-}
-
-export async function createPackage(data: any) {
-    try {
-        const { orgId } = await requireAuth();
-        const res = await fetch(`${BACKEND_URL}/api/packages`, {
-            method: 'POST', headers: getHeaders(orgId), body: JSON.stringify(data)
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        
+        const packages = await prisma.test.findMany({
+            where: { type: 'Package', organizationId: orgId }, // 🚨 Filter to current lab
+            include: {
+                department: true,
+                packageTests: {
+                    include: {
+                        test: {
+                            select: { id: true, name: true, code: true, price: true }
+                        }
+                    }
+                }
+            },
+            orderBy: { name: 'asc' }
         });
-        const result = await res.json();
-        if (result.success) revalidatePath('/packages');
-        return result;
+        return { success: true, data: packages };
     } catch (error: any) {
-        return { success: false, message: error.message || "Failed to create package." };
+        return { success: false, message: error.message };
     }
 }
 
-export async function updatePackage(id: number, data: any) {
+// Fetch available standalone tests that can be added to a package
+export async function getAvailableTestsForPackage() {
     try {
-        const { orgId } = await requireAuth();
-        const res = await fetch(`${BACKEND_URL}/api/packages/${id}`, {
-            method: 'PUT', headers: getHeaders(orgId), body: JSON.stringify(data)
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        
+        const tests = await prisma.test.findMany({
+            where: { type: 'Test', isActive: true, organizationId: orgId }, // 🚨 Filter to current lab
+            select: { id: true, name: true, code: true, price: true, department: { select: { name: true } } },
+            orderBy: { name: 'asc' }
         });
-        const result = await res.json();
-        if (result.success) revalidatePath('/packages');
-        return result;
+        return { success: true, data: tests };
     } catch (error: any) {
-        return { success: false, message: error.message || "Failed to update package." };
+        return { success: false, message: error.message };
     }
 }
 
-export async function savePackage(data: any) {
-    if (data.id) return updatePackage(data.id, data);
-    return createPackage(data);
-}
-
-export async function updatePackageStatus(id: number, isActive: boolean) {
+// Save the cart (update the tests inside a package)
+export async function savePackageTests(packageId: number, testIds: number[]) {
     try {
-        const { orgId } = await requireAuth();
-        const res = await fetch(`${BACKEND_URL}/api/packages/${id}/status`, {
-            method: 'PATCH', headers: getHeaders(orgId), body: JSON.stringify({ isActive })
+        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        
+        // 🚨 Verify ownership before modifying the package
+        const existingPackage = await prisma.test.findFirst({
+            where: { id: packageId, type: 'Package', organizationId: orgId }
         });
-        const result = await res.json();
-        if (result.success) revalidatePath('/packages');
-        return result;
-    } catch (error) {
-        return { success: false, message: "Failed to update status." };
+        
+        if (!existingPackage) {
+            return { success: false, message: "Unauthorized: Package not found in your lab." };
+        }
+
+        await prisma.$transaction(async (tx) => {
+            // 1. Remove all old tests from this package
+            await tx.packageTest.deleteMany({
+                where: { packageId: packageId }
+            });
+
+            // 2. Add the newly selected tests
+            if (testIds.length > 0) {
+                const dataToInsert = testIds.map(testId => ({
+                    packageId: packageId,
+                    testId: testId
+                }));
+                await tx.packageTest.createMany({
+                    data: dataToInsert
+                });
+            }
+        });
+
+        revalidatePath('/packages');
+        return { success: true, message: "Package updated successfully!" };
+    } catch (error: any) {
+        return { success: false, message: error.message };
     }
 }
-
-export async function deletePackage(id: number) {
-    try {
-        const { orgId } = await requireAuth();
-        const res = await fetch(`${BACKEND_URL}/api/packages/${id}`, { method: 'DELETE', headers: getHeaders(orgId) });
-        const result = await res.json();
-        if (result.success) revalidatePath('/packages');
-        return result;
-    } catch (error) {
-        return { success: false, message: "Failed to delete package." };
-    }
-}
-
-// --- DUMMY STUBS FOR VERCEL BUILD ---
-export async function savePackageTests(pkgId: number, tests: any[]) { return { success: false, message: 'Not available in this build.' }; }
-export async function getAvailableTestsForPackage(pkgId?: number) { return { success: false, data: [] as any[], message: 'Not available in this build.' }; }
+// --- BLOCK app/actions/packages.ts CLOSE ---

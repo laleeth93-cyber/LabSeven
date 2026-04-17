@@ -1,36 +1,108 @@
+// --- BLOCK app/actions/test-config.ts OPEN ---
 "use server";
 
+import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/server-auth'; 
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-const API_KEY = process.env.INTERNAL_API_KEY || 'labseven_secret_key_2025';
 
 export async function updateTestConfiguration(testId: number, data: any) {
   try {
     const { orgId } = await requireAuth(); 
 
-    // ⚡ Forward the heavy lifting to the Node.js Engine
-    const res = await fetch(`${BACKEND_URL}/api/test-config/${testId}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': API_KEY
-        },
-        body: JSON.stringify({ orgId, data })
-    });
-
-    const result = await res.json();
-
-    if (result.success) {
-        revalidatePath('/tests/configuration');
-        revalidatePath('/tests/formats');
+    if (!testId) {
+        return { success: false, message: "Invalid Test ID" };
     }
 
-    return result;
+    // Security Check: Ensure the test belongs to the logged-in lab!
+    const testBelongsToLab = await prisma.test.findFirst({
+        where: { id: testId, organizationId: orgId }
+    });
+
+    if (!testBelongsToLab) {
+        return { success: false, message: "Unauthorized: Test not found in your laboratory." };
+    }
+
+    const payload: any = {};
+
+    if (data.method !== undefined) payload.methodId = data.method ? parseInt(data.method) : null;
+    if (data.specimen !== undefined) payload.specimenId = data.specimen ? parseInt(data.specimen) : null;
+    if (data.vacutainer !== undefined) payload.vacutainerId = data.vacutainer ? parseInt(data.vacutainer) : null;
+    if (data.sampleVolume !== undefined) payload.sampleVolume = data.sampleVolume;
+    if (data.barcodeCopies !== undefined) payload.barcodeCopies = parseInt(data.barcodeCopies) || 1;
+
+    if (data.minDays !== undefined) payload.minDays = parseInt(data.minDays) || 0;
+    if (data.minHours !== undefined) payload.minHours = parseInt(data.minHours) || 0;
+    if (data.minMinutes !== undefined) payload.minMinutes = parseInt(data.minMinutes) || 0;
+    if (data.maxDays !== undefined) payload.maxDays = parseInt(data.maxDays) || 0;
+    if (data.maxHours !== undefined) payload.maxHours = parseInt(data.maxHours) || 0;
+    if (data.maxMinutes !== undefined) payload.maxMinutes = parseInt(data.maxMinutes) || 0;
+
+    if (data.resultType !== undefined) payload.resultType = data.resultType;
+    if (data.template !== undefined) payload.template = data.template;
+    if (data.printNextPage !== undefined) payload.printNextPage = data.printNextPage;
+    if (data.billingOnly !== undefined) payload.billingOnly = data.billingOnly;
+    
+    if (data.reportTitle !== undefined) payload.reportTitle = data.reportTitle;
+    if (data.colCaption1 !== undefined) payload.colCaption1 = data.colCaption1;
+    if (data.colCaption2 !== undefined) payload.colCaption2 = data.colCaption2;
+    if (data.colCaption3 !== undefined) payload.colCaption3 = data.colCaption3;
+    if (data.colCaption4 !== undefined) payload.colCaption4 = data.colCaption4;
+    if (data.colCaption5 !== undefined) payload.colCaption5 = data.colCaption5;
+    if (data.labEquiName !== undefined) payload.labEquiName = data.labEquiName;
+    
+    if (data.isFormulaNeeded !== undefined) payload.isFormulaNeeded = data.isFormulaNeeded;
+    if (data.isCountNeeded !== undefined) payload.isCountNeeded = data.isCountNeeded;
+    if (data.targetCount !== undefined) payload.targetCount = data.targetCount ? parseInt(data.targetCount) : null;
+    
+    if (data.isInterpretationNeeded !== undefined) payload.isInterpretationNeeded = data.isInterpretationNeeded;
+    if (data.interpretation !== undefined) payload.interpretation = data.interpretation || ''; 
+
+    if (data.cultureColumns !== undefined) payload.cultureColumns = data.cultureColumns;
+
+    payload.isConfigured = true;
+
+    await prisma.$transaction(async (tx) => {
+        await tx.test.update({
+            where: { id: testId },
+            data: payload
+        });
+
+        if (data.parameters && Array.isArray(data.parameters)) {
+            await tx.testParameter.deleteMany({ where: { testId } });
+
+            if (data.parameters.length > 0) {
+                const paramsToInsert = data.parameters.map((p: any, index: number) => {
+                    let pId: number | null = p.parameterId ? parseInt(p.parameterId) : null;
+                    if (pId !== null && (isNaN(pId) || pId <= 0)) pId = null;
+
+                    return {
+                        organizationId: orgId, // 🚨 THE FIX: Tell Prisma which lab this belongs to!
+                        testId: testId,
+                        parameterId: pId, 
+                        order: parseInt(p.order) || (index + 1),
+                        isHeading: Boolean(p.isHeading),
+                        headingText: p.headingText || '',
+                        isCultureField: Boolean(p.isCultureField), 
+                        isActive: p.isActive !== undefined ? Boolean(p.isActive) : true,
+                        formula: p.formula || '',
+                        isCountDependent: p.isCountDependent !== undefined ? Boolean(p.isCountDependent) : false
+                    };
+                });
+
+                await tx.testParameter.createMany({
+                    data: paramsToInsert
+                });
+            }
+        }
+    });
+    
+    revalidatePath('/tests/configuration');
+    revalidatePath('/tests/formats');
+    return { success: true, message: "Configuration updated successfully" };
 
   } catch (error: any) {
-    console.error("Test Config Proxy Error:", error);
-    return { success: false, message: "Backend unreachable." };
+    console.error("[UpdateConfig] FATAL ERROR:", error);
+    return { success: false, message: error.message || 'Database error occurred' };
   }
 }
+// --- BLOCK app/actions/test-config.ts CLOSE ---

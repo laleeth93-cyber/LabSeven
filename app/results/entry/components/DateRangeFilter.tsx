@@ -1,4 +1,3 @@
-// --- BLOCK app/results/entry/components/DateRangeFilter.tsx OPEN ---
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -13,6 +12,7 @@ interface DateRange {
 interface DateRangeFilterProps {
   onFilterChange: (range: DateRange) => void;
   buttonClassName?: string;
+  align?: "start" | "center" | "end";
 }
 
 // --- HELPER: CUSTOM CALENDAR (DATE ONLY) ---
@@ -117,7 +117,7 @@ const MiniCalendar = ({ value, onChange, label }: { value: Date | null, onChange
 };
 
 // --- MAIN FILTER COMPONENT ---
-export default function DateRangeFilter({ onFilterChange, buttonClassName }: DateRangeFilterProps) {
+export default function DateRangeFilter({ onFilterChange, buttonClassName, align = "end" }: DateRangeFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activePreset, setActivePreset] = useState('Today');
   const [displayLabel, setDisplayLabel] = useState('Today'); 
@@ -190,6 +190,12 @@ export default function DateRangeFilter({ onFilterChange, buttonClassName }: Dat
 
   const finalButtonClass = buttonClassName || "flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 transition-all h-8 group min-w-[140px]";
 
+  const alignmentClass = align === 'start' 
+    ? 'left-0 md:right-auto' 
+    : align === 'center' 
+    ? 'left-1/2 -translate-x-1/2'
+    : 'right-0 md:left-auto';
+
   return (
     <div className="relative w-full md:w-auto" ref={containerRef}>
       
@@ -204,7 +210,7 @@ export default function DateRangeFilter({ onFilterChange, buttonClassName }: Dat
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 left-0 md:left-auto top-full mt-2 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5 max-h-[85vh] md:max-h-none overflow-y-auto md:overflow-visible">
+        <div className={`absolute ${alignmentClass} top-full mt-2 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5 max-h-[85vh] md:max-h-none overflow-y-auto md:overflow-visible`}>
           
           <div className="w-full md:w-40 bg-slate-50/50 border-b md:border-b-0 md:border-r border-slate-100 py-2 shrink-0 flex flex-row md:flex-col overflow-x-auto md:overflow-visible no-scrollbar">
             {presets.map(preset => (
@@ -255,4 +261,3 @@ export default function DateRangeFilter({ onFilterChange, buttonClassName }: Dat
     </div>
   );
 }
-// --- BLOCK app/results/entry/components/DateRangeFilter.tsx CLOSE ---

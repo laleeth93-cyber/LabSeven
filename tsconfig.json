@@ -1,49 +1,27 @@
 {
   "compilerOptions": {
-    /* BLOCK COMPILER SETTINGS OPEN */
-    "target": "ES2017",
-    "lib": [
-      "ES2017",
-      "dom",
-      "dom.iterable"
-    ],
-    "jsx": "preserve",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "target": "es2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
-    "strict": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "strict": true,
     "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
     "incremental": true,
-    /* BLOCK COMPILER SETTINGS CLOSE */
-
-    /* BLOCK PATH MAPPING OPEN */
     "plugins": [
       {
         "name": "next"
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
-    "resolveJsonModule": true,
-    "isolatedModules": true
-    /* BLOCK PATH MAPPING CLOSE */
+      "@/*": ["./*"]
+    }
   },
-  /* BLOCK FILE INCLUSION OPEN */
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "LabSeven-Backend"
-  ]
-  /* BLOCK FILE INCLUSION CLOSE */
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "LabSeven-Backend"]
 }

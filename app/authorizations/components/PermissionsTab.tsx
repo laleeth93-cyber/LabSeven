@@ -171,7 +171,7 @@ export default function PermissionsTab({ users }: any) {
                 permissionsToSave.push({ module: itemName, action: act });
             });
         });
-        const res = await saveUserPermissions({ userId: selectedUserForPerms as number, permissions: permissionsToSave });
+        const res = await saveUserPermissions(selectedUserForPerms as number, permissionsToSave);
         alert(res.message);
         setIsPermsLoading(false);
     };

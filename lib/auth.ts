@@ -1,15 +1,15 @@
+// --- BLOCK lib/auth.ts OPEN ---
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
-const API_KEY = process.env.INTERNAL_API_KEY || "labseven_secret_key_2025";
+import { prisma } from "@/lib/prisma";
+import { comparePassword } from "@/lib/auth-utils";
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Lab Credentials",
       credentials: {
-        username: { label: "Email/Username", type: "text" },
+        username: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
@@ -17,27 +17,55 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Missing credentials");
         }
 
-        // ⚡ Forward the login request to the Node.js engine
-        const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': API_KEY
-            },
-            body: JSON.stringify({ 
-                username: credentials.username, 
-                password: credentials.password 
-            })
+        const cleanEmail = credentials.username.trim().toLowerCase();
+
+        // 🚨 THE FIX: We now strictly enforce login via Email address ONLY.
+        const user = await prisma.user.findFirst({
+          where: { 
+              isActive: true,
+              email: cleanEmail
+          },
+          include: { organization: true } 
         });
 
-        const result = await res.json();
-
-        if (!res.ok || !result.success) {
-            throw new Error(result.message || "Invalid credentials.");
+        if (!user) {
+          throw new Error("Invalid email or password.");
         }
 
-        // Return the validated user payload
-        return result.data;
+        // ==========================================
+        // ✨ SMART SUBSCRIPTION BLOCKER ✨
+        // ==========================================
+        if (user.organizationId !== 1) { // Master HQ (ID: 1) never expires
+            
+            // 1. Check if Super Admin manually disabled them
+            if (!user.organization.isActive) {
+                throw new Error("Account suspended. Please contact support.");
+            }
+
+            // 2. Check if the subscription date has passed
+            if (user.organization.subscriptionEndsAt) {
+                const now = new Date();
+                const expDate = new Date(user.organization.subscriptionEndsAt);
+                
+                if (expDate < now) {
+                    throw new Error("Subscription expired. Please renew to access your laboratory.");
+                }
+            }
+        }
+
+        // Check password
+        const isValid = await comparePassword(credentials.password, user.password);
+        if (!isValid) {
+          throw new Error("Invalid email or password.");
+        }
+
+        // Return user data
+        return {
+          id: user.id.toString(),
+          name: user.name,
+          email: user.email,
+          orgId: user.organizationId, 
+        };
       }
     })
   ],
@@ -57,7 +85,12 @@ export const authOptions: NextAuthOptions = {
       return session;
     }
   },
-  pages: { signIn: '/login' },
-  session: { strategy: "jwt" },
+  pages: {
+    signIn: '/login',
+  },
+  session: {
+    strategy: "jwt",
+  },
   secret: process.env.NEXTAUTH_SECRET,
 };
+// --- BLOCK lib/auth.ts CLOSE ---

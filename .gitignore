@@ -1,21 +1,22 @@
-# ========================
-# ENVIRONMENT VARIABLES
-# ========================
-.env
+# Dependencies
+node_modules
+
+# Next.js build output
+.next
+build
+out
+
+# Environment variables
 .env.local
-.env.development
-.env.production
-*.env
+.env
+.env.*
 
-# ========================
-# DEPENDENCIES
-# ========================
-node_modules/
-.npm/
+# Prisma
+/app/generated/prisma
 
-# ========================
-# NEXT.JS & BUILD FILES
-# ========================
-.next/
-dist/
-build/
+# Python Virtual Environments
+.venv
+venv/
+
+# IDE / Editor settings
+.vscode

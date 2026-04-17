@@ -17,7 +17,7 @@ export default async function ExpiringLabsPage() {
   });
 
   // 2. Filter them manually to ensure the 5-Day fallback applies to older accounts
-  const labs = allLabs.filter((lab: any) => {
+  const labs = allLabs.filter(lab => {
       let expDate = lab.subscriptionEndsAt ? new Date(lab.subscriptionEndsAt) : null;
       
       // If missing from database, calculate 5 days from creation
@@ -35,7 +35,7 @@ export default async function ExpiringLabsPage() {
   });
 
   // Sort the results so the closest expiration shows up first
-  labs.sort((a: any, b: any) => {
+  labs.sort((a, b) => {
       const dateA = a.subscriptionEndsAt ? new Date(a.subscriptionEndsAt) : new Date(a.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000);
       const dateB = b.subscriptionEndsAt ? new Date(b.subscriptionEndsAt) : new Date(b.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000);
       return dateA.getTime() - dateB.getTime();
