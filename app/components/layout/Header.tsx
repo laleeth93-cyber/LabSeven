@@ -1,12 +1,10 @@
-// --- BLOCK app/components/layout/Header.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Search, Bell, Settings, Building2, Loader2, User, Hash, X, Power, Cloud, CloudOff, CloudUpload, Zap } from 'lucide-react';
+import { Menu, Search, Bell, Settings, Building2, Loader2, User, Hash, X, Power, Cloud, CloudOff, CloudUpload, Zap, MessageSquare } from 'lucide-react';
 import { getLabProfile } from '@/app/actions/lab-profile';
 import { searchPatients } from '@/app/actions/patient';
 import { useRouter } from 'next/navigation';
-// 🚨 ADDED: useSession to grab the logged-in user's details
 import { signOut, useSession } from 'next-auth/react';
 import toast from 'react-hot-toast'; 
 
@@ -15,20 +13,26 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { localDB } from '@/lib/local-db/db'; 
 import { useNetworkStatus } from '@/lib/hooks/useNetworkStatus'; 
 
+// 🚨 NEW SUPPORT MODAL IMPORT
+import SupportModal from '@/app/components/SupportModal';
+
 interface HeaderProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (isOpen: boolean) => void;
 }
 
 export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps) {
-  // 🚨 GRAB SESSION DATA
   const { data: session } = useSession();
+  const orgId = (session?.user as any)?.orgId; 
   
   const [labProfile, setLabProfile] = useState<any>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isPreloading, setIsPreloading] = useState(false); 
+  
+  // 🚨 SUPPORT MODAL STATE
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   // --- GLOBAL SEARCH STATES ---
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,7 +46,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
   // --- NETWORK & SYNC STATES ---
   const isOnline = useNetworkStatus();
   
-  // Live query to count pending offline registrations
   const pendingCount = useLiveQuery(
     () => localDB.registrations.where('sync_status').equals('pending').count(),
     [] 
@@ -144,10 +147,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
     toast.success("System Optimized! Pages are compiled and ready.", { id: "speed-boost" });
   };
 
-  // Helper to safely get the Lab/Organization ID
   const displayLabId = labProfile?.organizationId || labProfile?.id || '001';
-  
-  // 🚨 Determine the display name (Name -> Email prefix -> Default)
   const displayName = session?.user?.name || session?.user?.email?.split('@')[0] || "User";
 
   return (
@@ -251,7 +251,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
       {/* RIGHT SIDE: Lab Details & User Account */}
       <div className="flex items-center gap-3 sm:gap-5 min-w-fit">
         
-        {/* LAB NAME & STACKED LAB ID BADGE */}
         <div className="hidden lg:flex items-center gap-3 transition-all duration-300 cursor-default group">
            {isProfileLoading && !labProfile ? (
              <div className="flex items-center gap-3 animate-pulse">
@@ -288,7 +287,6 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
            )}
         </div>
         
-        {/* DIVIDER */}
         <div className="h-8 w-[1px] bg-slate-400/30 hidden lg:block mx-1"></div>
         
         <div className="flex items-center gap-2 sm:gap-3">
@@ -313,7 +311,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
           <button 
             onClick={handleSpeedBoost}
             disabled={isPreloading}
-            className="p-2 rounded-lg bg-amber-100/50 hover:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50" 
+            className="p-2 rounded-lg bg-amber-100/50 hover:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50 hidden sm:block" 
             style={{ color: '#d97706' }}
             title="Speed Boost (Cache App Pages)"
           >
@@ -329,13 +327,26 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
             <Settings size={20} />
           </button>
 
+          {/* 🚨 SUPPORT MODAL WRAPPER & BUTTON */}
+          <SupportModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} />
+          <button 
+            onClick={() => {
+                if (orgId === 1) router.push('/super-admin/messages');
+                else setIsSupportModalOpen(true);
+            }}
+            className="relative p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer hidden sm:block" 
+            style={{ color: '#9575cd' }}
+            title="Message Station"
+          >
+            <MessageSquare size={20} />
+          </button>
+
           <div className="relative p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer hidden sm:block" style={{ color: '#9575cd' }} title="Notifications">
             <Bell size={20} />
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white font-bold shadow-sm"
                   style={{ background: '#f06292' }}>3</span>
           </div>
 
-          {/* 🚨 THE FIX: Displaying the actual Username dynamically */}
           <button 
             onClick={handleLogout}
             disabled={isLoggingOut}
@@ -358,4 +369,3 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
     </header>
   );
 }
-// --- BLOCK app/components/layout/Header.tsx CLOSE ---

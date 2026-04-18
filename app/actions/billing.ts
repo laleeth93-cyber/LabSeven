@@ -1,4 +1,3 @@
-// --- BLOCK app/actions/billing.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
@@ -131,4 +130,43 @@ export async function createBill(data: any) {
     return { success: false, message: "Failed to save bill" };
   }
 }
-// --- BLOCK app/actions/billing.ts CLOSE ---
+
+// 3. GENERATE SEQUENTIAL INVOICE NUMBER (TENANT ISOLATED)
+export async function getNextBillNumber() {
+  try {
+    const { orgId } = await requireAuth();
+    
+    // Get today's date in YYYYMMDD format
+    const today = new Date();
+    const dateStr = today.getFullYear().toString() +
+                    (today.getMonth() + 1).toString().padStart(2, '0') +
+                    today.getDate().toString().padStart(2, '0');
+    const prefix = `INV-${dateStr}`;
+
+    // Find the latest invoice created TODAY for this specific clinic
+    const lastBill = await prisma.bill.findFirst({
+      where: {
+        organizationId: orgId,
+        billNumber: { startsWith: prefix }
+      },
+      orderBy: { billNumber: 'desc' }
+    });
+
+    if (lastBill && lastBill.billNumber.includes('-')) {
+      const parts = lastBill.billNumber.split('-');
+      // Extract the last part of the INV-YYYYMMDD-XXXX string
+      const lastSerial = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(lastSerial)) {
+        const nextSerial = (lastSerial + 1).toString().padStart(4, '0');
+        return `${prefix}-${nextSerial}`;
+      }
+    }
+    
+    // If no invoices exist today, start at 0001
+    return `${prefix}-0001`;
+
+  } catch (error) {
+    console.error("Failed to generate Bill Sequence:", error);
+    return null;
+  }
+}

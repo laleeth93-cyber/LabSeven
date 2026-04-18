@@ -1,14 +1,13 @@
-// FILE: app/components/NewRegistration.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Loader2, CheckCircle, Type, X, User, Receipt, WifiOff } from 'lucide-react';
-import { v4 as uuidv4 } from 'uuid'; // MUST INSTALL: npm install uuid
+import { v4 as uuidv4 } from 'uuid'; 
 
-import { registerPatient } from '@/app/actions/patient';
+import { registerPatient, getNextPatientId } from '@/app/actions/patient'; // 🚨 Added sequence generator
 import { getReferrals } from '@/app/actions/referral'; 
-import { createBill } from '@/app/actions/billing'; 
+import { createBill, getNextBillNumber } from '@/app/actions/billing'; // 🚨 Added sequence generator
 
 // Import our new Offline-First tools!
 import { localDB } from '@/lib/local-db/db';
@@ -35,7 +34,6 @@ interface NewRegistrationProps {
 
 export default function NewRegistration({ onCustomizeClick, onQuotationClick, fields }: NewRegistrationProps) {
   
-  // --- NETWORK STATUS HOOK ---
   const isOnline = useNetworkStatus();
 
   // ==========================================
@@ -76,17 +74,32 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [invoiceData, setInvoiceData] = useState<any>(null);
 
-  // --- INITIALIZATION ---
   const getLocalISOString = () => {
     const now = new Date();
     const tzOffset = now.getTimezoneOffset() * 60000;
     return (new Date(now.getTime() - tzOffset)).toISOString().slice(0, 19);
   };
 
+  // 🚨 REPLACED RANDOM ID LOGIC WITH DATABASE SEQUENCE FETCH
   useEffect(() => {
-    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    setCurrentPatientId(`${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`);
-    setCurrentBillNumber(`INV-${dateStr}-${Math.floor(1000 + Math.random() * 9000)}`);
+    const initializeSerialNumbers = async () => {
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      
+      if (isOnline) {
+        // Fetch exact serial numbers from the database
+        const nextPatId = await getNextPatientId();
+        const nextBillId = await getNextBillNumber();
+        
+        setCurrentPatientId(nextPatId || `${dateStr}-0001`);
+        setCurrentBillNumber(nextBillId || `INV-${dateStr}-0001`);
+      } else {
+        // Fallback for when the clinic's internet goes down
+        setCurrentPatientId(`${dateStr}-OFF-${Math.floor(1000 + Math.random() * 9000)}`);
+        setCurrentBillNumber(`INV-${dateStr}-OFF-${Math.floor(1000 + Math.random() * 9000)}`);
+      }
+    };
+
+    initializeSerialNumbers();
     setBillingDate(getLocalISOString());
 
     const fetchRefs = async () => {
@@ -101,7 +114,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
       } catch (e) { console.error("Failed to load referrals", e); }
     };
     fetchRefs();
-  }, []);
+  }, [isOnline]); // Reacts when internet comes back online
 
   useEffect(() => {
     if (isManualTime) return;
@@ -113,7 +126,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   const handleOpenNotes = () => { setTempNotesContent(notesContent); setIsNotesEditorOpen(true); };
   const handleSaveNotes = () => { setNotesContent(tempNotesContent); setIsNotesEditorOpen(false); };
 
-  // --- CALCULATIONS ---
   const subTotal = billItems.reduce((sum, item) => sum + item.price, 0);
   const discPerc = parseFloat(discountPercent) || 0;
   const discAmtInput = parseFloat(discountAmount) || 0;
@@ -127,9 +139,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
 
   const visibleFields = fields.filter(f => f.isVisible).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  // ==========================================
-  // UNIFIED SUBMISSION (WITH OFFLINE SUPPORT!)
-  // ==========================================
   const handleSaveAndGenerate = async () => {
     const missingFields: string[] = [];
     visibleFields.forEach(field => {
@@ -157,7 +166,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
     setIsSaving(true); 
 
     try {
-      // 1. Prepare all the data exactly as before
       const refFields = fields.filter(f => (f.category === 'Referral' && !f.label.toLowerCase().includes('type')) || f.label.toLowerCase().includes('doctor') || f.label.toLowerCase().includes('hospital') || f.label.toLowerCase().includes('lab'));
       let docName = ''; let hospName = ''; let labName = '';
 
@@ -193,7 +201,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
       };
 
       const billPayload = {
-        billNumber: currentBillNumber, date: billingDate, patientId: currentPatientId, // Used generated ID
+        billNumber: currentBillNumber, date: billingDate, patientId: currentPatientId,
         subTotal, discountPercent: parseFloat(discountPercent) || 0, discountAmount: finalDiscount,
         netAmount, paidAmount: totalPaid, dueAmount, paymentMode: selectedModes[0] || 'Cash',
         discountReason: discountReason, items: billItems.map(item => ({ testId: item.id, price: item.price })),
@@ -212,9 +220,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
 
       setInvoiceData(finalInvoiceData);
 
-      // ==========================================
-      // OFFLINE MODE: Save to LocalDB
-      // ==========================================
       if (!isOnline) {
         await localDB.registrations.add({
           id: uuidv4(),
@@ -230,16 +235,13 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
             setShowSuccessPopup(false);
             setIsInvoiceOpen(true);
         }, 1500);
-        return; // EXIT EARLY! Do not hit the server.
+        return; 
       }
 
-      // ==========================================
-      // ONLINE MODE: Save directly to Supabase
-      // ==========================================
       const regResult = await registerPatient(dbPatientData);
       if (!regResult.success || !regResult.patient) throw new Error("Patient Registration Failed");
 
-      billPayload.patientId = regResult.patient.patientId; // Update with actual server DB Patient ID
+      billPayload.patientId = regResult.patient.patientId; 
       const billResult = await createBill(billPayload);
       if (!billResult.success) throw new Error("Bill Creation Failed");
 
@@ -259,7 +261,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   return (
     <div className="w-full h-full flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 duration-500 bg-slate-50 md:bg-transparent">
       
-      {/* --- OFFLINE WARNING BANNER --- */}
       {!isOnline && (
         <div className="bg-amber-100 border-b border-amber-200 text-amber-800 px-4 py-2 text-xs font-bold flex items-center justify-center gap-2 z-50 shadow-sm">
           <WifiOff size={14} className="animate-pulse" /> 
@@ -267,7 +268,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         </div>
       )}
 
-      {/* --- MOBILE TABS NAVIGATION --- */}
       <div className="md:hidden flex px-2 pt-2 bg-white border-b border-slate-200 shrink-0 gap-2 mb-2">
          <button onClick={() => setActiveMobileTab('patient')} className={`flex-1 py-2.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors ${activeMobileTab === 'patient' ? 'border-[#9575cd] text-[#9575cd]' : 'border-transparent text-slate-500'}`}><User size={16} /> Patient Details</button>
          <button onClick={() => setActiveMobileTab('billing')} className={`flex-1 py-2.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors ${activeMobileTab === 'billing' ? 'border-[#9575cd] text-[#9575cd]' : 'border-transparent text-slate-500'}`}><Receipt size={16} /> Billing {billItems.length > 0 && (<span className="bg-rose-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full ml-1">{billItems.length}</span>)}</button>
@@ -284,7 +284,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
           </div>
       </div>
 
-      {/* SUCCESS POPUP */}
       {showSuccessPopup && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-sm w-full mx-4 border border-slate-100">
@@ -301,7 +300,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         </div>
       )}
 
-      {/* NOTES POPUP */}
       {isNotesEditorOpen && (
           <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-4">
             <div className="bg-white w-full max-w-4xl h-[600px] max-h-[90vh] rounded-lg shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden">
@@ -318,7 +316,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
           </div>
       )}
 
-      {/* INVOICE MODAL */}
       <InvoiceModal 
          isOpen={isInvoiceOpen}
          onClose={() => { setIsInvoiceOpen(false); window.location.reload(); }} 

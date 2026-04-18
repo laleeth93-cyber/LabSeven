@@ -1,4 +1,3 @@
-// --- BLOCK prisma/schema.prisma OPEN ---
 generator client {
   provider = "prisma-client-js"
 }
@@ -55,6 +54,9 @@ model Organization {
   antibioticClasses         AntibioticClass[]
   antibioticInterpretations AntibioticInterpretation[]
   susceptibilityInfos       SusceptibilityInfo[]
+  
+  // 🚨 NEW: Links to the Support System
+  supportThreads            SupportThread[]
 }
 
 // ==========================================
@@ -521,7 +523,7 @@ model UOM {
 }
 
 model Operator {
-  id              Int      @id @default(autoincrement())
+  id              Int     @id @default(autoincrement())
   
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id])
@@ -683,6 +685,10 @@ model User {
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id])
 
+  // 🚨 ADD THESE TWO LINES BACK:
+  isTwoFactorEnabled Boolean @default(false)
+  twoFactorSecret    String?
+
   degree       String?
   signName     String?
   designation  String?  
@@ -751,7 +757,7 @@ model RolePermission {
 }
 
 model UserPermission {
-  id              Int        @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   permissionId Int
@@ -764,7 +770,7 @@ model UserPermission {
 // ==========================================
 
 model Organism {
-  id              Int         @id @default(autoincrement())
+  id              Int        @id @default(autoincrement())
   
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id])
@@ -852,4 +858,35 @@ model OtpCode {
 
   @@index([email, otp])
 }
-// --- BLOCK prisma/schema.prisma CLOSE ---
+
+// ==========================================
+// 8. SUPPORT TICKETING SYSTEM
+// ==========================================
+
+model SupportThread {
+  id              Int       @id @default(autoincrement())
+  
+  organizationId  Int
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  
+  title           String
+  type            String    @default("Issue") // 🚨 ADDED: Issue, Requirement, Suggestion
+  status          String    @default("Open") 
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  messages        SupportMessage[]
+}
+
+model SupportMessage {
+  id              Int       @id @default(autoincrement())
+  
+  threadId        Int
+  thread          SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  
+  senderName      String    
+  isFromSuperAdmin Boolean  @default(false)
+  
+  content         String    @db.Text
+  createdAt       DateTime  @default(now())
+}

@@ -1,19 +1,18 @@
-// --- BLOCK app/actions/patient.ts OPEN ---
 'use server'
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
+import { requireAuth } from '@/lib/server-auth'; 
 
 // 1. SEARCH EXISTING PATIENTS
 export async function searchPatients(query: string) {
   if (!query || query.length < 2) return [];
 
   try {
-    const { orgId } = await requireAuth(); // 🚨 USING THE GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const patients = await prisma.patient.findMany({
       where: {
-        organizationId: orgId, // 🚨 Filter to current lab
+        organizationId: orgId, 
         OR: [
           { firstName: { contains: query, mode: 'insensitive' } },
           { phone: { contains: query, mode: 'insensitive' } },
@@ -33,9 +32,8 @@ export async function searchPatients(query: string) {
 // 2. REGISTER / UPDATE PATIENT
 export async function registerPatient(data: any) {
   try {
-    const { orgId } = await requireAuth(); // 🚨 USING THE GATEKEEPER
+    const { orgId } = await requireAuth(); 
 
-    // 🚨 Check if patient with this ID already exists FOR THIS LAB
     const existing = await prisma.patient.findUnique({
       where: { 
         organizationId_patientId: { 
@@ -77,7 +75,7 @@ export async function registerPatient(data: any) {
       console.log("Creating new patient:", data.patientId);
       result = await prisma.patient.create({
         data: {
-          organizationId: orgId, // 🚨 Critical: Attach to lab
+          organizationId: orgId, 
           patientId: data.patientId, 
           designation: data.prefix || 'Mr.',
           firstName: data.firstName,
@@ -103,4 +101,41 @@ export async function registerPatient(data: any) {
     return { success: false, message: "Failed to save. Check inputs." };
   }
 }
-// --- BLOCK app/actions/patient.ts CLOSE ---
+
+// 3. GENERATE SEQUENTIAL PATIENT ID (TENANT ISOLATED)
+export async function getNextPatientId() {
+  try {
+    const { orgId } = await requireAuth();
+    
+    // Get today's date in YYYYMMDD format
+    const today = new Date();
+    const dateStr = today.getFullYear().toString() +
+                    (today.getMonth() + 1).toString().padStart(2, '0') +
+                    today.getDate().toString().padStart(2, '0');
+
+    // Find the absolute latest patient created TODAY for THIS specific clinic
+    const lastPatient = await prisma.patient.findFirst({
+      where: {
+        organizationId: orgId,
+        patientId: { startsWith: dateStr }
+      },
+      orderBy: { patientId: 'desc' }
+    });
+
+    if (lastPatient && lastPatient.patientId.includes('-')) {
+      // Extract the serial number and add 1
+      const lastSerial = parseInt(lastPatient.patientId.split('-')[1], 10);
+      if (!isNaN(lastSerial)) {
+        const nextSerial = (lastSerial + 1).toString().padStart(4, '0');
+        return `${dateStr}-${nextSerial}`;
+      }
+    }
+    
+    // If no patients exist today, start at 0001
+    return `${dateStr}-0001`;
+
+  } catch (error) {
+    console.error("Failed to generate Patient Sequence:", error);
+    return null;
+  }
+}
