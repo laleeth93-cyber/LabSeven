@@ -14,7 +14,6 @@ import {
 } from 'recharts';
 import DateRangeFilter from '@/app/results/entry/components/DateRangeFilter';
 
-// --- HELPER: GET STRICT START AND END OF TODAY ---
 const getTodayRange = () => {
     const from = new Date();
     from.setHours(0, 0, 0, 0);
@@ -23,14 +22,22 @@ const getTodayRange = () => {
     return { from, to };
 };
 
-// --- MODULAR WIDGET COMPONENT ---
-function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "end" }: any) {
-    // 🚨 FIX 1: Initialize strictly to Today instead of null
+function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "end", initialData }: any) {
     const [dateRange, setDateRange] = useState<{from: Date | null, to: Date | null}>(getTodayRange());
-    const [data, setData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    
+    // 🚨 Instantly use Server Data!
+    const [data, setData] = useState<any>(initialData);
+    const [loading, setLoading] = useState(!initialData);
+    
+    // Flag to ensure we don't trigger the fetcher on the first load
+    const isFirstRender = useRef(true);
 
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return; // 🚨 SKIP the initial fetch!
+        }
+
         let active = true;
         setLoading(true);
         const fromStr = dateRange.from?.toISOString();
@@ -51,7 +58,6 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "
                 <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                     <Icon size={16} className="text-[#9575cd] shrink-0"/> {title}
                 </h3>
-                {/* 🚨 FIX 2: CSS and Prop overrides to align left side widgets properly */}
                 <div className={`w-full xl:w-[240px] z-20 ${alignPopover === 'left' ? '[&>div>div]:!left-0 [&>div>div]:!right-auto origin-top-left' : ''}`}>
                     <DateRangeFilter align={alignPopover === 'left' ? 'start' : 'end'} onFilterChange={(range) => setDateRange({ from: range.from, to: range.to })} />
                 </div>
@@ -74,25 +80,18 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "
     );
 }
 
-// --- SPECIFIC REFERRAL WIDGET ---
-function SpecificReferralWidget() {
-    // 🚨 FIX 1: Initialize to Today
+function SpecificReferralWidget({ initialRefs, initialRefData }: { initialRefs: string[], initialRefData: any }) {
     const [dateRange, setDateRange] = useState<{from: Date | null, to: Date | null}>(getTodayRange());
-    const [referrals, setReferrals] = useState<string[]>([]);
-    const [selectedRef, setSelectedRef] = useState<string>('');
-    const [data, setData] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [referrals, setReferrals] = useState<string[]>(initialRefs);
+    const [selectedRef, setSelectedRef] = useState<string>(initialRefs.length > 0 ? initialRefs[0] : '');
+    
+    // 🚨 Instantly use Server Data!
+    const [data, setData] = useState<any>(initialRefData);
+    const [loading, setLoading] = useState(!initialRefData);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        getReferralList().then(res => {
-            setReferrals(res);
-            if (res.length > 0) setSelectedRef(res[0]);
-            else setLoading(false);
-        });
-    }, []);
+    const isFirstRender = useRef(true);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -106,6 +105,12 @@ function SpecificReferralWidget() {
 
     useEffect(() => {
         if (!selectedRef) return;
+
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return; // 🚨 SKIP the initial fetch!
+        }
+
         let active = true;
         setLoading(true);
         const fromStr = dateRange.from?.toISOString();
@@ -187,15 +192,21 @@ function SpecificReferralWidget() {
     );
 }
 
-export default function DashboardOverview() {
+export default function DashboardOverview({ initialData }: { initialData: any }) {
     
-    // KPI Section State
-    // 🚨 FIX 1: Initialize to Today
     const [kpiRange, setKpiRange] = useState<{from: Date | null, to: Date | null}>(getTodayRange());
-    const [kpiData, setKpiData] = useState<any>(null);
-    const [kpiLoading, setKpiLoading] = useState(true);
+    
+    // 🚨 Instantly use Server Data!
+    const [kpiData, setKpiData] = useState<any>(initialData.kpiData);
+    const [kpiLoading, setKpiLoading] = useState(!initialData.kpiData);
+    const isFirstKpiRender = useRef(true);
 
     useEffect(() => {
+        if (isFirstKpiRender.current) {
+            isFirstKpiRender.current = false;
+            return; // 🚨 SKIP initial fetch
+        }
+
         setKpiLoading(true);
         const fromStr = kpiRange.from?.toISOString();
         const toStr = kpiRange.to?.toISOString();
@@ -246,6 +257,7 @@ export default function DashboardOverview() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <ChartWidget 
                     title="Patient Demographics Trend" icon={Users} fetcher={getPatientData} 
+                    initialData={initialData.patientData}
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <ComposedChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: -20 }}>
@@ -263,6 +275,7 @@ export default function DashboardOverview() {
                 />
                 <ChartWidget 
                     title="Revenue Generation Trend" icon={TrendingUp} fetcher={getRevenueData} 
+                    initialData={initialData.revenueData}
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
@@ -277,6 +290,7 @@ export default function DashboardOverview() {
                 />
                 <ChartWidget 
                     title="Tests Volume Trend" icon={TestTube} fetcher={getTestTrendData} 
+                    initialData={initialData.testTrendData}
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: -20 }}>
@@ -291,6 +305,7 @@ export default function DashboardOverview() {
                 />
                 <ChartWidget 
                     title="Top 5 Most Ordered Tests" icon={Activity} fetcher={getTopTestsData} 
+                    initialData={initialData.topTestsData}
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 0 }}>
@@ -310,14 +325,18 @@ export default function DashboardOverview() {
             </div>
 
             <div className="mb-6 w-full h-[400px]">
-                <SpecificReferralWidget />
+                <SpecificReferralWidget 
+                    initialRefs={initialData.referralList} 
+                    initialRefData={initialData.specificReferralData} 
+                />
             </div>
 
             {/* CHARTS GRID 2 - 4 COLUMNS */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
                 <ChartWidget 
                     title="Top Referring Entities" icon={Stethoscope} fetcher={getTopReferralsData} 
-                    alignPopover="left" // 🚨 FIX 2: Added popover alignment constraint
+                    alignPopover="left"
+                    initialData={initialData.topReferralsData}
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 0 }}>
@@ -337,7 +356,8 @@ export default function DashboardOverview() {
                 
                 <ChartWidget 
                     title="Self vs Referred" icon={UserPlus} fetcher={getSelfVsReferralData} 
-                    alignPopover="left" // 🚨 FIX 2: Added to the second column as well for safety
+                    alignPopover="left"
+                    initialData={initialData.selfVsReferralData}
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -353,6 +373,7 @@ export default function DashboardOverview() {
 
                 <ChartWidget 
                     title="In-House vs Outsourced" icon={Building2} fetcher={getOutsourceData} 
+                    initialData={initialData.outsourceData}
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -367,6 +388,7 @@ export default function DashboardOverview() {
                 />
                 <ChartWidget 
                     title="Test Status Pipeline" icon={Activity} fetcher={getTestStatusData} 
+                    initialData={initialData.testStatusData}
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
