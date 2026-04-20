@@ -1,4 +1,3 @@
-// --- BLOCK app/results/entry/components/WorklistPanel.tsx OPEN ---
 "use client";
 
 import React from 'react';
@@ -11,9 +10,10 @@ interface WorklistPanelProps {
   selectedTestIds: number[];
   onToggleTest: (id: number) => void;
   activeTab: string;
+  onHoverBill?: (id: number) => void; // 🚨 NEW PROP
 }
 
-export default function WorklistPanel({ bills, selectedBillId, onSelect, selectedTestIds = [], onToggleTest, activeTab }: WorklistPanelProps) {
+export default function WorklistPanel({ bills, selectedBillId, onSelect, selectedTestIds = [], onToggleTest, activeTab, onHoverBill }: WorklistPanelProps) {
   
   const selectedBill = bills.find(b => b.id === selectedBillId);
 
@@ -85,6 +85,7 @@ export default function WorklistPanel({ bills, selectedBillId, onSelect, selecte
                         <div 
                             key={bill.id} 
                             onClick={() => onSelect(bill.id)}
+                            onMouseEnter={() => onHoverBill && onHoverBill(bill.id)} // 🚨 HOVER TRIGGER
                             className={`px-3 py-2 border-b border-slate-50 cursor-pointer transition-all duration-200 group flex items-center justify-between h-10 ${
                                 isSelected 
                                     ? 'bg-blue-50/80 border-l-4 border-l-blue-500 shadow-sm' 
@@ -168,4 +169,3 @@ export default function WorklistPanel({ bills, selectedBillId, onSelect, selecte
     </div>
   );
 }
-// --- BLOCK app/results/entry/components/WorklistPanel.tsx CLOSE ---

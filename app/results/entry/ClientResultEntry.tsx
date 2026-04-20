@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import useSWR from 'swr';
 import { getPendingWorklist, getResultEntryData } from '@/app/actions/result-entry';
 import WorklistPanel from './components/WorklistPanel';
@@ -63,17 +63,45 @@ export default function ClientResultEntry({ initialBills }: { initialBills: any[
 
   const [entryDateTime, setEntryDateTime] = useState(getLocalISOString());
 
+  // 🚨 THE NEW CACHE ENGINE FOR INSTANT ROW CLICKING
+  const billCache = useRef<Record<number, any>>({});
+
+  const prefetchBill = async (billId: number) => {
+      if (billCache.current[billId]) return; // Already cached or currently fetching
+      try {
+          billCache.current[billId] = 'fetching'; // Prevent duplicate network requests
+          const res = await getResultEntryData(billId);
+          if (res && res.success && res.data) {
+              billCache.current[billId] = res.data;
+          } else {
+              delete billCache.current[billId]; 
+          }
+      } catch (e) {
+          delete billCache.current[billId];
+      }
+  };
+
   useEffect(() => {
     if (isManualTime) return; 
-    const interval = setInterval(() => {
-        setEntryDateTime(getLocalISOString());
-    }, 1000); 
+    const interval = setInterval(() => setEntryDateTime(getLocalISOString()), 1000); 
     return () => clearInterval(interval);
   }, [isManualTime]);
 
   const handleManualDateChange = (newDate: string) => {
       setIsManualTime(true); 
       setEntryDateTime(newDate);
+  };
+
+  const setupTestIds = (data: any) => {
+      if (data.items) {
+          const items = data.items;
+          let idsToSelect: number[] = [];
+          if (activeTab === 'Pending') idsToSelect = items.filter((i: any) => i.status === 'Pending').map((i: any) => i.id);
+          else if (activeTab === 'Partial') idsToSelect = items.filter((i: any) => i.status === 'Entered').map((i: any) => i.id);
+          else if (activeTab === 'Completed') idsToSelect = items.filter((i: any) => i.status === 'Approved' || i.status === 'Printed').map((i: any) => i.id);
+          else idsToSelect = items.map((i: any) => i.id);
+          setSelectedTestIds(idsToSelect);
+      }
   };
 
   useEffect(() => {
@@ -86,27 +114,22 @@ export default function ClientResultEntry({ initialBills }: { initialBills: any[
   }, [selectedBillId]);
 
   const fetchBillDetails = async (billId: number) => {
+    // 🚨 1. IF IT IS CACHED, LOAD INSTANTLY IN 0ms!
+    if (billCache.current[billId] && billCache.current[billId] !== 'fetching') {
+        const data = billCache.current[billId];
+        setSelectedBillData(data);
+        setupTestIds(data);
+        return;
+    }
+
+    // 🚨 2. OTHERWISE, FETCH FROM SERVER
     setIsBillLoading(true);
     try {
         const res = await getResultEntryData(billId);
         if (res && res.success && res.data) {
+            billCache.current[billId] = res.data; // Save to cache for next time
             setSelectedBillData(res.data);
-            
-            if (res.data.items) {
-                const items = res.data.items;
-                let idsToSelect: number[] = [];
-
-                if (activeTab === 'Pending') {
-                    idsToSelect = items.filter((i: any) => i.status === 'Pending').map((i: any) => i.id);
-                } else if (activeTab === 'Partial') {
-                    idsToSelect = items.filter((i: any) => i.status === 'Entered').map((i: any) => i.id);
-                } else if (activeTab === 'Completed') {
-                    idsToSelect = items.filter((i: any) => i.status === 'Approved' || i.status === 'Printed').map((i: any) => i.id);
-                } else {
-                    idsToSelect = items.map((i: any) => i.id);
-                }
-                setSelectedTestIds(idsToSelect);
-            }
+            setupTestIds(res.data);
         } else {
             setSelectedBillData(null);
             setSelectedTestIds([]);
@@ -124,8 +147,10 @@ export default function ClientResultEntry({ initialBills }: { initialBills: any[
     refreshWorklist();
 
     if (selectedBillId) {
+        // Force fresh fetch overriding the cache so the UI shows the new saved results
         const billRes = await getResultEntryData(selectedBillId);
         if (billRes.success) {
+            billCache.current[selectedBillId] = billRes.data; 
             setSelectedBillData(billRes.data);
         }
     }
@@ -182,6 +207,17 @@ export default function ClientResultEntry({ initialBills }: { initialBills: any[
 
     return filtered;
   }, [bills, searchTerm, activeTab, dateRange]);
+
+  // 🚨 AUTO-PREFETCH THE TOP 3 BILLS IN THE BACKGROUND
+  useEffect(() => {
+      if (filteredBills.length > 0) {
+          const topBills = filteredBills.slice(0, 3);
+          topBills.forEach(b => {
+              // Slight delay so it doesn't interrupt the initial page render
+              setTimeout(() => prefetchBill(b.id), 500);
+          });
+      }
+  }, [filteredBills]);
 
   const tabs = useMemo(() => {
     const getCount = (type: string) => {
@@ -302,6 +338,7 @@ export default function ClientResultEntry({ initialBills }: { initialBills: any[
                 selectedTestIds={selectedTestIds}
                 onToggleTest={handleTestToggle}
                 activeTab={activeTab}
+                onHoverBill={prefetchBill} // 🚨 PASSING PREFETCH DOWN TO ROWS
             />
         </div>
 
