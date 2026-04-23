@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { getResultEntryData } from '@/app/actions/result-entry';
+// 🚨 CHANGED: Using the dedicated printing API
+import { getPrintableBillData } from '@/app/actions/result-entry'; 
 import { getReportSettings } from '@/app/actions/reports';
 import { getLabProfile } from '@/app/actions/lab-profile';
 import ReportDispatchModal from '@/app/reports/components/ReportDispatchModal';
@@ -56,7 +57,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
         setIsPreviewLoading(true);
         
         const [billRes, settingsRes, profileRes] = await Promise.all([
-            getResultEntryData(billId!),
+            getPrintableBillData(billId!), // 🚨 CHANGED: Fetching full parameter data
             getReportSettings(),
             getLabProfile()
         ]);
@@ -110,7 +111,8 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             setOverrideReportedDate(defaultReportedDate.toISOString());
 
             if (billData.items) {
-                const printableItems = billData.items.filter((i: any) => i.status !== 'Pending');
+                // 🚨 ALLOW ALL: Removed the Pending filter so blank worksheets can be printed
+                const printableItems = billData.items;
                 setSelectedItemIds(printableItems.map((item: any) => item.id));
             }
 
@@ -150,7 +152,6 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
             try {
                 const canvas = document.createElement('canvas');
-                // ONLY GENERATE BARCODE FOR THE LAST 4 DIGITS
                 const shortBarcodeText = String(billData.billNumber || '').slice(-4);
                 JsBarcode(canvas, shortBarcodeText, { displayValue: false, height: 40, width: 1.5, margin: 0, background: "transparent", lineColor: "#000000" });
                 setBarcodeUrl(canvas.toDataURL());
@@ -165,7 +166,8 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
     if (realData) {
         filteredRealData = {
             ...realData,
-            items: realData.items?.filter((item: any) => selectedItemIds.includes(item.id) && item.status !== 'Pending') || []
+            // 🚨 REMOVED STATUS CHECK: Will now map tests even if they are pending
+            items: realData.items?.filter((item: any) => selectedItemIds.includes(item.id)) || []
         };
     }
 
@@ -263,7 +265,6 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     const matchedResult = results.find((r: any) => r.parameterId === pId);
                     let val = matchedResult ? (matchedResult.resultValue ?? matchedResult.value ?? matchedResult.result ?? matchedResult.enteredValue ?? '') : '';
 
-                    // FIX: Allow empty strings, but ensure val is safely converted to a string
                     val = val !== null && val !== undefined ? String(val).trim() : '';
 
                     const refRange = getDisplayRange(actualParam);
@@ -309,7 +310,6 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
                     let val = res.resultValue ?? res.value ?? res.result ?? res.enteredValue ?? '';
                     
-                    // FIX: Allow empty strings, but ensure val is safely converted to a string
                     val = val !== null && val !== undefined ? String(val).trim() : '';
 
                     const refRange = getDisplayRange(actualParam);
@@ -445,7 +445,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             billItems={realData?.items || []}
             selectedItemIds={selectedItemIds}
             onToggleItem={toggleTestSelection}
-            onSelectAll={() => setSelectedItemIds((realData?.items || []).filter((i: any) => i.status !== 'Pending').map((i: any) => i.id))}
+            onSelectAll={() => setSelectedItemIds((realData?.items || []).map((i: any) => i.id))}
             onDeselectAll={() => setSelectedItemIds([])}
 
             overrideCollectionDate={overrideCollectionDate}

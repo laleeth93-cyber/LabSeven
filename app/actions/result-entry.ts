@@ -27,7 +27,7 @@ export async function getPendingWorklist(search?: string) {
     const { orgId } = await requireAuth(); 
     const where: any = {
       organizationId: orgId, 
-      isDeleted: false, // 🚨 CRITICAL FIX: Ignore soft-deleted bills
+      isDeleted: false, // 🚨 Fixes the ghost bill blocking issue
       items: { some: { status: { not: "Printed" } } }
     };
 
@@ -314,5 +314,53 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
   } catch (error) {
     console.error("Delta Check Error:", error);
     return { success: false, data: [] };
+  }
+}
+
+// 🚨 NEW FUNCTION: Fetch fully hydrated bill specifically for printing
+export async function getPrintableBillData(billId: number) {
+  try {
+    const { orgId } = await requireAuth(); 
+    if (!billId) throw new Error("Missing Bill ID");
+
+    const bill = await prisma.bill.findUnique({
+      where: { id: billId, organizationId: orgId }, 
+      include: {
+        patient: true,
+        doctor: { select: { id: true, name: true } },
+        approvedBy1: { select: { id: true, name: true, signName: true, designation: true, degree: true, regNumber: true, signatureUrl: true } },
+        approvedBy2: { select: { id: true, name: true, signName: true, designation: true, degree: true, regNumber: true, signatureUrl: true } },
+        items: {
+          include: {
+            test: {
+              include: {
+                parameters: {
+                  include: { parameter: true },
+                  orderBy: { order: 'asc' }
+                },
+                packageTests: {
+                  include: {
+                    test: {
+                      include: {
+                        parameters: {
+                          include: { parameter: true },
+                          orderBy: { order: 'asc' }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            results: true
+          }
+        }
+      }
+    });
+    if (!bill) return { success: false, error: "Bill not found" };
+    return { success: true, data: bill };
+  } catch (error) { 
+      console.error(error);
+      return { success: false, error: "Failed to load bill for printing" }; 
   }
 }
