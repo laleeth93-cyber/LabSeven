@@ -1,4 +1,3 @@
-// --- BLOCK app/list/components/PatientReportModal.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -264,9 +263,8 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     const matchedResult = results.find((r: any) => r.parameterId === pId);
                     let val = matchedResult ? (matchedResult.resultValue ?? matchedResult.value ?? matchedResult.result ?? matchedResult.enteredValue ?? '') : '';
 
-                    if (val === null || val === undefined || String(val).trim() === '') {
-                        return; 
-                    }
+                    // FIX: Allow empty strings, but ensure val is safely converted to a string
+                    val = val !== null && val !== undefined ? String(val).trim() : '';
 
                     const refRange = getDisplayRange(actualParam);
                     const activeRange = getMatchedRange(actualParam);
@@ -311,9 +309,8 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
                     let val = res.resultValue ?? res.value ?? res.result ?? res.enteredValue ?? '';
                     
-                    if (val === null || val === undefined || String(val).trim() === '') {
-                        return; 
-                    }
+                    // FIX: Allow empty strings, but ensure val is safely converted to a string
+                    val = val !== null && val !== undefined ? String(val).trim() : '';
 
                     const refRange = getDisplayRange(actualParam);
                     const activeRange = getMatchedRange(actualParam);
@@ -377,7 +374,6 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             if (letterheadStyle === 'custom3') activeImageBase64 = reportSettings?.customHeader3 || '';
             if (letterheadStyle === 'custom4') activeImageBase64 = reportSettings?.customHeader4 || '';
 
-            // 🚨 THE FIX: Create a real web link URL for the QR code!
             const qrUrl = `${window.location.origin}/verify/${filteredRealData?.id || billId}`;
             const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
             
@@ -459,4 +455,3 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
         />
     );
 }
-// --- BLOCK app/list/components/PatientReportModal.tsx CLOSE ---
