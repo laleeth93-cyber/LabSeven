@@ -84,7 +84,32 @@ export async function getResultEntryData(billId: number) {
   } catch (error) { return { success: false, error: "Failed to load bill" }; }
 }
 
-// 🚨 NEW API: Lazy-loads parameters only when needed
+// 🚨 NEW BATCH API: Gets ALL test formats for a patient in 1 single database trip
+export async function getTestParametersBatch(testIds: number[]) {
+  try {
+    const { orgId } = await requireAuth();
+    if (!testIds || testIds.length === 0) return { success: true, data: [] };
+
+    const tests = await prisma.test.findMany({
+      where: { id: { in: testIds }, organizationId: orgId },
+      select: {
+        id: true,
+        parameters: {
+          include: { 
+            parameter: { select: { id: true, name: true, unit: true, ranges: true, inputType: true, isMultiValue: true, options: true, method: true } } 
+          },
+          orderBy: { order: 'asc' }
+        }
+      }
+    });
+    return { success: true, data: tests };
+  } catch (error) {
+    console.error("Batch Parameter Error:", error);
+    return { success: false, data: [] };
+  }
+}
+
+// Keep the old single-fetch just in case other modules still call it
 export async function getTestParameters(testId: number) {
   try {
     const { orgId } = await requireAuth();
@@ -255,7 +280,6 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
                if (deltaPercent > 0) trend = 'up';
                else if (deltaPercent < 0) trend = 'down';
 
-               // Flag as significant if variance is > 15%
                if (Math.abs(deltaPercent) > 15) {
                    isClinicallySignificant = true;
                }

@@ -12,14 +12,12 @@ import MusicBarLoader from '@/app/components/MusicBarLoader';
 
 import { usePermissions } from '@/app/context/PermissionContext';
 
-// 🚨 UPGRADED CACHE: Added '| undefined' to satisfy TypeScript's strict checks
+// 🚨 UPGRADED CACHE
 const globalBillCache: Record<number, any> = {};
 const globalBillPromises: Record<number, Promise<any> | undefined> = {};
 
-// 🚨 Accepts Patient #1 from the server
 export default function ClientResultEntry({ initialBills, initialFirstBillData }: { initialBills: any[], initialFirstBillData: any }) {
   
-  // Instantly inject Patient #1 into the browser's RAM
   if (initialFirstBillData && !globalBillCache[initialFirstBillData.id]) {
       globalBillCache[initialFirstBillData.id] = initialFirstBillData;
   }
@@ -63,21 +61,8 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
 
   const [entryDateTime, setEntryDateTime] = useState(getLocalISOString());
 
-  // 🚨 SMART HOVER PREFETCH: Does not cause traffic jams!
-  const prefetchBill = (billId: number) => {
-      // If we already have it, or are already downloading it, DO NOTHING.
-      if (globalBillCache[billId] || globalBillPromises[billId] !== undefined) return; 
-
-      // Start the download in the background and save its "Promise"
-      const promise = getResultEntryData(billId).then(res => {
-          if (res && res.success && res.data) {
-              globalBillCache[billId] = res.data;
-              return res.data;
-          }
-          return null;
-      });
-      globalBillPromises[billId] = promise;
-  };
+  // 🚨 SPEED FIX: Completely disabled hover prefetching to prevent Vercel connection limits
+  const prefetchBill = (billId: number) => { return; };
 
   useEffect(() => {
     if (isManualTime) return; 
@@ -107,7 +92,6 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
   }, [selectedBillId]);
 
   const fetchBillDetails = async (billId: number) => {
-    // 1. If we already have the raw data downloaded, show it instantly (0ms)
     if (globalBillCache[billId]) {
         setSelectedBillData(globalBillCache[billId]);
         setupTestIds(globalBillCache[billId]);
@@ -117,7 +101,6 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
     setIsBillLoading(true);
 
     try {
-        // 2. 🚨 THE FIX: If it is currently downloading from a hover, wait for it! No duplicate queries!
         if (globalBillPromises[billId] !== undefined) {
             const data = await globalBillPromises[billId];
             if (data) {
@@ -125,7 +108,6 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
                 setupTestIds(data);
             }
         } else {
-            // 3. Otherwise, fetch it normally
             const res = await getResultEntryData(billId);
             if (res && res.success && res.data) {
                 globalBillCache[billId] = res.data; 

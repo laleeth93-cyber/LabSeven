@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Save, CheckCircle2, Loader2, RotateCcw, PenTool, ChevronDown, CheckCircle } from 'lucide-react';
-import { saveTestResults, saveTestNote, checkHistoryAvailability, getParameterHistory, getSignatureUsers, getTestParameters } from '@/app/actions/result-entry';
+import { saveTestResults, saveTestNote, checkHistoryAvailability, getParameterHistory, getSignatureUsers, getTestParametersBatch } from '@/app/actions/result-entry';
 import RichTextEditorModal from '@/app/components/RichTextEditorModal';
 import { getFlag, recalculateFormulas } from './ResultEntryUtils';
 import HistoryModal from './HistoryModal';
@@ -50,25 +50,26 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
 
   useEffect(() => { getSignatureUsers().then(res => { if (res.success && res.data) setSignatureUsers(res.data); }); }, []);
 
+  // 🚨 SPEED FIX: One single BATCH request for all test parameters
   useEffect(() => {
     if (bill && visibleItems.length > 0) {
       let isMounted = true;
       setIsParamsLoading(true);
 
       const fetchAllParams = async () => {
-          // 🚨 CRASH PROTECTION: Filter out null test IDs
-          const testIds = Array.from(new Set(visibleItems.map((i: any) => i?.test?.id).filter(Boolean)));
+          // 1. Get unique test IDs safely
+          const testIds = Array.from(new Set(visibleItems.map((i: any) => i?.test?.id).filter(Boolean))) as number[];
           
-          const paramPromises = testIds.map(async (testId) => {
-              const res = await getTestParameters(testId as number);
-              return { testId, params: res?.success ? res.data : [] };
-          });
-
-          const fetchedParams = await Promise.all(paramPromises);
+          // 2. ONE single request for ALL tests
+          const res = await getTestParametersBatch(testIds);
           if (!isMounted) return;
 
           const paramMap: Record<number, any[]> = {};
-          fetchedParams.forEach(fp => { paramMap[fp.testId as number] = fp.params || []; });
+          if (res.success && res.data) {
+              res.data.forEach((test: any) => {
+                  paramMap[test.id as number] = test.parameters || [];
+              });
+          }
           setLoadedParameters(paramMap);
 
           const initialResults: any = {};
