@@ -1,4 +1,3 @@
-// --- BLOCK app/results/entry/components/TestItemCard.tsx OPEN ---
 "use client";
 
 import React from 'react';
@@ -13,13 +12,7 @@ export default function TestItemCard({
     const isRowSaving = savingItemId === item.id;
     const isApproved = item.status === 'Approved' || item.status === 'Printed';
 
-    if (!item.test.isConfigured) return (
-        <div className="border border-red-200 rounded-lg overflow-hidden shadow-sm bg-red-50 p-6 flex flex-col items-center justify-center text-center w-full mb-6">
-            <Settings size={24} className="text-red-500 mb-2" />
-            <h4 className="text-sm font-bold text-red-700">Configuration Missing</h4>
-            <p className="text-xs text-red-500">Go to Test Configuration to fix {item.test.name}</p>
-        </div>
-    );
+    // 🚨 FIX: Removed the `isConfigured` blocker entirely as requested.
 
     if (item.test.parameters.length === 0) return (
          <div className="border border-amber-200 rounded-lg overflow-hidden shadow-sm bg-amber-50 p-6 flex flex-col items-center justify-center text-center w-full mb-6">
@@ -81,7 +74,6 @@ export default function TestItemCard({
         
         {/* TABLE WRAPPER */}
         <div className="p-0 bg-white w-full overflow-x-auto custom-scrollbar">
-            {/* EXPANDED min-w-[850px] so the Result column has tons of room on mobile! */}
             <table className="w-full text-xs md:text-sm border-collapse min-w-[850px]">
                 <thead>
                     <tr className="text-slate-500 bg-slate-50/50 text-left">
@@ -211,4 +203,3 @@ export default function TestItemCard({
     </div>
     );
 }
-// --- BLOCK app/results/entry/components/TestItemCard.tsx CLOSE ---

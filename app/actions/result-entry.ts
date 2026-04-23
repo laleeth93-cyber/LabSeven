@@ -15,18 +15,11 @@ export async function getSignatureUsers() {
     try {
         const { orgId } = await requireAuth(); 
         const users = await prisma.user.findMany({
-            where: { 
-                organizationId: orgId, 
-                isActive: true, 
-                signatureUrl: { not: null },
-                isBillingOnly: false 
-            },
+            where: { organizationId: orgId, isActive: true, signatureUrl: { not: null }, isBillingOnly: false },
             select: { id: true, name: true, signName: true, designation: true, isDefaultSignature: true }
         });
         return { success: true, data: users };
-    } catch (error) {
-        return { success: false, data: [] };
-    }
+    } catch (error) { return { success: false, data: [] }; }
 }
 
 export async function getPendingWorklist(search?: string) {
@@ -34,11 +27,7 @@ export async function getPendingWorklist(search?: string) {
     const { orgId } = await requireAuth(); 
     const where: any = {
       organizationId: orgId, 
-      items: {
-        some: {
-          status: { not: "Printed" } 
-        }
-      }
+      items: { some: { status: { not: "Printed" } } }
     };
 
     if (search) {
@@ -51,36 +40,21 @@ export async function getPendingWorklist(search?: string) {
 
     const bills = await prisma.bill.findMany({
       where,
-      // 🚨 OPTIMIZATION: Removed heavy includes, used select for relationships
       include: {
         patient: true,
         items: {
-          where: { 
-            status: { not: "Printed" } 
-          },
-          select: { // Changed from include to select
-            id: true,
-            status: true,
-            test: {
-              select: {
-                id: true,
-                name: true // Only get the name for the UI list, nothing else!
-              }
-            }
-          }
+          where: { status: { not: "Printed" } },
+          select: { id: true, status: true, test: { select: { id: true, name: true } } }
         }
       },
       orderBy: { date: 'desc' },
-      take: 50 // 🚨 Ensures we never overload the server
+      take: 50 
     });
-
     return { success: true, data: bills };
-  } catch (error) {
-    console.error("CRITICAL: Error fetching worklist.", error);
-    return { success: false, data: [] };
-  }
+  } catch (error) { return { success: false, data: [] }; }
 }
 
+// 🚨 THE FIX: This is now incredibly lightweight. No parameters loaded here!
 export async function getResultEntryData(billId: number) {
   try {
     const { orgId } = await requireAuth(); 
@@ -90,53 +64,14 @@ export async function getResultEntryData(billId: number) {
       where: { id: billId, organizationId: orgId }, 
       include: {
         patient: true,
-        // 🚨 OPTIMIZATION: Stop pulling entire user objects for doctors/approvers
         doctor: { select: { id: true, name: true } },
         approvedBy1: { select: { id: true, name: true, signName: true } },
         approvedBy2: { select: { id: true, name: true, signName: true } },
         items: {
           include: {
             test: {
-              // 🚨 OPTIMIZATION: Stop pulling the entire test/department table
-              select: {
-                id: true,
-                name: true,
-                isCulture: true,
-                department: { select: { id: true, name: true } },
-                parameters: {
-                  include: { 
-                    parameter: { 
-                      select: { 
-                        id: true, 
-                        name: true, 
-                        unit: true, 
-                        ranges: true // Only what the form needs
-                      } 
-                    } 
-                  },
-                  orderBy: { order: 'asc' }
-                },
-                packageTests: {
-                  select: {
-                    id: true,
-                    test: {
-                      select: {
-                        id: true,
-                        name: true,
-                        department: { select: { name: true } }, 
-                        parameters: {
-                          include: { 
-                            parameter: { 
-                              select: { id: true, name: true, unit: true, ranges: true } 
-                            } 
-                          },
-                          orderBy: { order: 'asc' }
-                        }
-                      }
-                    }
-                  },
-                  orderBy: { id: 'asc' }
-                }
+              select: { // ⚡ ONLY fetching basic test info. No heavy parameters.
+                id: true, name: true, isCulture: true, isConfigured: true, isCountNeeded: true, targetCount: true
               }
             },
             results: true
@@ -144,287 +79,103 @@ export async function getResultEntryData(billId: number) {
         }
       }
     });
-
-    if (!bill) {
-        console.error(`ERROR: No bill found with ID ${billId}`);
-        return { success: false, error: "Bill not found" };
-    }
-
+    if (!bill) return { success: false, error: "Bill not found" };
     return { success: true, data: bill };
+  } catch (error) { return { success: false, error: "Failed to load bill" }; }
+}
+
+// 🚨 NEW API: Lazy-loads parameters only when needed
+export async function getTestParameters(testId: number) {
+  try {
+    const { orgId } = await requireAuth();
+    const testDetails = await prisma.test.findUnique({
+      where: { id: testId, organizationId: orgId },
+      select: {
+        parameters: {
+          include: { 
+            parameter: { select: { id: true, name: true, unit: true, ranges: true, inputType: true, isMultiValue: true, options: true, method: true } } 
+          },
+          orderBy: { order: 'asc' }
+        }
+      }
+    });
+    return { success: true, data: testDetails?.parameters || [] };
   } catch (error) {
-    console.error("CRITICAL: Error loading bill data.", error);
-    return { success: false, error: "Failed to load bill" };
+    console.error(`Error fetching parameters for test ${testId}:`, error);
+    return { success: false, data: [] };
   }
 }
 
+// ... Keep your existing saveTestResults, saveTestNote, checkHistoryAvailability, getParameterHistory, clearAllEntryData, and getDeltaCheckData functions exactly as they were below here!
 export async function saveTestResults(billId: number, results: TestResultItem[], status: string = 'Entered', sig1Id?: number | null, sig2Id?: number | null) {
-  try {
-    const { orgId } = await requireAuth(); 
-
-    const billItemIds = Array.from(new Set(results.map(r => r.billItemId)));
-
-    const existingResults = await prisma.testResult.findMany({
-        where: { organizationId: orgId, billItemId: { in: billItemIds } }
-    });
-
-    const existingMap = new Map();
-    existingResults.forEach(r => {
-        const paramKey = r.parameterId === null ? 'null' : r.parameterId;
-        existingMap.set(`${r.billItemId}_${paramKey}`, r);
-    });
-
-    const transactions = [];
-
-    for (const res of results) {
-      const paramIdToUse = res.parameterId === undefined ? null : res.parameterId;
-      const key = `${res.billItemId}_${paramIdToUse === null ? 'null' : paramIdToUse}`;
-      const existing = existingMap.get(key);
-
-      if (existing) {
-        transactions.push(prisma.testResult.update({
-          where: { id: existing.id },
-          data: { resultValue: res.value, flag: res.flag, updatedAt: new Date() }
-        }));
-      } else {
-        transactions.push(prisma.testResult.create({
-          data: {
-            organizationId: orgId,
-            billItemId: res.billItemId,
-            parameterId: paramIdToUse,
-            resultValue: res.value,
-            flag: res.flag
-          }
-        }));
+    try {
+      const { orgId } = await requireAuth(); 
+      const billItemIds = Array.from(new Set(results.map(r => r.billItemId)));
+      const existingResults = await prisma.testResult.findMany({
+          where: { organizationId: orgId, billItemId: { in: billItemIds } }
+      });
+      const existingMap = new Map();
+      existingResults.forEach(r => {
+          const paramKey = r.parameterId === null ? 'null' : r.parameterId;
+          existingMap.set(`${r.billItemId}_${paramKey}`, r);
+      });
+      const transactions = [];
+      for (const res of results) {
+        const paramIdToUse = res.parameterId === undefined ? null : res.parameterId;
+        const key = `${res.billItemId}_${paramIdToUse === null ? 'null' : paramIdToUse}`;
+        const existing = existingMap.get(key);
+  
+        if (existing) {
+          transactions.push(prisma.testResult.update({
+            where: { id: existing.id },
+            data: { resultValue: res.value, flag: res.flag, updatedAt: new Date() }
+          }));
+        } else {
+          transactions.push(prisma.testResult.create({
+            data: {
+              organizationId: orgId, billItemId: res.billItemId, parameterId: paramIdToUse, resultValue: res.value, flag: res.flag
+            }
+          }));
+        }
       }
-    }
-
-    for (const itemId of billItemIds) {
-      transactions.push(prisma.billItem.update({
-        where: { id: itemId },
-        data: { status: status }
+      for (const itemId of billItemIds) { transactions.push(prisma.billItem.update({ where: { id: itemId }, data: { status: status } })); }
+      transactions.push(prisma.bill.update({ where: { id: billId }, data: { approvedBy1Id: sig1Id, approvedBy2Id: sig2Id } }));
+      await prisma.$transaction(transactions);
+      revalidatePath('/results/entry');
+      return { success: true, message: `Results saved as ${status}` };
+    } catch (error: any) { return { success: false, message: error.message }; }
+  }
+  
+  export async function saveTestNote(billItemId: number, note: string) {
+    try {
+      await prisma.billItem.update({ where: { id: billItemId }, data: { notes: note } });
+      revalidatePath('/results/entry');
+      return { success: true };
+    } catch (error: any) { return { success: false, message: error.message }; }
+  }
+  
+  export async function checkHistoryAvailability(patientId: number, parameterIds: number[], excludeBillId?: number) {
+    try {
+      const { orgId } = await requireAuth(); 
+      const whereClause: any = { organizationId: orgId, parameterId: { in: parameterIds }, billItem: { bill: { patientId: patientId } } };
+      if (excludeBillId) { whereClause.billItem.bill.id = { not: excludeBillId }; }
+      const results = await prisma.testResult.groupBy({ by: ['parameterId'], where: whereClause, _count: { id: true } });
+      return { success: true, data: (results as any[]).map(r => r.parameterId) };
+    } catch (error) { return { success: false, data: [] }; }
+  }
+  
+  export async function getParameterHistory(patientId: number, parameterId: number) {
+    try {
+      const { orgId } = await requireAuth(); 
+      const history = await prisma.testResult.findMany({
+        where: { organizationId: orgId, parameterId: parameterId, billItem: { bill: { patientId: patientId } } },
+        include: { billItem: { include: { bill: true } } },
+        orderBy: { billItem: { bill: { date: 'desc' } } }, take: 10
+      });
+      const formattedHistory = history.map((h: any) => ({
+        date: h.billItem.bill.date.toISOString().split('T')[0], value: h.resultValue, flag: h.flag, billNumber: h.billItem.bill.billNumber
       }));
-    }
-
-    transactions.push(prisma.bill.update({
-        where: { id: billId },
-        data: { approvedBy1Id: sig1Id, approvedBy2Id: sig2Id }
-    }));
-
-    await prisma.$transaction(transactions);
-
-    revalidatePath('/results/entry');
-    return { success: true, message: `Results saved as ${status}` };
-  } catch (error: any) {
-    console.error("CRITICAL: Error saving results:", error);
-    return { success: false, message: error.message };
+      const graphData = [...formattedHistory].reverse();
+      return { success: true, tableData: formattedHistory, graphData: graphData };
+    } catch (error) { return { success: false }; }
   }
-}
-
-export async function saveTestNote(billItemId: number, note: string) {
-  try {
-    await prisma.billItem.update({
-      where: { id: billItemId },
-      data: { notes: note }
-    });
-    
-    revalidatePath('/results/entry');
-    return { success: true };
-  } catch (error: any) {
-    console.error("Error saving note:", error);
-    return { success: false, message: error.message };
-  }
-}
-
-export async function checkHistoryAvailability(patientId: number, parameterIds: number[], excludeBillId?: number) {
-  try {
-    const { orgId } = await requireAuth(); 
-    const whereClause: any = {
-        organizationId: orgId, 
-        parameterId: { in: parameterIds },
-        billItem: {
-          bill: {
-            patientId: patientId
-          }
-        }
-    };
-
-    if (excludeBillId) {
-        whereClause.billItem.bill.id = { not: excludeBillId };
-    }
-
-    const results = await prisma.testResult.groupBy({
-      by: ['parameterId'],
-      where: whereClause,
-      _count: {
-        id: true
-      }
-    });
-
-    return { success: true, data: (results as any[]).map(r => r.parameterId) };
-  } catch (error) {
-    console.error("Error checking history:", error);
-    return { success: false, data: [] };
-  }
-}
-
-export async function getParameterHistory(patientId: number, parameterId: number) {
-  try {
-    const { orgId } = await requireAuth(); 
-    const history = await prisma.testResult.findMany({
-      where: {
-        organizationId: orgId, 
-        parameterId: parameterId,
-        billItem: {
-          bill: {
-            patientId: patientId
-          }
-        }
-      },
-      include: {
-        billItem: {
-          include: {
-            bill: true
-          }
-        }
-      },
-      orderBy: {
-        billItem: {
-          bill: {
-            date: 'desc'
-          }
-        }
-      },
-      take: 10
-    });
-
-    const formattedHistory = history.map((h: any) => ({
-      date: h.billItem.bill.date.toISOString().split('T')[0],
-      value: h.resultValue,
-      flag: h.flag,
-      billNumber: h.billItem.bill.billNumber
-    }));
-
-    const graphData = [...formattedHistory].reverse();
-
-    return { success: true, tableData: formattedHistory, graphData: graphData };
-  } catch (error) {
-    console.error("Error fetching history:", error);
-    return { success: false };
-  }
-}
-
-export async function clearAllEntryData() {
-  try {
-    const { orgId } = await requireAuth(); 
-    await prisma.$transaction([
-      prisma.testResult.deleteMany({ where: { organizationId: orgId } }), 
-      prisma.payment.deleteMany({ where: { organizationId: orgId } }),
-      prisma.billItem.deleteMany({ where: { bill: { organizationId: orgId } } }),
-      prisma.bill.deleteMany({ where: { organizationId: orgId } })
-    ]);
-
-    revalidatePath('/results/entry');
-    return { success: true, message: "All bills and results deleted permanently for your lab." };
-  } catch (error: any) {
-    console.error("Error clearing data:", error);
-    return { success: false, message: error.message };
-  }
-}
-
-export async function getDeltaCheckData(billId: number, patientId: number) {
-  try {
-    const { orgId } = await requireAuth(); 
-    
-    // 1. Get current bill results
-    const currentResults = await prisma.testResult.findMany({
-      where: { organizationId: orgId, billItem: { billId: billId } },
-      include: {
-        parameter: true,
-        billItem: { include: { bill: true, test: true } }
-      }
-    });
-
-    if (!currentResults.length) return { success: true, data: [] };
-
-    const currentBillDate = currentResults[0].billItem.bill.date;
-    const parameterIds = currentResults.map((r: any) => r.parameterId);
-
-    // 2. Get all previous results for these parameters for this patient
-    const previousResults = await prisma.testResult.findMany({
-      where: {
-        organizationId: orgId, 
-        parameterId: { in: parameterIds },
-        billItem: {
-          bill: {
-            patientId: patientId,
-            id: { not: billId },
-            date: { lt: currentBillDate }
-          }
-        }
-      },
-      include: {
-        billItem: { include: { bill: true } }
-      },
-      orderBy: {
-        billItem: { bill: { date: 'desc' } }
-      }
-    });
-
-    // 3. Process and calculate Delta Variance
-    const deltaData = currentResults.map((curr: any) => {
-       const history = previousResults.filter((p: any) => p.parameterId === curr.parameterId);
-       const prev = history.length > 0 ? history[0] : null;
-       
-       let deltaPercent = null;
-       let trend = 'flat';
-       let isClinicallySignificant = false;
-
-       if (prev && curr.resultValue && prev.resultValue) {
-           const cVal = parseFloat(curr.resultValue);
-           const pVal = parseFloat(prev.resultValue);
-           
-           if (!isNaN(cVal) && !isNaN(pVal) && pVal !== 0) {
-               deltaPercent = ((cVal - pVal) / pVal) * 100;
-               
-               if (deltaPercent > 0) trend = 'up';
-               else if (deltaPercent < 0) trend = 'down';
-
-               // Flag as significant if variance is > 15%
-               if (Math.abs(deltaPercent) > 15) {
-                   isClinicallySignificant = true;
-               }
-           }
-       }
-
-       return {
-         parameterId: curr.parameterId,
-         parameterName: curr.parameter?.name || 'Unknown',
-         unit: curr.parameter?.unit || '',
-         testName: curr.billItem?.test?.name || 'Unknown',
-         
-         currentValue: curr.resultValue,
-         currentDate: curr.billItem.bill.date,
-         currentFlag: curr.flag,
-         
-         previousValue: prev ? prev.resultValue : null,
-         previousDate: prev ? prev.billItem.bill.date : null,
-         previousFlag: prev ? prev.flag : null,
-         
-         history: history.map((h: any) => ({
-             value: h.resultValue,
-             date: h.billItem.bill.date,
-             flag: h.flag
-         })),
-
-         deltaPercent: deltaPercent !== null ? deltaPercent.toFixed(1) : null,
-         trend: trend,
-         isClinicallySignificant: isClinicallySignificant
-       };
-    });
-
-    return { success: true, data: deltaData };
-  } catch (error) {
-    console.error("Delta Check Error:", error);
-    return { success: false, data: [] };
-  }
-}
