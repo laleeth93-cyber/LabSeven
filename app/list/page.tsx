@@ -2,8 +2,6 @@ import React from 'react';
 import { getPendingWorklist } from '@/app/actions/result-entry';
 import ClientPatientList from './ClientPatientList';
 
-export const dynamic = 'force-dynamic';
-
 export default async function PatientListPage() {
     // 🚨 1. Fetch data instantly on the server before the page loads
     const initialRes = await getPendingWorklist();

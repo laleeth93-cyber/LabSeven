@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // 🚨 REQUIRED FOR VERCEL + SUPABASE
 }
 
 // ==========================================
@@ -97,6 +98,8 @@ model Patient {
   bills         Bill[]
 
   @@unique([organizationId, patientId])
+  @@index([organizationId]) // 🚨 SPEED INDEX
+  @@index([phone])          // 🚨 SPEED INDEX
 }
 
 model Bill {
@@ -136,6 +139,8 @@ model Bill {
   payments      Payment[]
 
   @@unique([organizationId, billNumber])
+  @@index([organizationId, date]) // 🚨 SPEED INDEX (Crucial for Dashboard/Lists)
+  @@index([patientId])            // 🚨 SPEED INDEX
 }
 
 model BillItem {
@@ -157,6 +162,10 @@ model BillItem {
   notes           String? @db.Text
 
   results         TestResult[]
+
+  @@index([organizationId]) // 🚨 SPEED INDEX
+  @@index([billId])         // 🚨 SPEED INDEX
+  @@index([testId])         // 🚨 SPEED INDEX
 }
 
 model TestResult {
@@ -176,6 +185,10 @@ model TestResult {
   remarks         String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@index([organizationId]) // 🚨 SPEED INDEX
+  @@index([billItemId])     // 🚨 SPEED INDEX
+  @@index([parameterId])    // 🚨 SPEED INDEX
 }
 
 model Payment {
@@ -191,6 +204,9 @@ model Payment {
   amount        Float
   transactionId String?
   date          DateTime @default(now())
+
+  @@index([organizationId]) // 🚨 SPEED INDEX
+  @@index([billId])         // 🚨 SPEED INDEX
 }
 
 model Doctor {
@@ -523,7 +539,7 @@ model UOM {
 }
 
 model Operator {
-  id              Int     @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id])
@@ -688,10 +704,9 @@ model User {
   // 🚨 ADD THESE TWO LINES BACK:
   isTwoFactorEnabled Boolean @default(false)
   twoFactorSecret    String?
-
   degree       String?
   signName     String?
-  designation  String?  
+  designation  String?
   regNumber    String?  
   signText1    String?
   signText2    String?  
@@ -757,7 +772,7 @@ model RolePermission {
 }
 
 model UserPermission {
-  id           Int        @id @default(autoincrement())
+  id            Int        @id @default(autoincrement())
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   permissionId Int
@@ -786,7 +801,7 @@ model Organism {
 }
 
 model Antibiotic {
-  id              Int          @id @default(autoincrement())
+  id              Int        @id @default(autoincrement())
   
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id])
@@ -864,7 +879,7 @@ model OtpCode {
 // ==========================================
 
 model SupportThread {
-  id              Int       @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id])

@@ -1,10 +1,8 @@
-// --- BLOCK app/actions/dashboard.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
+import { requireAuth } from '@/lib/server-auth'; 
 
-// Helper to reliably calculate precise date ranges
 const getRange = (from?: string, to?: string) => {
     let startDate = new Date();
     let endDate = new Date();
@@ -16,12 +14,23 @@ const getRange = (from?: string, to?: string) => {
 };
 
 export async function getKPIs(from?: string, to?: string) {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const { startDate, endDate } = getRange(from, to);
     
+    // 🚨 OPTIMIZED: Only fetch the numeric values needed for math, not the entire objects!
     const bills = await prisma.bill.findMany({
-        where: { organizationId: orgId, date: { gte: startDate, lte: endDate } }, // 🚨 FILTER BY ORG
-        include: { items: { include: { test: true } } }
+        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false }, 
+        select: {
+            patientId: true,
+            netAmount: true,
+            paidAmount: true,
+            dueAmount: true,
+            items: {
+                select: {
+                    test: { select: { isOutsourced: true } }
+                }
+            }
+        }
     });
     
     let totalBills = bills.length; 
@@ -29,27 +38,29 @@ export async function getKPIs(from?: string, to?: string) {
     const patients = new Set();
     
     bills.forEach((b: any) => {
-        if (!b.isDeleted) {
-            totalRevenue += b.netAmount;
-            totalCollected += b.paidAmount;
-            totalDue += b.dueAmount;
-            patients.add(b.patientId);
-            b.items?.forEach((i: any) => {
-                totalTests++;
-                if (i.test?.isOutsourced) outsourced++;
-            });
-        }
+        totalRevenue += b.netAmount;
+        totalCollected += b.paidAmount;
+        totalDue += b.dueAmount;
+        patients.add(b.patientId);
+        b.items?.forEach((i: any) => {
+            totalTests++;
+            if (i.test?.isOutsourced) outsourced++;
+        });
     });
+    
     return { totalBills, totalRevenue, totalCollected, totalDue, totalPatients: patients.size, totalTests, outsourced };
 }
 
 export async function getRevenueData(from?: string, to?: string) {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const { startDate, endDate } = getRange(from, to);
+    
     const bills = await prisma.bill.findMany({
-        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false }, // 🚨 FILTER BY ORG
+        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false }, 
+        select: { date: true, netAmount: true }, // 🚨 OPTIMIZED
         orderBy: { date: 'asc' }
     });
+    
     const map = new Map();
     bills.forEach((b: any) => {
         const d = new Date(b.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
@@ -60,11 +71,16 @@ export async function getRevenueData(from?: string, to?: string) {
 }
 
 export async function getPatientData(from?: string, to?: string) {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const { startDate, endDate } = getRange(from, to);
+    
     const bills = await prisma.bill.findMany({
-        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false }, // 🚨 FILTER BY ORG
-        include: { patient: true },
+        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false },
+        select: { 
+            date: true, 
+            patientId: true, 
+            patient: { select: { createdAt: true } } 
+        }, // 🚨 OPTIMIZED
         orderBy: { date: 'asc' }
     });
     
@@ -86,13 +102,15 @@ export async function getPatientData(from?: string, to?: string) {
 }
 
 export async function getTestTrendData(from?: string, to?: string) {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const { startDate, endDate } = getRange(from, to);
+    
     const bills = await prisma.bill.findMany({
-        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false }, // 🚨 FILTER BY ORG
-        include: { items: true },
+        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false }, 
+        select: { date: true, items: { select: { id: true } } }, // 🚨 OPTIMIZED
         orderBy: { date: 'asc' }
     });
+    
     const map = new Map();
     bills.forEach((b: any) => {
         const d = new Date(b.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
@@ -103,16 +121,20 @@ export async function getTestTrendData(from?: string, to?: string) {
 }
 
 export async function getTestStatusData(from?: string, to?: string) {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const { startDate, endDate } = getRange(from, to);
+    
     const items = await prisma.billItem.findMany({
-        where: { organizationId: orgId, bill: { date: { gte: startDate, lte: endDate }, isDeleted: false } } // 🚨 FILTER BY ORG
+        where: { organizationId: orgId, bill: { date: { gte: startDate, lte: endDate }, isDeleted: false } },
+        select: { status: true } // 🚨 OPTIMIZED
     });
+    
     let counts = { Pending: 0, Entered: 0, Approved: 0, Printed: 0 };
     items.forEach((i: any) => {
         if (counts[i.status as keyof typeof counts] !== undefined) counts[i.status as keyof typeof counts]++;
         else counts.Pending++;
     });
+    
     return [
         { name: 'Pending', value: counts.Pending, fill: '#fbbf24' },
         { name: 'Entered', value: counts.Entered, fill: '#60a5fa' },
@@ -122,12 +144,14 @@ export async function getTestStatusData(from?: string, to?: string) {
 }
 
 export async function getTopTestsData(from?: string, to?: string) {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const { startDate, endDate } = getRange(from, to);
+    
     const items = await prisma.billItem.findMany({
-        where: { organizationId: orgId, bill: { date: { gte: startDate, lte: endDate }, isDeleted: false } }, // 🚨 FILTER BY ORG
-        include: { test: true }
+        where: { organizationId: orgId, bill: { date: { gte: startDate, lte: endDate }, isDeleted: false } },
+        select: { test: { select: { name: true } } } // 🚨 OPTIMIZED
     });
+    
     const map = new Map();
     items.forEach((i: any) => {
         const name = i.test?.name || 'Unknown';
@@ -137,12 +161,18 @@ export async function getTopTestsData(from?: string, to?: string) {
 }
 
 export async function getTopReferralsData(from?: string, to?: string) {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const { startDate, endDate } = getRange(from, to);
+    
     const bills = await prisma.bill.findMany({
-        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false }, // 🚨 FILTER BY ORG
-        include: { patient: true }
+        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false }, 
+        select: { 
+            netAmount: true, 
+            patientId: true, 
+            patient: { select: { referralType: true, refDoctor: true } } 
+        } // 🚨 OPTIMIZED
     });
+    
     const map = new Map();
     bills.forEach((b: any) => {
         const type = b.patient?.referralType;
@@ -161,12 +191,14 @@ export async function getTopReferralsData(from?: string, to?: string) {
 }
 
 export async function getOutsourceData(from?: string, to?: string) {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const { startDate, endDate } = getRange(from, to);
+    
     const items = await prisma.billItem.findMany({
-        where: { organizationId: orgId, bill: { date: { gte: startDate, lte: endDate }, isDeleted: false } }, // 🚨 FILTER BY ORG
-        include: { test: true }
+        where: { organizationId: orgId, bill: { date: { gte: startDate, lte: endDate }, isDeleted: false } },
+        select: { test: { select: { isOutsourced: true } } } // 🚨 OPTIMIZED
     });
+    
     let inHouse = 0, outsourced = 0;
     items.forEach((i: any) => {
         if (i.test?.isOutsourced) outsourced++;
@@ -179,11 +211,12 @@ export async function getOutsourceData(from?: string, to?: string) {
 }
 
 export async function getSelfVsReferralData(from?: string, to?: string) {
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const { startDate, endDate } = getRange(from, to);
+    
     const bills = await prisma.bill.findMany({
-        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false }, // 🚨 FILTER BY ORG
-        include: { patient: true }
+        where: { organizationId: orgId, date: { gte: startDate, lte: endDate }, isDeleted: false }, 
+        select: { patientId: true, patient: { select: { refDoctor: true } } } // 🚨 OPTIMIZED
     });
     
     let selfCount = 0;
@@ -210,9 +243,9 @@ export async function getSelfVsReferralData(from?: string, to?: string) {
 
 export async function getReferralList() {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         const refs = await prisma.doctor.findMany({
-            where: { organizationId: orgId, isActive: true }, // 🚨 FILTER BY ORG
+            where: { organizationId: orgId, isActive: true }, 
             select: { name: true },
             orderBy: { name: 'asc' }
         });
@@ -226,16 +259,17 @@ export async function getReferralList() {
 
 export async function getSpecificReferralTrendData(from?: string, to?: string, doctorName?: string) {
     if (!doctorName) return [];
-    const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+    const { orgId } = await requireAuth(); 
     const { startDate, endDate } = getRange(from, to);
     
     const bills = await prisma.bill.findMany({
         where: { 
-            organizationId: orgId, // 🚨 FILTER BY ORG
+            organizationId: orgId, 
             date: { gte: startDate, lte: endDate }, 
             patient: { refDoctor: { contains: doctorName } }, 
             isDeleted: false 
         },
+        select: { date: true, netAmount: true }, // 🚨 OPTIMIZED
         orderBy: { date: 'asc' }
     });
     
@@ -250,4 +284,3 @@ export async function getSpecificReferralTrendData(from?: string, to?: string, d
     
     return Array.from(map.values());
 }
-// --- BLOCK app/actions/dashboard.ts CLOSE ---

@@ -10,8 +10,6 @@ import {
     getOutsourceData, getReferralList, getSelfVsReferralData, getSpecificReferralTrendData
 } from '@/app/actions/dashboard';
 
-export const dynamic = 'force-dynamic';
-
 export default async function Page() {
     // 1. Validate Session
     const session = await getServerSession(authOptions);

@@ -2,8 +2,6 @@ import React from 'react';
 import { getPendingWorklist, getResultEntryData } from '@/app/actions/result-entry';
 import ClientResultEntry from './ClientResultEntry';
 
-export const dynamic = 'force-dynamic';
-
 export default async function ResultEntryPage() {
     // 1. Fetch the main worklist instantly on the server
     const initialRes = await getPendingWorklist();

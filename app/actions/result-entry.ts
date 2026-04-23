@@ -1,4 +1,3 @@
-// --- BLOCK app/actions/result-entry.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
@@ -52,19 +51,27 @@ export async function getPendingWorklist(search?: string) {
 
     const bills = await prisma.bill.findMany({
       where,
+      // 🚨 OPTIMIZATION: Removed heavy includes, used select for relationships
       include: {
         patient: true,
         items: {
           where: { 
             status: { not: "Printed" } 
           },
-          include: {
-            test: true
+          select: { // Changed from include to select
+            id: true,
+            status: true,
+            test: {
+              select: {
+                id: true,
+                name: true // Only get the name for the UI list, nothing else!
+              }
+            }
           }
         }
       },
       orderBy: { date: 'desc' },
-      take: 50
+      take: 50 // 🚨 Ensures we never overload the server
     });
 
     return { success: true, data: bills };
@@ -83,25 +90,46 @@ export async function getResultEntryData(billId: number) {
       where: { id: billId, organizationId: orgId }, 
       include: {
         patient: true,
-        doctor: true,
-        approvedBy1: true,
-        approvedBy2: true,
+        // 🚨 OPTIMIZATION: Stop pulling entire user objects for doctors/approvers
+        doctor: { select: { id: true, name: true } },
+        approvedBy1: { select: { id: true, name: true, signName: true } },
+        approvedBy2: { select: { id: true, name: true, signName: true } },
         items: {
           include: {
             test: {
-              include: {
-                department: true,
+              // 🚨 OPTIMIZATION: Stop pulling the entire test/department table
+              select: {
+                id: true,
+                name: true,
+                isCulture: true,
+                department: { select: { id: true, name: true } },
                 parameters: {
-                  include: { parameter: { include: { ranges: true } } },
+                  include: { 
+                    parameter: { 
+                      select: { 
+                        id: true, 
+                        name: true, 
+                        unit: true, 
+                        ranges: true // Only what the form needs
+                      } 
+                    } 
+                  },
                   orderBy: { order: 'asc' }
                 },
                 packageTests: {
-                  include: {
+                  select: {
+                    id: true,
                     test: {
-                      include: {
-                        department: true, 
+                      select: {
+                        id: true,
+                        name: true,
+                        department: { select: { name: true } }, 
                         parameters: {
-                          include: { parameter: { include: { ranges: true } } },
+                          include: { 
+                            parameter: { 
+                              select: { id: true, name: true, unit: true, ranges: true } 
+                            } 
+                          },
                           orderBy: { order: 'asc' }
                         }
                       }
@@ -111,9 +139,6 @@ export async function getResultEntryData(billId: number) {
                 }
               }
             },
-            // 🚨 MASSIVE SPEED BOOST: Removed redundant deep parameter inclusion here. 
-            // The frontend already gets parameter data from the 'test' object above. 
-            // This prevents a Cartesian explosion in the SQL query!
             results: true
           }
         }
@@ -138,8 +163,6 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
 
     const billItemIds = Array.from(new Set(results.map(r => r.billItemId)));
 
-    // 🚨 MASSIVE SPEED BOOST: Replaced the N+1 loop with a single Transaction block.
-    // Fetch all existing results at once
     const existingResults = await prisma.testResult.findMany({
         where: { organizationId: orgId, billItemId: { in: billItemIds } }
     });
@@ -152,7 +175,6 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
 
     const transactions = [];
 
-    // Queue up result creates/updates
     for (const res of results) {
       const paramIdToUse = res.parameterId === undefined ? null : res.parameterId;
       const key = `${res.billItemId}_${paramIdToUse === null ? 'null' : paramIdToUse}`;
@@ -176,7 +198,6 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
       }
     }
 
-    // Queue up status updates
     for (const itemId of billItemIds) {
       transactions.push(prisma.billItem.update({
         where: { id: itemId },
@@ -184,13 +205,11 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
       }));
     }
 
-    // Queue up bill approval
     transactions.push(prisma.bill.update({
         where: { id: billId },
         data: { approvedBy1Id: sig1Id, approvedBy2Id: sig2Id }
     }));
 
-    // 🚨 Execute EVERYTHING in a single database round-trip
     await prisma.$transaction(transactions);
 
     revalidatePath('/results/entry');
@@ -409,4 +428,3 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
     return { success: false, data: [] };
   }
 }
-// --- BLOCK app/actions/result-entry.ts CLOSE ---

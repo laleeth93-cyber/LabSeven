@@ -3,8 +3,6 @@ import React from "react";
 import { prisma } from "@/lib/prisma";
 import AdminsManager from "./components/AdminsManager";
 
-export const dynamic = "force-dynamic";
-
 export default async function SuperAdminsPage() {
   // Fetch all users belonging to Organization 1 (Master HQ)
   const admins = await prisma.user.findMany({

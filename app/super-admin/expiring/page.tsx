@@ -4,8 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { AlertTriangle, Clock, PhoneForwarded } from "lucide-react";
 import SuperAdminTable from "../components/SuperAdminTable";
 
-export const dynamic = 'force-dynamic';
-
 export default async function ExpiringLabsPage() {
   
   // 1. Fetch all labs except Master HQ

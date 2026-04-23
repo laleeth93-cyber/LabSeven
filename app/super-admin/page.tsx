@@ -4,8 +4,6 @@ import { prisma } from "@/lib/prisma";
 import SuperAdminTable from "./components/SuperAdminTable";
 import GlobalSyncWidget from "./components/GlobalSyncWidget"; // 🚨 ADDED IMPORT
 
-export const dynamic = "force-dynamic";
-
 export default async function SuperAdminPage() {
   const labs = await prisma.organization.findMany({
     orderBy: { id: 'asc' },

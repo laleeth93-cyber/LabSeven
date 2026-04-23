@@ -1,16 +1,14 @@
-// --- BLOCK app/actions/patient-list.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '@/lib/server-auth'; // 🚨 IMPORTING OUR NEW GATEKEEPER
+import { requireAuth } from '@/lib/server-auth';
 
 // Fetch all bills/patients for the list with optional Date Filtering
 export async function getPatientList(searchQuery: string = '', startDate?: string, endDate?: string) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
 
-        // ONLY FETCH BILLS THAT ARE NOT DELETED AND BELONG TO THIS LAB 🚨
         const whereClause: any = { isDeleted: false, organizationId: orgId };
         
         if (searchQuery) {
@@ -39,6 +37,7 @@ export async function getPatientList(searchQuery: string = '', startDate?: strin
 
         const bills = await prisma.bill.findMany({
             where: whereClause,
+            // 🚨 OPTIMIZED: Removed `results: true` and `payments: true` to prevent Vercel timeouts.
             include: {
                 patient: true,
                 items: {
@@ -54,11 +53,9 @@ export async function getPatientList(searchQuery: string = '', startDate?: strin
                                 isCulture: true, 
                                 cultureColumns: true 
                             } 
-                        },
-                        results: true 
+                        }
                     }
-                },
-                payments: true
+                }
             },
             orderBy: { date: 'desc' },
             take: 200 
@@ -74,9 +71,8 @@ export async function getPatientList(searchQuery: string = '', startDate?: strin
 // Clear Due Amount
 export async function clearBillDue(billId: number, amount: number, paymentMode: string) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         
-        // 🚨 Verify ownership
         const bill = await prisma.bill.findUnique({ where: { id: billId, organizationId: orgId } });
         if (!bill) return { success: false, message: "Bill not found" };
 
@@ -85,7 +81,6 @@ export async function clearBillDue(billId: number, amount: number, paymentMode: 
 
         await prisma.$transaction([
             prisma.payment.create({
-                // 🚨 Tag payment to the current lab
                 data: { organizationId: orgId, billId: billId, amount: amount, mode: paymentMode, date: new Date() }
             }),
             prisma.bill.update({
@@ -104,9 +99,8 @@ export async function clearBillDue(billId: number, amount: number, paymentMode: 
 // Refund Amount 
 export async function processRefund(billId: number, amount: number, mode: string, reason: string) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         
-        // 🚨 Verify ownership
         const bill = await prisma.bill.findUnique({ where: { id: billId, organizationId: orgId } });
         if (!bill) return { success: false, message: "Bill not found" };
         if (amount > bill.paidAmount) return { success: false, message: "Refund cannot exceed the paid amount." };
@@ -119,7 +113,7 @@ export async function processRefund(billId: number, amount: number, mode: string
         await prisma.$transaction([
             prisma.payment.create({
                 data: { 
-                    organizationId: orgId, // 🚨 Tag payment to the current lab
+                    organizationId: orgId,
                     billId: billId, 
                     amount: -amount, 
                     mode: refundModeString, 
@@ -147,9 +141,8 @@ export async function processRefund(billId: number, amount: number, mode: string
 // Delete Bill Entirely (Soft Delete to keep metrics)
 export async function deleteBill(billId: number) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         
-        // 🚨 Verify ownership
         const bill = await prisma.bill.findUnique({ where: { id: billId, organizationId: orgId } });
         if (!bill) return { success: false, message: "Bill not found" };
 
@@ -170,9 +163,8 @@ export async function deleteBill(billId: number) {
 // Update Patient Details
 export async function updatePatientDetails(patientId: number, data: any) {
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         
-        // 🚨 Verify ownership
         const patient = await prisma.patient.findUnique({ where: { id: patientId, organizationId: orgId } });
         if (!patient) return { success: false, message: "Patient not found" };
 
@@ -205,10 +197,10 @@ export async function updatePatientDetails(patientId: number, data: any) {
 export async function searchMasterTests(query: string) {
     if (!query || query.length < 2) return [];
     try {
-        const { orgId } = await requireAuth(); // 🚨 GATEKEEPER
+        const { orgId } = await requireAuth(); 
         return await prisma.test.findMany({
             where: {
-                organizationId: orgId, // 🚨 Filter to current lab
+                organizationId: orgId,
                 OR: [ { name: { contains: query, mode: 'insensitive' } }, { code: { contains: query, mode: 'insensitive' } } ],
                 isActive: true
             },
@@ -217,4 +209,3 @@ export async function searchMasterTests(query: string) {
         });
     } catch (error) { return []; }
 }
-// --- BLOCK app/actions/patient-list.ts CLOSE ---

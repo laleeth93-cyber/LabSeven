@@ -38,7 +38,6 @@ export async function createBill(data: any) {
     const { orgId } = await requireAuth();
     const billNumber = data.billNumber || `INV-${Date.now()}`;
     
-    // 🚨 THE FIX: Use Number() instead of parseInt() so hyphenated strings correctly trigger the lookup!
     let patientDbId = Number(data.patientId); 
     
     if (isNaN(patientDbId)) {
@@ -78,7 +77,6 @@ export async function createBill(data: any) {
         }
     }
 
-    // SMART DOCTOR LINKING 
     let doctorId: number | undefined = undefined;
     if (data.referredBy && data.referredBy !== 'Self') {
         const doc = await prisma.doctor.findFirst({
@@ -107,7 +105,6 @@ export async function createBill(data: any) {
           create: finalItemsToSave 
         },
         
-        // Only create a payment record if they actually paid something
         ...(data.paidAmount > 0 && {
             payments: {
               create: {
@@ -131,19 +128,17 @@ export async function createBill(data: any) {
   }
 }
 
-// 3. GENERATE SEQUENTIAL INVOICE NUMBER (TENANT ISOLATED)
+// 3. GENERATE SEQUENTIAL INVOICE NUMBER
 export async function getNextBillNumber() {
   try {
     const { orgId } = await requireAuth();
     
-    // Get today's date in YYYYMMDD format
     const today = new Date();
     const dateStr = today.getFullYear().toString() +
                     (today.getMonth() + 1).toString().padStart(2, '0') +
                     today.getDate().toString().padStart(2, '0');
     const prefix = `INV-${dateStr}`;
 
-    // Find the latest invoice created TODAY for this specific clinic
     const lastBill = await prisma.bill.findFirst({
       where: {
         organizationId: orgId,
@@ -154,7 +149,6 @@ export async function getNextBillNumber() {
 
     if (lastBill && lastBill.billNumber.includes('-')) {
       const parts = lastBill.billNumber.split('-');
-      // Extract the last part of the INV-YYYYMMDD-XXXX string
       const lastSerial = parseInt(parts[parts.length - 1], 10);
       if (!isNaN(lastSerial)) {
         const nextSerial = (lastSerial + 1).toString().padStart(4, '0');
@@ -162,7 +156,6 @@ export async function getNextBillNumber() {
       }
     }
     
-    // If no invoices exist today, start at 0001
     return `${prefix}-0001`;
 
   } catch (error) {

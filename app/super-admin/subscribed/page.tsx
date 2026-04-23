@@ -4,8 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { CheckCircle, Users, Receipt } from "lucide-react";
 import SuperAdminTable from "../components/SuperAdminTable";
 
-export const dynamic = 'force-dynamic';
-
 export default async function SubscribedLabsPage() {
   // 1. Fetch only labs that are NOT on a "Free Trial" and are NOT the Master HQ
   const labs = await prisma.organization.findMany({
