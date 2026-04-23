@@ -27,6 +27,7 @@ export async function getPendingWorklist(search?: string) {
     const { orgId } = await requireAuth(); 
     const where: any = {
       organizationId: orgId, 
+      isDeleted: false, // 🚨 CRITICAL FIX: Ignore soft-deleted bills
       items: { some: { status: { not: "Printed" } } }
     };
 
@@ -54,7 +55,6 @@ export async function getPendingWorklist(search?: string) {
   } catch (error) { return { success: false, data: [] }; }
 }
 
-// 🚨 OPTIMIZED: Incredibly lightweight. No parameters loaded here!
 export async function getResultEntryData(billId: number) {
   try {
     const { orgId } = await requireAuth(); 
@@ -70,7 +70,7 @@ export async function getResultEntryData(billId: number) {
         items: {
           include: {
             test: {
-              select: { // ⚡ ONLY fetching basic test info. No heavy parameters.
+              select: { 
                 id: true, name: true, isCulture: true, isConfigured: true, isCountNeeded: true, targetCount: true
               }
             },
@@ -84,7 +84,6 @@ export async function getResultEntryData(billId: number) {
   } catch (error) { return { success: false, error: "Failed to load bill" }; }
 }
 
-// 🚨 NEW BATCH API: Gets ALL test formats for a patient in 1 single database trip
 export async function getTestParametersBatch(testIds: number[]) {
   try {
     const { orgId } = await requireAuth();
@@ -109,7 +108,6 @@ export async function getTestParametersBatch(testIds: number[]) {
   }
 }
 
-// Keep the old single-fetch just in case other modules still call it
 export async function getTestParameters(testId: number) {
   try {
     const { orgId } = await requireAuth();

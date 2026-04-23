@@ -19,8 +19,7 @@ import EditPatientModal from './components/EditPatientModal';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 
 import { usePermissions } from '@/app/context/PermissionContext';
-import { getPendingWorklist } from '@/app/actions/result-entry'; 
-import { deleteBill } from '@/app/actions/patient-list';
+import { getPatientList, deleteBill } from '@/app/actions/patient-list'; // 🚨 CRITICAL FIX
 
 // 🚨 ACCEPTS THE PRE-LOADED SERVER DATA
 export default function ClientPatientList({ initialBills }: { initialBills: any[] }) {
@@ -59,15 +58,15 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
         return permissions.some(p => p.module === 'Patient List' && p.action === action);
     };
 
-    // 🚨 SWR CACHING WITH FALLBACK DATA FOR INSTANT LOAD
+    // 🚨 CRITICAL FIX: Calling getPatientList() instead of getPendingWorklist()
     const { data: fetchRes, isLoading, mutate: refreshBills } = useSWR(
-        (permsLoaded && canSee('Patient List')) ? 'pending-worklist' : null,
+        (permsLoaded && canSee('Patient List')) ? 'patient-list-all' : null,
         async () => {
-            const res = await getPendingWorklist();
+            const res = await getPatientList();
             return res;
         },
         {
-            fallbackData: { success: true, data: initialBills }, // Instant Data injection
+            fallbackData: { success: true, data: initialBills }, 
             revalidateOnFocus: false, 
             keepPreviousData: true    
         }
