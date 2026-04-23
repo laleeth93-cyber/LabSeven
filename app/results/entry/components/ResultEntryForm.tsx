@@ -9,7 +9,7 @@ import HistoryModal from './HistoryModal';
 import TestItemCard from './TestItemCard';
 import CultureSensitivityModal from './CultureSensitivityModal';
 
-export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds, entryDateTime }: any) {
+export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [], entryDateTime }: any) {
   const [results, setResults] = useState<any>({});
   const [flags, setFlags] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -42,9 +42,11 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds, en
   const [loadedParameters, setLoadedParameters] = useState<Record<number, any[]>>({});
   const [isParamsLoading, setIsParamsLoading] = useState(true);
 
-  const visibleItems = bill?.items.filter((item: any) => filterTestIds.includes(item.id)) || [];
-  const validItems = visibleItems.filter((item: any) => item.test.isConfigured);
-  const allApproved = validItems.length > 0 && validItems.every((item: any) => item.status === 'Approved' || item.status === 'Printed');
+  // 🚨 CRASH PROTECTION: Safely access items array
+  const safeItems = Array.isArray(bill?.items) ? bill.items : [];
+  const visibleItems = safeItems.filter((item: any) => filterTestIds.includes(item?.id));
+  const validItems = visibleItems.filter((item: any) => item?.test?.isConfigured);
+  const allApproved = validItems.length > 0 && validItems.every((item: any) => item?.status === 'Approved' || item?.status === 'Printed');
 
   useEffect(() => { getSignatureUsers().then(res => { if (res.success && res.data) setSignatureUsers(res.data); }); }, []);
 
@@ -54,18 +56,19 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds, en
       setIsParamsLoading(true);
 
       const fetchAllParams = async () => {
-          const testIds = Array.from(new Set(visibleItems.map((i: any) => i.test.id)));
+          // 🚨 CRASH PROTECTION: Filter out null test IDs
+          const testIds = Array.from(new Set(visibleItems.map((i: any) => i?.test?.id).filter(Boolean)));
           
           const paramPromises = testIds.map(async (testId) => {
               const res = await getTestParameters(testId as number);
-              return { testId, params: res.success ? res.data : [] };
+              return { testId, params: res?.success ? res.data : [] };
           });
 
           const fetchedParams = await Promise.all(paramPromises);
           if (!isMounted) return;
 
           const paramMap: Record<number, any[]> = {};
-          fetchedParams.forEach(fp => { paramMap[fp.testId as number] = fp.params; });
+          fetchedParams.forEach(fp => { paramMap[fp.testId as number] = fp.params || []; });
           setLoadedParameters(paramMap);
 
           const initialResults: any = {};
@@ -73,13 +76,12 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds, en
           const allParamIds: number[] = [];
           
           visibleItems.forEach((item: any) => {
-            if (!item.test.isConfigured) return;
-            // 🚨 TS FIX: Cast as number
+            if (!item?.test?.isConfigured) return;
             const testParams = paramMap[item.test.id as number] || [];
             
             testParams.forEach((tp: any) => { 
-                if (tp.parameter && tp.parameter.id) allParamIds.push(tp.parameter.id); 
-                if (tp.isCultureField) allParamIds.push(-999);
+                if (tp?.parameter && tp.parameter.id) allParamIds.push(tp.parameter.id); 
+                if (tp?.isCultureField) allParamIds.push(-999);
             });
 
             if (item.results && item.results.length > 0) {
@@ -132,10 +134,10 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds, en
     
     const key = `${billItemId}-${keyId}`;
     let newResults = { ...results, [key]: value };
-    let newFlags = { ...flags, [key]: isCulture ? 'Normal' : getFlag(value, parameter, bill.patient) }; 
+    let newFlags = { ...flags, [key]: isCulture ? 'Normal' : getFlag(value, parameter, bill?.patient) }; 
 
     if (testParameters && !isCulture) {
-        const calculated = recalculateFormulas(newResults, newFlags, billItemId, testParameters, bill.patient);
+        const calculated = recalculateFormulas(newResults, newFlags, billItemId, testParameters, bill?.patient);
         if (calculated) {
             newResults = calculated.results;
             newFlags = calculated.flags;
@@ -146,17 +148,17 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds, en
   };
 
   const handleSaveItem = async (item: any, status: 'Entered' | 'Approved') => {
+    if (!item?.test?.id) return;
     setSavingItemId(item.id);
     const dataToSave: any[] = [];
-    // 🚨 TS FIX: Cast as number
     const testParams = loadedParameters[item.test.id as number] || [];
 
     testParams.forEach((tp: any) => {
-        if (tp.parameter) {
+        if (tp?.parameter) {
             const key = `${item.id}-${tp.parameter.id}`;
             if (results[key] !== undefined) dataToSave.push({ billItemId: item.id, parameterId: tp.parameter.id, value: results[key], flag: flags[key] || 'Normal' });
         }
-        if (tp.isCultureField) {
+        if (tp?.isCultureField) {
             const key = `${item.id}--999`;
             if (results[key] !== undefined) dataToSave.push({ billItemId: item.id, parameterId: null, value: results[key], flag: 'Normal' });
         }
@@ -174,14 +176,14 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds, en
     setIsSaving(true);
     const dataToSave: any[] = [];
     validItems.forEach((item: any) => {
-        // 🚨 TS FIX: Cast as number
+        if (!item?.test?.id) return;
         const testParams = loadedParameters[item.test.id as number] || [];
         testParams.forEach((tp: any) => {
-            if (tp.parameter) {
+            if (tp?.parameter) {
                 const key = `${item.id}-${tp.parameter.id}`;
                 if (results[key] !== undefined) dataToSave.push({ billItemId: item.id, parameterId: tp.parameter.id, value: results[key], flag: flags[key] || 'Normal' });
             }
-            if (tp.isCultureField) {
+            if (tp?.isCultureField) {
                 const key = `${item.id}--999`;
                 if (results[key] !== undefined) dataToSave.push({ billItemId: item.id, parameterId: null, value: results[key], flag: 'Normal' });
             }
@@ -213,10 +215,11 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds, en
   const handleSaveResultContent = (content: string) => {
       if (activeResultParam) {
           const item = validItems.find((i: any) => i.id === activeResultParam.itemId);
-          // 🚨 TS FIX: Cast as number
-          const testParams = loadedParameters[item.test.id as number] || [];
-          const param = testParams.find((p: any) => p.parameter && p.parameter.id === activeResultParam.paramId)?.parameter;
-          if (param) handleInputChange(activeResultParam.itemId, param, content, testParams);
+          if (item?.test?.id) {
+              const testParams = loadedParameters[item.test.id as number] || [];
+              const param = testParams.find((p: any) => p?.parameter && p.parameter.id === activeResultParam.paramId)?.parameter;
+              if (param) handleInputChange(activeResultParam.itemId, param, content, testParams);
+          }
           setIsResultEditorOpen(false); setActiveResultParam(null);
       }
   };
@@ -301,8 +304,7 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds, en
                 <TestItemCard 
                     key={item.id} item={item} bill={bill} results={results} flags={flags} 
                     hasHistory={hasHistory} savingItemId={savingItemId}
-                    // 🚨 TS FIX: Cast as number
-                    testParams={loadedParameters[item.test.id as number] || []} 
+                    testParams={item?.test?.id ? (loadedParameters[item.test.id as number] || []) : []} 
                     isParamsLoading={isParamsLoading}                 
                     onOpenNote={handleOpenNote} onSaveItem={handleSaveItem} 
                     onOpenResultEditor={handleOpenResultEditor} onInputChange={handleInputChange} 
