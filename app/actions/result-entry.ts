@@ -54,7 +54,7 @@ export async function getPendingWorklist(search?: string) {
   } catch (error) { return { success: false, data: [] }; }
 }
 
-// 🚨 THE FIX: This is now incredibly lightweight. No parameters loaded here!
+// 🚨 OPTIMIZED: Incredibly lightweight. No parameters loaded here!
 export async function getResultEntryData(billId: number) {
   try {
     const { orgId } = await requireAuth(); 
@@ -106,7 +106,6 @@ export async function getTestParameters(testId: number) {
   }
 }
 
-// ... Keep your existing saveTestResults, saveTestNote, checkHistoryAvailability, getParameterHistory, clearAllEntryData, and getDeltaCheckData functions exactly as they were below here!
 export async function saveTestResults(billId: number, results: TestResultItem[], status: string = 'Entered', sig1Id?: number | null, sig2Id?: number | null) {
     try {
       const { orgId } = await requireAuth(); 
@@ -144,17 +143,17 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
       revalidatePath('/results/entry');
       return { success: true, message: `Results saved as ${status}` };
     } catch (error: any) { return { success: false, message: error.message }; }
-  }
+}
   
-  export async function saveTestNote(billItemId: number, note: string) {
+export async function saveTestNote(billItemId: number, note: string) {
     try {
       await prisma.billItem.update({ where: { id: billItemId }, data: { notes: note } });
       revalidatePath('/results/entry');
       return { success: true };
     } catch (error: any) { return { success: false, message: error.message }; }
-  }
+}
   
-  export async function checkHistoryAvailability(patientId: number, parameterIds: number[], excludeBillId?: number) {
+export async function checkHistoryAvailability(patientId: number, parameterIds: number[], excludeBillId?: number) {
     try {
       const { orgId } = await requireAuth(); 
       const whereClause: any = { organizationId: orgId, parameterId: { in: parameterIds }, billItem: { bill: { patientId: patientId } } };
@@ -162,9 +161,9 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
       const results = await prisma.testResult.groupBy({ by: ['parameterId'], where: whereClause, _count: { id: true } });
       return { success: true, data: (results as any[]).map(r => r.parameterId) };
     } catch (error) { return { success: false, data: [] }; }
-  }
+}
   
-  export async function getParameterHistory(patientId: number, parameterId: number) {
+export async function getParameterHistory(patientId: number, parameterId: number) {
     try {
       const { orgId } = await requireAuth(); 
       const history = await prisma.testResult.findMany({
@@ -178,4 +177,120 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
       const graphData = [...formattedHistory].reverse();
       return { success: true, tableData: formattedHistory, graphData: graphData };
     } catch (error) { return { success: false }; }
+}
+
+export async function clearAllEntryData() {
+  try {
+    const { orgId } = await requireAuth(); 
+    await prisma.$transaction([
+      prisma.testResult.deleteMany({ where: { organizationId: orgId } }), 
+      prisma.payment.deleteMany({ where: { organizationId: orgId } }),
+      prisma.billItem.deleteMany({ where: { bill: { organizationId: orgId } } }),
+      prisma.bill.deleteMany({ where: { organizationId: orgId } })
+    ]);
+
+    revalidatePath('/results/entry');
+    return { success: true, message: "All bills and results deleted permanently for your lab." };
+  } catch (error: any) {
+    console.error("Error clearing data:", error);
+    return { success: false, message: error.message };
   }
+}
+
+export async function getDeltaCheckData(billId: number, patientId: number) {
+  try {
+    const { orgId } = await requireAuth(); 
+    
+    // 1. Get current bill results
+    const currentResults = await prisma.testResult.findMany({
+      where: { organizationId: orgId, billItem: { billId: billId } },
+      include: {
+        parameter: true,
+        billItem: { include: { bill: true, test: true } }
+      }
+    });
+
+    if (!currentResults.length) return { success: true, data: [] };
+
+    const currentBillDate = currentResults[0].billItem.bill.date;
+    const parameterIds = currentResults.map((r: any) => r.parameterId);
+
+    // 2. Get all previous results for these parameters for this patient
+    const previousResults = await prisma.testResult.findMany({
+      where: {
+        organizationId: orgId, 
+        parameterId: { in: parameterIds },
+        billItem: {
+          bill: {
+            patientId: patientId,
+            id: { not: billId },
+            date: { lt: currentBillDate }
+          }
+        }
+      },
+      include: {
+        billItem: { include: { bill: true } }
+      },
+      orderBy: {
+        billItem: { bill: { date: 'desc' } }
+      }
+    });
+
+    // 3. Process and calculate Delta Variance
+    const deltaData = currentResults.map((curr: any) => {
+       const history = previousResults.filter((p: any) => p.parameterId === curr.parameterId);
+       const prev = history.length > 0 ? history[0] : null;
+       
+       let deltaPercent = null;
+       let trend = 'flat';
+       let isClinicallySignificant = false;
+
+       if (prev && curr.resultValue && prev.resultValue) {
+           const cVal = parseFloat(curr.resultValue);
+           const pVal = parseFloat(prev.resultValue);
+           
+           if (!isNaN(cVal) && !isNaN(pVal) && pVal !== 0) {
+               deltaPercent = ((cVal - pVal) / pVal) * 100;
+               
+               if (deltaPercent > 0) trend = 'up';
+               else if (deltaPercent < 0) trend = 'down';
+
+               // Flag as significant if variance is > 15%
+               if (Math.abs(deltaPercent) > 15) {
+                   isClinicallySignificant = true;
+               }
+           }
+       }
+
+       return {
+         parameterId: curr.parameterId,
+         parameterName: curr.parameter?.name || 'Unknown',
+         unit: curr.parameter?.unit || '',
+         testName: curr.billItem?.test?.name || 'Unknown',
+         
+         currentValue: curr.resultValue,
+         currentDate: curr.billItem.bill.date,
+         currentFlag: curr.flag,
+         
+         previousValue: prev ? prev.resultValue : null,
+         previousDate: prev ? prev.billItem.bill.date : null,
+         previousFlag: prev ? prev.flag : null,
+         
+         history: history.map((h: any) => ({
+             value: h.resultValue,
+             date: h.billItem.bill.date,
+             flag: h.flag
+         })),
+
+         deltaPercent: deltaPercent !== null ? deltaPercent.toFixed(1) : null,
+         trend: trend,
+         isClinicallySignificant: isClinicallySignificant
+       };
+    });
+
+    return { success: true, data: deltaData };
+  } catch (error) {
+    console.error("Delta Check Error:", error);
+    return { success: false, data: [] };
+  }
+}
