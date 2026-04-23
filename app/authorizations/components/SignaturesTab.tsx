@@ -1,10 +1,10 @@
-// --- app/authorizations/components/SignaturesTab.tsx Block Open ---
 import React, { useState, useEffect } from 'react';
-import { PenTool, Trash2, Upload, Edit, Save, X, User, CheckCircle2, Crop } from 'lucide-react';
+import { PenTool, Trash2, Upload, Edit, Save, X, User, CheckCircle2, Crop, Loader2 } from 'lucide-react';
 import { saveUserSignatureDetails } from '@/app/actions/authorizations';
 
 export default function SignaturesTab({ users, loadData }: any) {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false); // 🚨 NEW LOADING STATE
     
     // Original upload state for the cropper
     const [originalUpload, setOriginalUpload] = useState<string | null>(null);
@@ -57,7 +57,6 @@ export default function SignaturesTab({ users, loadData }: any) {
     useEffect(() => {
         if (!originalUpload) return;
         
-        // If no crop is applied, revert to original image
         if (crop.top === 0 && crop.bottom === 0 && crop.left === 0 && crop.right === 0) {
             setForm(prev => prev.signatureUrl !== originalUpload ? { ...prev, signatureUrl: originalUpload } : prev);
             return;
@@ -70,39 +69,77 @@ export default function SignaturesTab({ users, loadData }: any) {
             const ctx = canvas.getContext('2d');
             if (!ctx) return;
 
-            // Calculate actual pixel dimensions to keep
             const sX = img.width * (crop.left / 100);
             const sY = img.height * (crop.top / 100);
             const sW = img.width * (1 - (crop.left + crop.right) / 100);
             const sH = img.height * (1 - (crop.top + crop.bottom) / 100);
 
-            if (sW <= 0 || sH <= 0) return; // Prevent collapse
+            if (sW <= 0 || sH <= 0) return; 
 
             canvas.width = sW;
             canvas.height = sH;
 
-            // Draw cropped region onto canvas
             ctx.drawImage(img, sX, sY, sW, sH, 0, 0, sW, sH);
             
-            // Update the form with the new tightly-cropped base64 image
             setForm(prev => ({ ...prev, signatureUrl: canvas.toDataURL('image/png') }));
         };
     }, [crop, originalUpload]);
 
     const handleBakeCrop = () => {
-        // Sets the currently cropped image as the "new" original, allowing further cropping
         setOriginalUpload(form.signatureUrl);
         setCrop({ top: 0, bottom: 0, left: 0, right: 0 });
     };
 
+    // 🚨 REWRITTEN TO INTERCEPT BASE64 AND UPLOAD TO R2 BEFORE SAVING
     const handleSave = async () => {
-        const res = await saveUserSignatureDetails(form);
+        setIsSaving(true);
+        let finalSignatureUrl = form.signatureUrl;
+
+        // If the signature is a base64 string, we need to upload it to R2 first
+        if (finalSignatureUrl && finalSignatureUrl.startsWith('data:image')) {
+            try {
+                // Convert Base64 back to a File
+                const res = await fetch(finalSignatureUrl);
+                const blob = await res.blob();
+                const file = new File([blob], `signature-${form.id || Date.now()}.png`, { type: 'image/png' });
+
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("folder", "signatures");
+
+                // Upload to our new R2 route
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const uploadResult = await uploadRes.json();
+
+                if (uploadResult.success) {
+                    finalSignatureUrl = uploadResult.url; // Replace Base64 with real R2 URL
+                } else {
+                    alert("Failed to upload signature image to R2: " + uploadResult.error);
+                    setIsSaving(false);
+                    return;
+                }
+            } catch (error) {
+                console.error("R2 Upload Error:", error);
+                alert("An error occurred while uploading the signature.");
+                setIsSaving(false);
+                return;
+            }
+        }
+
+        // Save the profile with the final URL
+        const res = await saveUserSignatureDetails({ ...form, signatureUrl: finalSignatureUrl });
         if (res.success) {
             setIsModalOpen(false);
             loadData();
         } else {
             alert(res.message);
         }
+        
+        setIsSaving(false);
     };
 
     return (
@@ -161,7 +198,7 @@ export default function SignaturesTab({ users, loadData }: any) {
                             <h3 className="font-bold text-slate-800 flex items-center gap-2">
                                 <User size={18} className="text-[#9575cd]"/> Edit Signature Profile
                             </h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
+                            <button onClick={() => setIsModalOpen(false)} disabled={isSaving} className="text-slate-400 hover:text-slate-600 disabled:opacity-50"><X size={20}/></button>
                         </div>
                         
                         <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -169,25 +206,25 @@ export default function SignaturesTab({ users, loadData }: any) {
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-600 mb-1">Printed Name (for reports)</label>
-                                    <input type="text" value={form.signName} onChange={e => setForm({...form, signName: e.target.value})} className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none"/>
+                                    <input type="text" value={form.signName} onChange={e => setForm({...form, signName: e.target.value})} disabled={isSaving} className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none disabled:bg-slate-100"/>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-600 mb-1">Designation</label>
-                                    <input type="text" value={form.designation} onChange={e => setForm({...form, designation: e.target.value})} placeholder="e.g., Chief Pathologist" className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none"/>
+                                    <input type="text" value={form.designation} onChange={e => setForm({...form, designation: e.target.value})} disabled={isSaving} placeholder="e.g., Chief Pathologist" className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none disabled:bg-slate-100"/>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-600 mb-1">Qualification</label>
-                                        <input type="text" value={form.degree} onChange={e => setForm({...form, degree: e.target.value})} placeholder="e.g., MD Path" className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none"/>
+                                        <input type="text" value={form.degree} onChange={e => setForm({...form, degree: e.target.value})} disabled={isSaving} placeholder="e.g., MD Path" className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none disabled:bg-slate-100"/>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-600 mb-1">Reg. Number</label>
-                                        <input type="text" value={form.regNumber} onChange={e => setForm({...form, regNumber: e.target.value})} placeholder="e.g., KMC-1234" className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none"/>
+                                        <input type="text" value={form.regNumber} onChange={e => setForm({...form, regNumber: e.target.value})} disabled={isSaving} placeholder="e.g., KMC-1234" className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#9575cd]/50 outline-none disabled:bg-slate-100"/>
                                     </div>
                                 </div>
                                 
                                 <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
-                                    <input type="checkbox" id="isDefault" checked={form.isDefaultSignature} onChange={e => setForm({...form, isDefaultSignature: e.target.checked})} className="w-4 h-4 text-[#9575cd] rounded border-slate-300 focus:ring-[#9575cd] cursor-pointer"/>
+                                    <input type="checkbox" id="isDefault" checked={form.isDefaultSignature} onChange={e => setForm({...form, isDefaultSignature: e.target.checked})} disabled={isSaving} className="w-4 h-4 text-[#9575cd] rounded border-slate-300 focus:ring-[#9575cd] cursor-pointer disabled:opacity-50"/>
                                     <label htmlFor="isDefault" className="text-sm font-bold text-slate-700 cursor-pointer">Set as Primary/Default Signature</label>
                                 </div>
                             </div>
@@ -199,18 +236,19 @@ export default function SignaturesTab({ users, loadData }: any) {
                                 <div className="flex-1 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center p-4 bg-slate-50 relative group min-h-[160px]">
                                     {form.signatureUrl ? (
                                         <>
-                                            {/* Dashed border around image shows exact cropped boundaries */}
                                             <img src={form.signatureUrl} alt="Signature Preview" className="max-h-32 max-w-full object-contain border border-dashed border-[#9575cd]/40 bg-white shadow-sm" />
                                             
-                                            <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
-                                                <button onClick={() => { setForm({...form, signatureUrl: null}); setOriginalUpload(null); setCrop({top:0, bottom:0, left:0, right:0}); }} className="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 mb-2 hover:bg-red-100">
-                                                    <Trash2 size={14}/> Remove Image
-                                                </button>
-                                                <label className="cursor-pointer text-[#9575cd] bg-purple-50 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-purple-100">
-                                                    <Upload size={14}/> Change Image
-                                                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                                                </label>
-                                            </div>
+                                            {!isSaving && (
+                                                <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
+                                                    <button onClick={() => { setForm({...form, signatureUrl: null}); setOriginalUpload(null); setCrop({top:0, bottom:0, left:0, right:0}); }} className="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 mb-2 hover:bg-red-100">
+                                                        <Trash2 size={14}/> Remove Image
+                                                    </button>
+                                                    <label className="cursor-pointer text-[#9575cd] bg-purple-50 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-purple-100">
+                                                        <Upload size={14}/> Change Image
+                                                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                                    </label>
+                                                </div>
+                                            )}
                                         </>
                                     ) : (
                                         <div className="text-center">
@@ -218,14 +256,14 @@ export default function SignaturesTab({ users, loadData }: any) {
                                             <p className="text-sm text-slate-500 mb-4">No signature uploaded</p>
                                             <label className="cursor-pointer bg-white border border-slate-300 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:border-[#9575cd] hover:text-[#9575cd] transition-colors shadow-sm">
                                                 <Upload size={16}/> Browse Files
-                                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isSaving} />
                                             </label>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* LIVE CROPPER CONTROLS */}
-                                {originalUpload && (
+                                {originalUpload && !isSaving && (
                                     <div className="mt-4 bg-purple-50/50 border border-[#9575cd]/20 rounded-lg p-3">
                                         <div className="flex justify-between items-center mb-3">
                                             <h4 className="text-[11px] font-bold text-[#5e35b1] uppercase tracking-wider flex items-center gap-1.5"><Crop size={12}/> Trim Empty Margins</h4>
@@ -262,8 +300,11 @@ export default function SignaturesTab({ users, loadData }: any) {
                         </div>
 
                         <div className="p-4 border-t border-slate-100 flex justify-end gap-2 bg-slate-50 mt-4">
-                            <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 font-bold text-sm hover:bg-slate-200 rounded-lg">Cancel</button>
-                            <button onClick={handleSave} className="px-4 py-2 bg-[#9575cd] text-white font-bold text-sm rounded-lg shadow-sm hover:bg-[#7e57c2] flex items-center gap-2"><Save size={16}/> Save Profile</button>
+                            <button onClick={() => setIsModalOpen(false)} disabled={isSaving} className="px-4 py-2 text-slate-600 font-bold text-sm hover:bg-slate-200 rounded-lg disabled:opacity-50">Cancel</button>
+                            <button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-[#9575cd] text-white font-bold text-sm rounded-lg shadow-sm hover:bg-[#7e57c2] flex items-center gap-2 disabled:opacity-70">
+                                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16}/>} 
+                                {isSaving ? 'Saving & Uploading...' : 'Save Profile'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -271,4 +312,3 @@ export default function SignaturesTab({ users, loadData }: any) {
         </div>
     );
 }
-// --- app/authorizations/components/SignaturesTab.tsx Block Close ---

@@ -1,16 +1,15 @@
-// --- BLOCK app/lab-profile/page.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { Building2, Save, Upload, Loader2, Image as ImageIcon, MapPin, Phone, Mail, Globe, Info, Hash, CheckCircle } from 'lucide-react';
 import { getLabProfile, updateLabProfile } from '@/app/actions/lab-profile';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
+import MusicBarLoader from '@/app/components/MusicBarLoader';
 
 export default function LabProfilePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState(false); // 🚨 NEW STATE FOR R2 UPLOAD
     
-    // --- SUCCESS POPUP STATE ---
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
     const [settings, setSettings] = useState<any>({
@@ -34,10 +33,7 @@ export default function LabProfilePage() {
         setIsSaving(true);
         const res = await updateLabProfile(settings);
         if (res.success) {
-            // Tell the Header to update its data instantly!
             window.dispatchEvent(new Event('labProfileUpdated'));
-            
-            // SHOW SUCCESS POPUP
             setShowSuccessPopup(true);
             setTimeout(() => { setShowSuccessPopup(false); }, 1500);
         } else {
@@ -46,16 +42,38 @@ export default function LabProfilePage() {
         setIsSaving(false);
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 🚨 REWRITTEN TO UPLOAD DIRECTLY TO CLOUDFLARE R2
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => { setSettings({ ...settings, logoUrl: reader.result as string }); };
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        setIsUploading(true);
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folder", "logos"); 
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                // Set the R2 public URL directly to the settings
+                setSettings({ ...settings, logoUrl: result.url });
+            } else {
+                alert("Upload failed: " + result.error);
+            }
+        } catch (error) {
+            console.error("R2 Upload Error:", error);
+            alert("An error occurred while uploading to the storage server.");
+        } finally {
+            setIsUploading(false);
         }
     };
 
-    // 🚨 REPLACED SPINNER WITH MUSIC BAR
     if (isLoading) {
         return (
             <div className="h-full w-full flex flex-col items-center justify-center bg-[#f1f5f9]">
@@ -67,7 +85,6 @@ export default function LabProfilePage() {
     return (
         <div className="h-full w-full bg-[#f1f5f9] p-4 md:p-6 overflow-y-auto font-sans relative">
             
-            {/* --- SUCCESS POPUP OVERLAY --- */}
             {showSuccessPopup && (
               <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
                 <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-sm w-full mx-4 border border-slate-100">
@@ -81,7 +98,6 @@ export default function LabProfilePage() {
 
             <div className="max-w-5xl mx-auto space-y-6 relative z-10">
                 
-                {/* HEADER CARD */}
                 <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden">
                     <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-purple-50 to-transparent pointer-events-none"></div>
                     
@@ -96,7 +112,7 @@ export default function LabProfilePage() {
                     </div>
                     <button 
                         onClick={handleSave} 
-                        disabled={isSaving} 
+                        disabled={isSaving || isUploading} 
                         className="bg-[#9575cd] text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-[#7e57c2] flex items-center gap-2 transition-all disabled:opacity-70 shadow-md hover:shadow-lg active:scale-95 relative z-10 w-full sm:w-auto justify-center"
                     >
                         {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
@@ -104,10 +120,8 @@ export default function LabProfilePage() {
                     </button>
                 </div>
 
-                {/* CONTENT GRID */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
-                    {/* LEFT COLUMN: LOGO UPLOAD */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                             <h3 className="font-bold text-slate-800 text-base mb-1 flex items-center gap-2">
@@ -116,7 +130,12 @@ export default function LabProfilePage() {
                             <p className="text-xs text-slate-500 mb-6">This logo will appear on your printed reports and invoices.</p>
                             
                             <div className="w-full aspect-square max-w-[240px] mx-auto border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden group transition-colors hover:border-[#9575cd] hover:bg-purple-50/30">
-                                {settings.logoUrl ? (
+                                {isUploading ? (
+                                    <div className="flex flex-col items-center">
+                                        <Loader2 size={28} className="text-[#9575cd] animate-spin mb-2" />
+                                        <span className="text-xs font-bold text-slate-500">Uploading to R2...</span>
+                                    </div>
+                                ) : settings.logoUrl ? (
                                     <img src={settings.logoUrl} alt="Lab Logo" className="w-full h-full object-contain p-4" />
                                 ) : (
                                     <div className="text-center text-slate-400 flex flex-col items-center">
@@ -128,18 +147,20 @@ export default function LabProfilePage() {
                                     </div>
                                 )}
                                 
-                                <label className={`absolute inset-0 cursor-pointer flex flex-col items-center justify-center transition-all ${settings.logoUrl ? 'bg-slate-900/60 opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
-                                    {settings.logoUrl && (
-                                        <>
-                                            <Upload size={24} className="mb-2 text-white" />
-                                            <span className="text-xs font-bold text-white">Change Logo</span>
-                                        </>
-                                    )}
-                                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                                </label>
+                                {!isUploading && (
+                                    <label className={`absolute inset-0 cursor-pointer flex flex-col items-center justify-center transition-all ${settings.logoUrl ? 'bg-slate-900/60 opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+                                        {settings.logoUrl && (
+                                            <>
+                                                <Upload size={24} className="mb-2 text-white" />
+                                                <span className="text-xs font-bold text-white">Change Logo</span>
+                                            </>
+                                        )}
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                                    </label>
+                                )}
                             </div>
                             
-                            {settings.logoUrl && (
+                            {settings.logoUrl && !isUploading && (
                                 <div className="mt-4 flex justify-center">
                                     <button 
                                         onClick={() => setSettings({...settings, logoUrl: null})} 
@@ -151,7 +172,6 @@ export default function LabProfilePage() {
                             )}
                         </div>
 
-                        {/* HELPER CARD */}
                         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-100">
                             <div className="flex items-start gap-3">
                                 <Info size={18} className="text-blue-500 mt-0.5 shrink-0" />
@@ -165,10 +185,8 @@ export default function LabProfilePage() {
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: FORM FIELDS */}
                     <div className="lg:col-span-2 space-y-6">
                         
-                        {/* SECTION 1: GENERAL INFO */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                             <h3 className="font-bold text-slate-800 text-base mb-6 pb-4 border-b border-slate-100 flex items-center gap-2">
                                 <Building2 size={18} className="text-[#9575cd]"/> General Information
@@ -209,7 +227,6 @@ export default function LabProfilePage() {
                             </div>
                         </div>
 
-                        {/* SECTION 2: CONTACT DETAILS */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                             <h3 className="font-bold text-slate-800 text-base mb-6 pb-4 border-b border-slate-100 flex items-center gap-2">
                                 <MapPin size={18} className="text-[#9575cd]"/> Contact & Location
@@ -288,4 +305,3 @@ export default function LabProfilePage() {
         </div>
     );
 }
-// --- BLOCK app/lab-profile/page.tsx CLOSE ---
