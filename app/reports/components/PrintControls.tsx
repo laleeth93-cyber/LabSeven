@@ -1,167 +1,182 @@
-// --- app/reports/components/PrintControls.tsx Block Open ---
-import React from 'react';
-import { UploadCloud, Trash2, FileText, Move, Printer } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileUp, Trash2, Maximize, Loader2 } from 'lucide-react';
 
-interface PrintControlsProps {
-    formData: any;
-    handleChange: (e: React.ChangeEvent<any>) => void;
-    handleCustomChange: (field: string, value: any) => void;
-    activeStyle: string;
-    t: number;
-    b: number;
-    l: number;
-    r: number;
-}
+export default function PrintControls({ formData, handleChange, handleCustomChange, activeStyle, t, b, l, r }: any) {
+    const [isUploading, setIsUploading] = useState(false);
 
-export default function PrintControls({ formData, handleChange, handleCustomChange, activeStyle, t, b, l, r }: PrintControlsProps) {
-
-    const handleMarginUpdate = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        const newSettings = { ...(formData.marginSettings || {}) };
-        if (!newSettings[activeStyle]) newSettings[activeStyle] = { top: 120, bottom: 80, left: 40, right: 40 };
-        newSettings[activeStyle][name] = parseInt(value) || 0;
-        handleCustomChange('marginSettings', newSettings);
+    const handleMarginChange = (side: string, val: string) => {
+        const num = parseInt(val) || 0;
+        const newMargins = { ...formData.marginSettings };
+        if (!newMargins[activeStyle]) {
+            newMargins[activeStyle] = { top: 120, bottom: 80, left: 40, right: 40 };
+        }
+        newMargins[activeStyle][side] = num;
+        handleCustomChange('marginSettings', newMargins);
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, num: number) => {
+    // 🚨 UPDATED: Direct R2 Upload Logic
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result as string;
-                handleCustomChange(`customHeader${num}`, base64String); 
-                handleCustomChange('letterheadStyle', `custom${num}`);  
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+
+        setIsUploading(true);
+
+        const uploadData = new FormData();
+        uploadData.append("file", file);
+        uploadData.append("folder", "letterheads");
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: uploadData,
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                // Set the R2 URL to the specific custom header slot
+                const targetKey = activeStyle.replace('custom', 'customHeader');
+                handleCustomChange(targetKey, result.url);
+            } else {
+                alert("Upload failed: " + result.error);
+            }
+        } catch (error) {
+            console.error("R2 Upload Error:", error);
+            alert("An error occurred while uploading the letterhead.");
+        } finally {
+            setIsUploading(false);
         }
     };
 
-    const handleRemoveImage = (e: React.MouseEvent, num: number) => {
-        e.stopPropagation();
-        handleCustomChange(`customHeader${num}`, '');
+    const handleRemoveImage = () => {
+        const targetKey = activeStyle.replace('custom', 'customHeader');
+        handleCustomChange(targetKey, '');
     };
 
+    const activeImage = formData[activeStyle.replace('custom', 'customHeader')];
+
     return (
-        <div className="w-full flex flex-col gap-5 overflow-y-auto pr-2 custom-scrollbar pb-4 h-full">
-            
-            {/* 1. Letterhead Formats */}
-            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col shrink-0">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                    <div className="flex items-center gap-2">
-                        <UploadCloud size={16} className="text-[#9575cd]" />
-                        <div>
-                            <h3 className="font-bold text-slate-800 text-sm">Letterhead Formats</h3>
-                            <p className="text-[11px] text-slate-500 mt-0.5">Select a box below to set it as Default. Margins save per format.</p>
-                        </div>
-                    </div>
+        <div className="flex flex-col gap-4">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col">
+                <div className="border-b border-slate-100 pb-3 mb-4">
+                    <h3 className="font-bold text-slate-800 text-sm">Paper & Orientation</h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Select the physical dimensions of the printed report.</p>
                 </div>
-
-                <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-                    {[1, 2, 3, 4].map((num) => {
-                        const isBoxActive = activeStyle === `custom${num}`;
-                        const imageBase64 = formData[`customHeader${num}`];
-                        const hasImage = !!imageBase64;
-
-                        return (
-                            <div 
-                                key={num} 
-                                className={`relative border-2 rounded-xl h-[120px] flex flex-col overflow-hidden transition-all group ${isBoxActive ? 'border-[#9575cd] ring-4 ring-purple-50 shadow-md' : 'border-dashed border-slate-300 hover:border-[#9575cd] bg-slate-50/50 cursor-pointer'}`}
-                                onClick={() => handleCustomChange('letterheadStyle', `custom${num}`)}
-                            >
-                                <div className="absolute top-2 left-2 z-20">
-                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center bg-white shadow-sm ${isBoxActive ? 'border-[#9575cd]' : 'border-slate-300'}`}>
-                                        {isBoxActive && <div className="w-2 h-2 rounded-full bg-[#9575cd]"></div>}
-                                    </div>
-                                </div>
-
-                                <div className="absolute top-2 right-2 z-20 flex flex-col gap-1.5">
-                                    <label className="bg-white/90 backdrop-blur border border-slate-200 text-slate-500 p-1.5 rounded-lg shadow-sm hover:text-white hover:bg-[#9575cd] hover:border-[#9575cd] cursor-pointer transition-colors" title="Upload Image" onClick={(e) => e.stopPropagation()}>
-                                        <UploadCloud size={14} />
-                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, num)} />
-                                    </label>
-                                    {hasImage && (
-                                        <button className="bg-white/90 backdrop-blur border border-slate-200 text-slate-500 p-1.5 rounded-lg shadow-sm hover:text-white hover:bg-red-500 hover:border-red-500 cursor-pointer transition-colors" title="Delete Image" onClick={(e) => handleRemoveImage(e, num)}>
-                                            <Trash2 size={14} />
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div className="w-full h-full flex flex-col items-center justify-center pt-2">
-                                    {hasImage ? (
-                                        <img src={imageBase64} alt={`Fmt ${num}`} className={`w-full h-full object-contain p-1.5 ${isBoxActive ? 'opacity-100' : 'opacity-60 group-hover:opacity-80'}`} />
-                                    ) : (
-                                        <div className="flex flex-col items-center text-slate-400 opacity-60">
-                                            <FileText size={24} className="mb-1" />
-                                            <span className="text-[10px] font-bold uppercase tracking-wider">Format {num}</span>
-                                            <span className="text-[9px]">Blank Canvas</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* 2. Margin Controls */}
-            <div className="bg-white border border-[#9575cd]/40 shadow-sm rounded-2xl p-5 flex flex-col shrink-0 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#9575cd]"></div>
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4 pl-3">
-                    <Move size={16} className="text-[#9575cd]" />
-                    <div className="flex items-baseline gap-2">
-                        <h3 className="font-bold text-slate-800 text-sm">Margin Configuration</h3>
-                        <span className="text-[10px] text-[#9575cd] font-bold uppercase tracking-wider bg-purple-50 px-2 py-0.5 rounded-md border border-[#9575cd]/10">Format {activeStyle.replace('custom', '')}</span>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 pl-3">
+                <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Top (px)</label>
-                        <input type="number" name="top" value={t} onChange={handleMarginUpdate} className="w-full text-sm font-bold p-2.5 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] focus:ring-2 focus:ring-[#9575cd]/20 bg-slate-50 transition-all" />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Bottom (px)</label>
-                        <input type="number" name="bottom" value={b} onChange={handleMarginUpdate} className="w-full text-sm font-bold p-2.5 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] focus:ring-2 focus:ring-[#9575cd]/20 bg-slate-50 transition-all" />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Left (px)</label>
-                        <input type="number" name="left" value={l} onChange={handleMarginUpdate} className="w-full text-sm font-bold p-2.5 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] focus:ring-2 focus:ring-[#9575cd]/20 bg-slate-50 transition-all" />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Right (px)</label>
-                        <input type="number" name="right" value={r} onChange={handleMarginUpdate} className="w-full text-sm font-bold p-2.5 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] focus:ring-2 focus:ring-[#9575cd]/20 bg-slate-50 transition-all" />
-                    </div>
-                </div>
-            </div>
-
-            {/* 3. Paper Setup */}
-            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col shrink-0">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
-                    <Printer size={16} className="text-[#9575cd]" />
-                    <h3 className="font-bold text-slate-800 text-sm">Printer Setup</h3>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Paper Size</label>
-                        <select name="paperSize" value={formData.paperSize} onChange={handleChange} className="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] bg-slate-50 font-medium cursor-pointer transition-all">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Paper Size</label>
+                        <select name="paperSize" value={formData.paperSize || 'A4'} onChange={handleChange} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
                             <option value="A4">A4 (Standard)</option>
                             <option value="A5">A5 (Half Size)</option>
-                            <option value="Letter">US Letter</option>
-                            <option value="Legal">US Legal</option>
+                            <option value="LETTER">US Letter</option>
+                            <option value="LEGAL">US Legal</option>
                         </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Orientation</label>
-                        <select name="printOrientation" value={formData.printOrientation} onChange={handleChange} className="w-full text-xs p-2.5 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] bg-slate-50 font-medium cursor-pointer transition-all">
-                            <option value="portrait">Portrait</option>
-                            <option value="landscape">Landscape</option>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Orientation</label>
+                        <select name="printOrientation" value={formData.printOrientation || 'portrait'} onChange={handleChange} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
+                            <option value="portrait">Portrait (Vertical)</option>
+                            <option value="landscape">Landscape (Horizontal)</option>
                         </select>
                     </div>
                 </div>
             </div>
 
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col">
+                <div className="border-b border-slate-100 pb-3 mb-4">
+                    <h3 className="font-bold text-slate-800 text-sm">Letterhead Source</h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Choose how the background letterhead is applied to the PDF.</p>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                    <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${formData.letterheadStyle === 'none' ? 'bg-purple-50 border-[#9575cd]' : 'border-slate-200 hover:border-[#9575cd]/50'}`}>
+                        <input type="radio" name="letterheadStyle" value="none" checked={formData.letterheadStyle === 'none'} onChange={handleChange} className="accent-[#9575cd] w-4 h-4" />
+                        <div>
+                            <span className="text-xs font-bold text-slate-800 block">No Letterhead (Pre-Printed Paper)</span>
+                            <span className="text-[10px] text-slate-500 mt-0.5 block">Use this if you feed your own branded paper into the printer. Only margins are applied.</span>
+                        </div>
+                    </label>
+
+                    {['custom1', 'custom2', 'custom3', 'custom4'].map((styleOpt, i) => (
+                        <label key={styleOpt} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${formData.letterheadStyle === styleOpt ? 'bg-purple-50 border-[#9575cd]' : 'border-slate-200 hover:border-[#9575cd]/50'}`}>
+                            <input type="radio" name="letterheadStyle" value={styleOpt} checked={formData.letterheadStyle === styleOpt} onChange={handleChange} className="accent-[#9575cd] w-4 h-4" />
+                            <div>
+                                <span className="text-xs font-bold text-slate-800 block">Custom Letterhead {i + 1} (Digital Overlay)</span>
+                                <span className="text-[10px] text-slate-500 mt-0.5 block">A full-page background image is stamped onto every page of the PDF.</span>
+                            </div>
+                        </label>
+                    ))}
+                </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col">
+                <div className="border-b border-slate-100 pb-3 mb-4 flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-slate-800 text-sm">Margins & Background Image</h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                            {formData.letterheadStyle === 'none' ? 'Set physical margins for pre-printed paper.' : `Configure margins and upload the image for ${activeStyle}.`}
+                        </p>
+                    </div>
+                </div>
+
+                {formData.letterheadStyle !== 'none' && (
+                    <div className="mb-6">
+                        <div className="w-full h-32 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center bg-slate-50 relative group overflow-hidden transition-colors hover:border-[#9575cd] hover:bg-purple-50/30">
+                            {isUploading ? (
+                                <div className="flex flex-col items-center gap-2">
+                                    <Loader2 className="animate-spin text-[#9575cd]" size={24} />
+                                    <span className="text-[10px] font-bold text-slate-500">Uploading to R2...</span>
+                                </div>
+                            ) : activeImage ? (
+                                <img src={activeImage} alt="Letterhead Preview" className="w-full h-full object-contain p-2" />
+                            ) : (
+                                <div className="text-center text-slate-400 flex flex-col items-center pointer-events-none">
+                                    <FileUp size={24} className="mb-2 group-hover:text-[#9575cd] transition-colors" />
+                                    <span className="text-xs font-bold text-slate-600">Upload A4 Background Image</span>
+                                    <span className="text-[9px] text-slate-400 mt-1">Recommended: 2480 x 3508 pixels (PNG/JPG)</span>
+                                </div>
+                            )}
+
+                            {!isUploading && (
+                                <label className={`absolute inset-0 cursor-pointer flex flex-col items-center justify-center transition-all ${activeImage ? 'bg-slate-900/60 opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+                                    {activeImage && <span className="text-xs font-bold text-white bg-[#9575cd] px-3 py-1.5 rounded-lg shadow-sm">Replace Image</span>}
+                                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                </label>
+                            )}
+                        </div>
+
+                        {activeImage && !isUploading && (
+                            <div className="flex justify-end mt-2">
+                                <button onClick={handleRemoveImage} className="text-[10px] text-red-500 font-bold hover:bg-red-50 px-2 py-1 rounded transition-colors flex items-center gap-1">
+                                    <Trash2 size={12} /> Remove
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <div>
+                    <h4 className="text-[10px] font-bold text-slate-500 uppercase mb-3 flex items-center gap-1.5"><Maximize size={12}/> Print Safe Area (Margins)</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-bold text-slate-600">Top Margin (px)</label>
+                            <input type="number" value={t} onChange={(e) => handleMarginChange('top', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] bg-slate-50" />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-bold text-slate-600">Bottom Margin (px)</label>
+                            <input type="number" value={b} onChange={(e) => handleMarginChange('bottom', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] bg-slate-50" />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-bold text-slate-600">Left Margin (px)</label>
+                            <input type="number" value={l} onChange={(e) => handleMarginChange('left', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] bg-slate-50" />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-bold text-slate-600">Right Margin (px)</label>
+                            <input type="number" value={r} onChange={(e) => handleMarginChange('right', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] bg-slate-50" />
+                        </div>
+                    </div>
+                    <p className="text-[10px] text-slate-400 italic mt-3 text-center">Adjust margins to ensure the text does not overlap with your printed headers/footers.</p>
+                </div>
+            </div>
         </div>
     );
 }
-// --- app/reports/components/PrintControls.tsx Block Close ---
