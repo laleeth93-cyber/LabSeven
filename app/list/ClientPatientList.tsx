@@ -19,7 +19,7 @@ import EditPatientModal from './components/EditPatientModal';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 
 import { usePermissions } from '@/app/context/PermissionContext';
-import { getPatientList, deleteBill } from '@/app/actions/patient-list'; // 🚨 CRITICAL FIX
+import { getPatientList, deleteBill } from '@/app/actions/patient-list';
 
 // 🚨 ACCEPTS THE PRE-LOADED SERVER DATA
 export default function ClientPatientList({ initialBills }: { initialBills: any[] }) {
@@ -39,8 +39,9 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
         testSearch: '', statusFilter: 'All', refDocFilter: 'All', isUrgentFilter: false
     });
     
+    // 🚨 FIXED: Changed default filter to 'All' instead of 'Today'
     const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>({
-        from: new Date(), to: new Date(), label: 'Today'
+        from: null, to: null, label: 'All'
     });
 
     const filtersList = ['All', 'Pending', 'Partial', 'Completed', 'Printed'];
@@ -58,7 +59,6 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
         return permissions.some(p => p.module === 'Patient List' && p.action === action);
     };
 
-    // 🚨 CRITICAL FIX: Calling getPatientList() instead of getPendingWorklist()
     const { data: fetchRes, isLoading, mutate: refreshBills } = useSWR(
         (permsLoaded && canSee('Patient List')) ? 'patient-list-all' : null,
         async () => {

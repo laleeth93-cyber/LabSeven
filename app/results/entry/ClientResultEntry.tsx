@@ -48,8 +48,9 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
   const [activeTab, setActiveTab] = useState('Pending'); 
   const [searchTerm, setSearchTerm] = useState('');
   
+  // 🚨 FIXED: Changed default filter to 'All' instead of 'Today'
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>({
-    from: new Date(), to: new Date(), label: 'Today'
+    from: null, to: null, label: 'All'
   });
 
   const [isManualTime, setIsManualTime] = useState(false);

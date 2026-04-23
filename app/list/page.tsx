@@ -1,12 +1,12 @@
 import React from 'react';
-import { getPendingWorklist } from '@/app/actions/result-entry';
+import { getPatientList } from '@/app/actions/patient-list';
 import ClientPatientList from './ClientPatientList';
 
 export default async function PatientListPage() {
-    // 🚨 1. Fetch data instantly on the server before the page loads
-    const initialRes = await getPendingWorklist();
+    // 🚨 1. Fetch data instantly using the correct Patient List API
+    const initialRes = await getPatientList();
     const initialBills = initialRes?.success && initialRes?.data ? initialRes.data : [];
 
-    // 🚨 2. Pass the data perfectly to your existing Client component
+    // 🚨 2. Pass the data to the Client component
     return <ClientPatientList initialBills={initialBills} />;
 }
