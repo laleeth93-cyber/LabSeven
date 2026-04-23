@@ -13,20 +13,20 @@ datasource db {
 // ==========================================
 
 model Organization {
-  id          Int      @id @default(autoincrement())
-  name        String   // e.g., "City Path Labs"
-  email       String?  @unique
-  phone       String?
-  address     String?
-  plan        String   @default("Free Trial")
+  id                 Int      @id @default(autoincrement())
+  name               String   // e.g., "City Path Labs"
+  email              String?  @unique
+  phone              String?
+  address            String?
+  plan               String   @default("Free Trial")
   subscriptionEndsAt DateTime?
-  isActive    Boolean  @default(true)
+  isActive           Boolean  @default(true)
   
   // 🚨 NEW SENSITIVITY TOGGLE FLAG
-  hasSensitivity Boolean @default(false) 
+  hasSensitivity     Boolean  @default(false) 
   
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now()) @updatedAt
 
   // SaaS Relationships (Links to all lab data)
   users                     User[]
@@ -69,7 +69,7 @@ model Patient {
   patientId       String   
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now()) @updatedAt
@@ -107,7 +107,7 @@ model Bill {
   billNumber      String   
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   date          DateTime @default(now())
   
@@ -147,7 +147,7 @@ model BillItem {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   billId          Int
   bill            Bill    @relation(fields: [billId], references: [id])
@@ -172,7 +172,7 @@ model TestResult {
   id              Int       @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   billItemId      Int
   billItem        BillItem  @relation(fields: [billItemId], references: [id], onDelete: Cascade)
@@ -195,7 +195,7 @@ model Payment {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   billId          Int
   bill            Bill     @relation(fields: [billId], references: [id])
@@ -213,7 +213,7 @@ model Doctor {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   type           String   @default("Doctor") 
   name           String
@@ -245,7 +245,7 @@ model Test {
   code            String   
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   name          String
   displayName   String?
@@ -338,7 +338,7 @@ model TestParameter {
   id              Int       @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   testId          Int
   test            Test      @relation(fields: [testId], references: [id], onDelete: Cascade)
@@ -365,7 +365,7 @@ model Parameter {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   name          String
   displayName   String?
@@ -424,7 +424,7 @@ model ParameterRange {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   parameterId     Int
   parameter       Parameter @relation(fields: [parameterId], references: [id], onDelete: Cascade)
@@ -459,7 +459,7 @@ model Department {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code          String   
   name          String
@@ -476,7 +476,7 @@ model Specimen {
   id              Int     @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code      String  
   name      String
@@ -494,7 +494,7 @@ model Vacutainer {
   id              Int     @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code      String  
   name      String
@@ -511,7 +511,7 @@ model Method {
   id              Int     @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code      String  
   name      String
@@ -527,7 +527,7 @@ model UOM {
   id              Int     @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code      String  
   name      String
@@ -539,10 +539,10 @@ model UOM {
 }
 
 model Operator {
-  id              Int      @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code      String  
   name      String
@@ -558,7 +558,7 @@ model LabList {
   id              Int     @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code      String  
   name      String
@@ -578,7 +578,7 @@ model LabProfile {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   name      String   @default("Lab Seven")
   tagline   String?
@@ -596,7 +596,7 @@ model ReportSettings {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   doc1Name        String?  @default("Dr. John Doe")
   doc1Designation String?  @default("Chief Pathologist")
@@ -630,7 +630,7 @@ model ReportSettings {
   highlightAbnormal   Boolean  @default(true)
   stripedRows         Boolean  @default(false)
   
-  testColumnWidth     String   @default("auto") 
+  testColumnWidth      String   @default("auto") 
   
   colWidthParam       String?
   colWidthResult      String?
@@ -676,7 +676,7 @@ model ReportSettings {
   paperSize           String   @default("A4")
   printOrientation    String   @default("portrait")
 
-  customHeader1       String?  @db.Text
+  customHeader1        String?  @db.Text
   customHeader2       String?  @db.Text
   customHeader3       String?  @db.Text
   customHeader4       String?  @db.Text
@@ -699,9 +699,8 @@ model User {
   email           String?  @unique
   phone           String?
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  // 🚨 ADD THESE TWO LINES BACK:
   isTwoFactorEnabled Boolean @default(false)
   twoFactorSecret    String?
   degree       String?
@@ -710,7 +709,7 @@ model User {
   regNumber    String?  
   signText1    String?
   signText2    String?  
-  signatureUrl String?  @db.Text 
+  signatureUrl String?   @db.Text 
   isDefaultSignature Boolean @default(false)
 
   allowConcession Boolean @default(false)
@@ -738,7 +737,7 @@ model Role {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   name        String   
   description String?
@@ -772,7 +771,7 @@ model RolePermission {
 }
 
 model UserPermission {
-  id            Int        @id @default(autoincrement())
+  id             Int        @id @default(autoincrement())
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   permissionId Int
@@ -786,9 +785,9 @@ model UserPermission {
 
 model Organism {
   id              Int        @id @default(autoincrement())
-  
+ 
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code        String       
   name        String
@@ -804,7 +803,7 @@ model Antibiotic {
   id              Int        @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code        String       
   name        String
@@ -821,7 +820,7 @@ model AntibioticClass {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code      String   
   name      String
@@ -836,7 +835,7 @@ model AntibioticInterpretation {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code      String   
   name      String
@@ -851,7 +850,7 @@ model SusceptibilityInfo {
   id              Int      @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   code      String   
   name      String   
@@ -882,7 +881,7 @@ model SupportThread {
   id             Int       @id @default(autoincrement())
   
   organizationId  Int
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
   title           String
   type            String    @default("Issue") // 🚨 ADDED: Issue, Requirement, Suggestion

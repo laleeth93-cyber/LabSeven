@@ -120,7 +120,8 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                             <View style={getTableWrapStyle()}>
                                 <View style={getHeaderRowStyle()} wrap={false} fixed>
                                     <View style={[{ width: paramColWidth }, getCellBorder(false)]}>
-                                        <Text style={[styles.thText, { textAlign: 'left', color: dynamicHeaderTextColor }]}>Test Parameter</Text>
+                                        {/* 🚨 FIX: Using non-breaking spaces (\u00A0) to prevent table header text from wrapping */}
+                                        <Text style={[styles.thText, { textAlign: 'left', color: dynamicHeaderTextColor }]}>{"Test\u00A0Parameter"}</Text>
                                     </View>
                                     <View style={[{ width: resultColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'))]}>
                                         <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>Result</Text>
@@ -136,7 +137,8 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                     {/* BULLETPROOF: Strict Ternary */}
                                     {showRefRangeCol ? (
                                         <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'))]}>
-                                            <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>Bio. Ref. Range</Text>
+                                            {/* 🚨 FIX: Non-breaking spaces applied here as well */}
+                                            <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>{"Bio.\u00A0Ref.\u00A0Range"}</Text>
                                         </View>
                                     ) : null}
 
