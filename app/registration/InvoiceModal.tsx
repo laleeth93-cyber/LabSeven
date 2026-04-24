@@ -1,5 +1,4 @@
-// --- BLOCK app/components/InvoiceModal.tsx OPEN ---
-// FILE: app/components/InvoiceModal.tsx
+// FILE: app/registration/InvoiceModal.tsx
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Printer, Download, CheckCircle, ScanBarcode, ArrowRight, FileText, Send, Loader2 } from 'lucide-react';
@@ -74,7 +73,6 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
     } else { setNoteImage(''); }
   }, [isOpen, data]);
 
-  // Fallback to prevent silent crashes during hydration
   if (!isClient || !isOpen || !data) return null;
 
   const barcodeModalData = {
@@ -138,9 +136,7 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
 
   return (
     <>
-    {/* CRITICAL FIX: Z-index set to 99999 so it never hides behind headers or lists */}
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-2 md:p-4 animate-in fade-in zoom-in-95 duration-200">
-      
       <div className="bg-white w-full max-w-[850px] rounded-lg shadow-2xl flex flex-col h-[95vh] md:max-h-[90vh] overflow-hidden">
         
         <div className="flex justify-between items-center p-3 px-4 md:px-6 border-b border-purple-100 shadow-sm print:hidden shrink-0" style={{ background: 'linear-gradient(to right, #b3e5fc, #e1bee7)' }}>
@@ -155,7 +151,6 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
         </div>
 
         <div className="flex-1 overflow-y-auto bg-slate-50/50 flex justify-center items-start print:p-0 print:bg-white print:overflow-visible">
-            
             <div className="w-full flex justify-center origin-top transform scale-[0.45] sm:scale-[0.6] md:scale-100 mb-[-50%] md:mb-0 mt-4 md:mt-6">
                 
                 <div id="invoice-printable-area" className="bg-white shadow-md md:shadow-lg border border-slate-200 w-[700px] p-8 min-h-[600px] flex flex-col shrink-0">
@@ -196,7 +191,6 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
                                 {data.items.map((item: { name: string; price: number }, i: number) => (
                                 <tr key={i} className="border-b border-slate-100">
                                     <td className="py-2 pl-3 text-slate-700 font-medium">{item.name}</td>
-                                    {/* CRITICAL FIX: Wrap in Number() so it never crashes if missing */}
                                     <td className="py-2 pr-3 text-right font-bold text-slate-800">{Number(item.price || 0).toFixed(2)}</td>
                                 </tr>
                                 ))}
@@ -212,9 +206,11 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
                                 <p className="text-[10px] text-slate-500 font-mono tracking-widest">{String(data.billId || '').slice(-4)}</p>
                             </div>
                             )}
+                            
+                            {/* 🚨 FIX: QR Code now properly embeds the verification link directly */}
                             <div className="opacity-90 flex flex-col items-center">
                                 <div className="p-1 bg-white border border-slate-200 rounded">
-                                    <QRCodeSVG value={`${labProfile?.name || 'SmartLab'} | ID: ${data.billId} | Patient: ${data.patientName}`} size={44} level="L" />
+                                    <QRCodeSVG value={`${typeof window !== 'undefined' ? window.location.origin : 'https://labseven.in'}/verify/${data.billId}`} size={44} level="L" />
                                 </div>
                                 <p className="text-[8px] text-slate-400 font-bold uppercase mt-1 tracking-wider">Scan to Verify</p>
                             </div>
@@ -222,7 +218,6 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
 
                         <div className="w-[45%] flex flex-col">
                             <div className="space-y-2">
-                                {/* CRITICAL FIX: Wrap all values in Number() to prevent NaN crashes */}
                                 <div className="flex justify-between text-xs text-slate-500"><span>Sub Total</span><span>{Number(data.subTotal || 0).toFixed(2)}</span></div>
                                 {Number(data.discount || 0) > 0 && <div className="flex justify-between text-xs text-red-500"><span>Discount</span><span>- {Number(data.discount || 0).toFixed(2)}</span></div>}
                                 <div className="flex justify-between text-sm font-black text-slate-900 border-t border-slate-900 pt-2 mt-1"><span>Net Amount</span><span>₹ {Number(data.totalAmount || 0).toFixed(2)}</span></div>
@@ -272,9 +267,7 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
       </div>
     </div>
     
-    {/* Barcode popup runs independently */}
     <BarcodeModal isOpen={isBarcodeOpen} onClose={() => setIsBarcodeOpen(false)} data={barcodeModalData} />
     </>
   );
 }
-// --- BLOCK app/components/InvoiceModal.tsx CLOSE ---

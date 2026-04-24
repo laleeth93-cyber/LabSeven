@@ -1,10 +1,7 @@
-// --- BLOCK app/list/components/SmartReportDocument.tsx OPEN ---
+// FILE: app/list/components/SmartReportDocument.tsx
 import React from 'react';
 import { Document, Page, StyleSheet, View, Text, Svg, Circle, Line, G, Path, Image } from '@react-pdf/renderer';
 
-// ============================================================================
-// PDF CHART ENGINE (Dynamic Settings Applied)
-// ============================================================================
 function PdfDynamicChart({ dataPoints, isAlert, deltaSettings }: { dataPoints: {value: number, label: string}[], isAlert: boolean, deltaSettings: any }) {
     if (!dataPoints || dataPoints.length < 2) return null;
 
@@ -25,7 +22,6 @@ function PdfDynamicChart({ dataPoints, isAlert, deltaSettings }: { dataPoints: {
     const primaryColor = isAlert ? (deltaSettings?.alertColor || '#e11d48') : (deltaSettings?.primaryColor || '#9575cd');
     const nodeRadius = parseInt(deltaSettings?.nodeRadius !== undefined ? deltaSettings.nodeRadius : '3');
 
-    // Chart Style Booleans
     const style = deltaSettings?.graphStyle || 'lollipop';
     const isLine = style === 'line';
     const isBar = style === 'bar';
@@ -51,23 +47,18 @@ function PdfDynamicChart({ dataPoints, isAlert, deltaSettings }: { dataPoints: {
     return (
         <View style={{ marginTop: 15, alignItems: 'center' }}>
             <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-                {/* Base Axis Line */}
                 <Line x1={paddingX - 10} y1={height - paddingY} x2={width - paddingX + 10} y2={height - paddingY} stroke="#e2e8f0" strokeWidth={1.5} strokeLinecap="round" />
                 
-                {/* Area Fill - USING CAPITALIZED Path FOR REACT-PDF */}
                 {isArea && <Path d={areaPath} fill={primaryColor} opacity={0.15} stroke="none" />}
 
-                {/* Line & Step Connectors - USING CAPITALIZED Path FOR REACT-PDF */}
                 {(isLine || isArea) && <Path d={linePath} stroke={primaryColor} strokeWidth={2} fill="none" />}
                 {isStep && <Path d={stepPath} stroke={primaryColor} strokeWidth={2} fill="none" />}
 
-                {/* Data Stems & Nodes */}
                 {dataPoints.map((d, i) => {
                     const cx = getX(i);
                     const cy = getY(d.value);
                     return (
                         <G key={i}>
-                            {/* Stems are strictly for Lollipop and Bar */}
                             {(isLollipop || isBar) && (
                                 <Line 
                                     x1={cx} y1={height - paddingY} x2={cx} y2={cy} 
@@ -77,7 +68,6 @@ function PdfDynamicChart({ dataPoints, isAlert, deltaSettings }: { dataPoints: {
                                 />
                             )}
                             
-                            {/* Nodes are hidden for bar charts, visible on others if radius > 0 */}
                             {!isBar && nodeRadius > 0 && (
                                 <Circle cx={cx} cy={cy} r={nodeRadius} fill="#ffffff" stroke={primaryColor} strokeWidth={1.5} />
                             )}
@@ -102,10 +92,7 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
     const resultValueSize = parseInt(deltaSettings?.resultValueSize || '12');
 
     const styles = StyleSheet.create({
-        // Increased paddingBottom from 40 to 140 to make room for signatures and QR codes
         page: { backgroundColor: '#ffffff', padding: 40, paddingBottom: 140, fontFamily: docFont, position: 'relative' },
-        
-        // Header
         headerContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottomWidth: 2, borderBottomColor: primaryTheme, paddingBottom: 15, marginBottom: 20 },
         headerLeft: { flex: 1 },
         headerRight: { flex: 1, alignItems: 'flex-end' },
@@ -113,39 +100,27 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
         tagline: { fontSize: 9, color: '#64748b', textTransform: 'uppercase' },
         reportTitle: { fontSize: 14, fontFamily: `${docFont}-Bold`, color: primaryTheme, textAlign: 'right', marginBottom: 4 },
         reportDate: { fontSize: 9, color: '#64748b', textAlign: 'right' },
-
-        // Demographics
         demoBox: { backgroundColor: '#f8fafc', borderRadius: 8, padding: 12, flexDirection: 'row', justifyContent: 'space-between', borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 20 },
         demoCol: { flex: 1 },
         demoLabel: { fontSize: 7, color: '#94a3b8', textTransform: 'uppercase', marginBottom: 4, fontFamily: `${docFont}-Bold` },
         demoValue: { fontSize: 11, color: '#0f172a', fontFamily: `${docFont}-Bold`, marginBottom: 2 },
         demoSubValue: { fontSize: 9, color: '#475569' },
-
-        // Parameter Layout
         testSection: { marginBottom: 25 },
         testHeader: { fontSize: headingSize, fontFamily: `${docFont}-Bold`, color: primaryTheme, textTransform: 'uppercase', marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#e2e8f0', paddingBottom: 4 },
-        
         paramCard: { marginBottom: 15, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-        
-        // Strict Row Alignment
         paramTopRow: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-        
         colName: { width: '30%' },
         paramName: { fontSize: paramNameSize, fontFamily: `${docFont}-Bold`, color: '#1e293b' },
         paramUnit: { fontSize: 7, color: '#64748b', marginTop: 2 },
-        
         colResults: { width: '55%', flexDirection: 'row', flexWrap: 'wrap' },
         resultItem: { marginRight: 24, alignItems: 'flex-start' },
         resultValue: { fontSize: resultValueSize, fontFamily: `${docFont}-Bold`, color: '#1e293b' },
         alertValue: { color: alertTheme },
         resultDate: { fontSize: 7, color: '#64748b', marginTop: 2 },
-        
         colShift: { width: '15%', alignItems: 'flex-end' },
         shiftText: { fontSize: resultValueSize, fontFamily: `${docFont}-Bold`, color: '#334155' },
         shiftAlert: { color: alertTheme },
         shiftLabel: { fontSize: 6, color: '#94a3b8', textTransform: 'uppercase', marginTop: 2 },
-
-        // Updated Footer Layout
         footer: { position: 'absolute', bottom: 30, left: 40, right: 40 },
         footerNotesContainer: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 8, marginTop: 15 },
         footerText: { fontSize: 8, color: '#94a3b8' }
@@ -190,11 +165,7 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
 
                         {groupedData[testName].map((row: any, idx: number) => {
                             const isAlert = row.isClinicallySignificant;
-                            
-                            // 1. Get chronological history (Oldest -> Newer)
                             const chronologicalHistory = row.history ? [...row.history].reverse() : [];
-                            
-                            // 2. Chart points (Oldest -> Latest)
                             const rawPoints = [
                                 ...chronologicalHistory.map((h: any) => ({
                                     value: parseFloat(h.value),
@@ -204,7 +175,6 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
                             ];
                             const graphPoints = rawPoints.filter((p: {value: number, label: string}) => !isNaN(p.value));
 
-                            // 3. Text sequence mapped exactly same as chart (Oldest -> Latest)
                             const displaySequence = [
                                 ...chronologicalHistory.map((h: any) => ({
                                     label: new Date(h.date).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: '2-digit'}), value: h.value, flag: h.flag
@@ -214,8 +184,6 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
                             
                             return (
                                 <View key={idx} style={styles.paramCard} wrap={false}>
-                                    
-                                    {/* --- STRICT ROW LAYOUT --- */}
                                     <View style={styles.paramTopRow}>
                                         <View style={styles.colName}>
                                             <Text style={styles.paramName}>{row.parameterName} {isAlert ? '(!)' : ''}</Text>
@@ -245,7 +213,6 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
                                         </View>
                                     </View>
 
-                                    {/* --- DYNAMIC GRAPH --- */}
                                     <PdfDynamicChart dataPoints={graphPoints} isAlert={isAlert} deltaSettings={deltaSettings} />
                                     
                                 </View>
@@ -254,15 +221,13 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
                     </View>
                 ))}
 
-                {/* --- FOOTER: SIGNATURES, QR, BARCODE --- */}
                 <View style={styles.footer} fixed>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                        
-                        {/* Left Side: QR & Barcode */}
                         <View style={{ flexDirection: 'row', gap: 15, alignItems: 'flex-end' }}>
                             {reportSettings?.showQrCode !== false && (
                                 <View style={{ alignItems: 'center' }}>
-                                    <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=UID:${bill?.patient?.patientId}%0ABILL:${bill?.billNumber}`} style={{ width: 50, height: 50 }} />
+                                    {/* 🚨 FIX: QR Code URL is now properly embedding the verification link */}
+                                    <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`https://labseven.in/verify/${bill?.id}`)}`} style={{ width: 50, height: 50 }} />
                                     <Text style={{ fontSize: 6, color: '#64748b', marginTop: 4 }}>{reportSettings?.qrText || 'Scan to validate'}</Text>
                                 </View>
                             )}
@@ -274,7 +239,6 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
                             )}
                         </View>
 
-                        {/* Right Side: Signatures */}
                         <View style={{ flexDirection: 'row', gap: 40, alignItems: 'flex-end' }}>
                             {reportSettings?.doc1Name && (
                                 <View style={{ alignItems: 'center' }}>
@@ -297,7 +261,6 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
                         </View>
                     </View>
 
-                    {/* Bottom Edge Notes */}
                     <View style={styles.footerNotesContainer}>
                         <Text style={styles.footerText}>
                             {deltaSettings?.showFooterNotes !== false ? '* (!) Indicates a clinically significant shift (>15%) from historical baseline.' : ''}
@@ -312,4 +275,3 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
         </Document>
     );
 }
-// --- BLOCK app/list/components/SmartReportDocument.tsx CLOSE ---
