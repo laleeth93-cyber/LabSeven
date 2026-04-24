@@ -1,4 +1,4 @@
-// FILE: app/components/CustomizeRegistrationModal.tsx
+// FILE: app/registration/CustomizeRegistrationModal.tsx
 "use client";
 
 import React, { useState } from 'react';
@@ -21,14 +21,15 @@ interface CustomizeRegistrationModalProps {
 export default function CustomizeRegistrationModal({ isOpen, onClose, fields, setFields }: CustomizeRegistrationModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  // New state for handling the configuration modal
   const [activeField, setActiveField] = useState<FieldData | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
+  // 🚨 FIX: Forcefully exclude "Collection Date" (id: 22) from the customization menu
+  const customizableFields = fields.filter(f => f.id !== 22 && f.label !== "Collection Date");
+
   const toggleField = (id: number) => {
-    // We now update the parent state directly using the prop
     const newFields = [...fields];
     const targetIndex = newFields.findIndex(f => f.id === id);
     if (targetIndex === -1) return;
@@ -36,19 +37,16 @@ export default function CustomizeRegistrationModal({ isOpen, onClose, fields, se
     const targetField = newFields[targetIndex];
 
     if (targetField.isVisible) {
-       // Hide it
        const removedOrder = targetField.order;
        targetField.isVisible = false;
        targetField.order = null;
        
-       // Reorder remaining fields
        newFields.forEach(f => {
          if (f.isVisible && f.order !== null && removedOrder !== null && f.order > removedOrder) {
            f.order = f.order - 1;
          }
        });
     } else {
-       // Show it
        const currentMaxOrder = newFields.reduce((max, f) => (f.order && f.order > max ? f.order : max), 0);
        targetField.isVisible = true;
        targetField.order = currentMaxOrder + 1;
@@ -58,39 +56,41 @@ export default function CustomizeRegistrationModal({ isOpen, onClose, fields, se
   };
 
   const handleSelectAll = () => {
-    const allVisible = fields.every(f => f.isVisible);
+    const allVisible = customizableFields.every(f => f.isVisible);
     const newFields = fields.map(f => {
+       // 🚨 Keep Collection Date hidden regardless of Select All status
+       if (f.id === 22 || f.label === "Collection Date") {
+           return { ...f, isVisible: false, order: null };
+       }
        if (allVisible) {
          return { ...f, isVisible: false, order: null };
        } else {
-         return { ...f, isVisible: true, order: f.id }; // Simple ordering for select all
+         return { ...f, isVisible: true, order: f.id };
        }
     });
     setFields(newFields);
   };
 
-  // Handler to open the configure modal
   const handleConfigureClick = (e: React.MouseEvent, field: FieldData) => {
     e.stopPropagation(); 
     setActiveField(field);
     setIsConfigModalOpen(true);
   };
 
-  // Handler to save changes from the configure modal
   const handleSaveField = (updatedField: FieldData) => {
     setFields(fields.map(f => f.id === updatedField.id ? updatedField : f));
   };
 
   const filteredCategories = categories.filter(cat => {
     const catMatches = cat.toLowerCase().includes(searchQuery.toLowerCase());
-    const hasFieldMatches = fields.some(f => 
+    const hasFieldMatches = customizableFields.some(f => 
       f.category === cat && f.label.toLowerCase().includes(searchQuery.toLowerCase())
     );
     return catMatches || hasFieldMatches;
   });
 
   const getFieldsNc = (category: string) => {
-    return fields.filter(f => 
+    return customizableFields.filter(f => 
       f.category === category && 
       f.label.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -135,7 +135,7 @@ export default function CustomizeRegistrationModal({ isOpen, onClose, fields, se
           <div className="flex items-center gap-2 px-1">
             <input 
               type="checkbox" 
-              checked={fields.every(f => f.isVisible)}
+              checked={customizableFields.length > 0 && customizableFields.every(f => f.isVisible)}
               onChange={handleSelectAll}
               className="w-4 h-4 rounded border-slate-300 text-[#4dd0e1] focus:ring-[#4dd0e1]" 
             />

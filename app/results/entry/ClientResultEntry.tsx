@@ -12,7 +12,10 @@ import MusicBarLoader from '@/app/components/MusicBarLoader';
 
 import { usePermissions } from '@/app/context/PermissionContext';
 
-// 🚨 UPGRADED CACHE
+// 🚨 Report Modal Imports
+import PatientReportModal from '@/app/list/components/PatientReportModal';
+import SmartReportModal from '@/app/list/components/SmartReportModal';
+
 const globalBillCache: Record<number, any> = {};
 const globalBillPromises: Record<number, Promise<any> | undefined> = {};
 
@@ -44,11 +47,14 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
   const [selectedBillData, setSelectedBillData] = useState<any>(null);
   const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
 
+  // Report Modal States
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isSmartReportModalOpen, setIsSmartReportModalOpen] = useState(false);
+
   const [isBillLoading, setIsBillLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('Pending'); 
   const [searchTerm, setSearchTerm] = useState('');
   
-  // 🚨 FIXED: Changed default filter to 'All' instead of 'Today'
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>({
     from: null, to: null, label: 'All'
   });
@@ -62,7 +68,6 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
 
   const [entryDateTime, setEntryDateTime] = useState(getLocalISOString());
 
-  // 🚨 SPEED FIX: Completely disabled hover prefetching to prevent Vercel connection limits
   const prefetchBill = (billId: number) => { return; };
 
   useEffect(() => {
@@ -201,6 +206,23 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
 
   return (
     <div className="h-full w-full flex flex-col font-sans bg-[#f1f5f9] overflow-hidden">
+      
+      {/* 🚨 FIXED: Changed `bill` to `billId` */}
+      {isReportModalOpen && selectedBillData && (
+          <PatientReportModal
+              isOpen={isReportModalOpen}
+              onClose={() => setIsReportModalOpen(false)}
+              billId={selectedBillData.id}
+          />
+      )}
+      {isSmartReportModalOpen && selectedBillData && (
+          <SmartReportModal
+              isOpen={isSmartReportModalOpen}
+              onClose={() => setIsSmartReportModalOpen(false)}
+              bill={selectedBillData}
+          />
+      )}
+
       <header className="bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm">
         <div className="px-4 md:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h1 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">Result Entry</h1>
@@ -236,7 +258,15 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
         </div>
         <div className={`w-full md:w-[60%] h-full bg-white rounded-lg md:rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-col relative ${activeMobileTab === 'form' ? 'flex' : 'hidden md:flex'}`}>
             {selectedBillId ? (
-               isBillLoading ? <div className="flex-1 flex items-center justify-center"><MusicBarLoader text="Loading Test Data..." /></div> : <ResultEntryForm bill={selectedBillData} onSaveSuccess={handleSaveSuccess} filterTestIds={selectedTestIds} entryDateTime={entryDateTime} />
+               isBillLoading ? <div className="flex-1 flex items-center justify-center"><MusicBarLoader text="Loading Test Data..." /></div> : 
+               <ResultEntryForm 
+                   bill={selectedBillData} 
+                   onSaveSuccess={handleSaveSuccess} 
+                   filterTestIds={selectedTestIds} 
+                   entryDateTime={entryDateTime} 
+                   onPrint={() => setIsReportModalOpen(true)}
+                   onDeltaPrint={() => setIsSmartReportModalOpen(true)}
+               />
             ) : (
                <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/30 p-6">
                   <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100"><Printer size={32} className="text-slate-300 opacity-50"/></div>

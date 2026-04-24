@@ -39,7 +39,10 @@ const initialFieldsData: FieldData[] = [
   { id: 24, label: "Referring Doctor", category: "Referral", isVisible: true, order: 9, width: '230px', required: false, inputType: 'select', options: ['Self', 'Dr. Smith', 'Dr. Jones', 'Dr. Akram'] },
   { id: 30, label: "Referral Lab", category: "Referral", isVisible: false, order: null, width: '230px', required: false, inputType: 'select', options: ['Self'] },
   { id: 19, label: "Referral Type", category: "Referral", isVisible: false, order: null, width: '180px', required: false, inputType: 'select', options: ['Walk-in', 'Doctor', 'Hospital', 'Camp'] },
-  { id: 22, label: "Collection Date", category: "Collection", isVisible: true, order: 10, width: '180px', required: true, inputType: 'date' },
+  
+  // 🚨 Default State: Hidden
+  { id: 22, label: "Collection Date", category: "Collection", isVisible: false, order: null, width: '180px', required: false, inputType: 'date' },
+  
   { id: 23, label: "Collected By", category: "Collection", isVisible: false, order: null, width: '200px', required: false, inputType: 'select', options: ['Lab Technician', 'Nurse', 'Phlebotomist'] },
   { id: 29, label: "Report Delivery", category: "Collection", isVisible: true, order: 11, width: '250px', required: false, inputType: 'multi-select', options: ['Hard Copy', 'Email', 'WhatsApp', 'App'] },
   { id: 17, label: "Clinical History", category: "Medical Info", isVisible: false, order: null, width: '100%', required: false, inputType: 'textarea' },
@@ -73,9 +76,16 @@ export default function RegistrationPage() {
           try { 
             const parsed = JSON.parse(savedSettings);
             if (Array.isArray(parsed) && parsed.length > 5) {
-              const mergedFields = [...parsed];
+              
+              // 🚨 FIX: Forcefully strip "Collection Date" visibility from their saved browser cache
+              const mergedFields = parsed.map((f: any) => 
+                (f.id === 22 || f.label === "Collection Date") 
+                  ? { ...f, isVisible: false, order: null, required: false } 
+                  : f
+              );
+
               initialFieldsData.forEach(initialField => {
-                if (!mergedFields.find(f => f.id === initialField.id)) mergedFields.push(initialField);
+                if (!mergedFields.find((f: any) => f.id === initialField.id)) mergedFields.push(initialField);
               });
               setRegistrationFields(mergedFields);
             }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Save, CheckCircle2, Loader2, RotateCcw, PenTool, ChevronDown, CheckCircle } from 'lucide-react';
+import { Save, CheckCircle2, Loader2, RotateCcw, PenTool, ChevronDown, CheckCircle, Printer, Activity } from 'lucide-react';
 import { saveTestResults, saveTestNote, checkHistoryAvailability, getParameterHistory, getSignatureUsers, getTestParametersBatch } from '@/app/actions/result-entry';
 import RichTextEditorModal from '@/app/components/RichTextEditorModal';
 import { getFlag, recalculateFormulas } from './ResultEntryUtils';
@@ -9,7 +9,8 @@ import HistoryModal from './HistoryModal';
 import TestItemCard from './TestItemCard';
 import CultureSensitivityModal from './CultureSensitivityModal';
 
-export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [], entryDateTime }: any) {
+// 🚨 ADDED: onPrint and onDeltaPrint props
+export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [], entryDateTime, onPrint, onDeltaPrint }: any) {
   const [results, setResults] = useState<any>({});
   const [flags, setFlags] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -42,7 +43,6 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
   const [loadedParameters, setLoadedParameters] = useState<Record<number, any[]>>({});
   const [isParamsLoading, setIsParamsLoading] = useState(true);
 
-  // 🚨 CRASH PROTECTION: Safely access items array
   const safeItems = Array.isArray(bill?.items) ? bill.items : [];
   const visibleItems = safeItems.filter((item: any) => filterTestIds.includes(item?.id));
   const validItems = visibleItems.filter((item: any) => item?.test?.isConfigured);
@@ -50,17 +50,14 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
 
   useEffect(() => { getSignatureUsers().then(res => { if (res.success && res.data) setSignatureUsers(res.data); }); }, []);
 
-  // 🚨 SPEED FIX: One single BATCH request for all test parameters
   useEffect(() => {
     if (bill && visibleItems.length > 0) {
       let isMounted = true;
       setIsParamsLoading(true);
 
       const fetchAllParams = async () => {
-          // 1. Get unique test IDs safely
           const testIds = Array.from(new Set(visibleItems.map((i: any) => i?.test?.id).filter(Boolean))) as number[];
           
-          // 2. ONE single request for ALL tests
           const res = await getTestParametersBatch(testIds);
           if (!isMounted) return;
 
@@ -279,6 +276,18 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
                             <ChevronDown size={12} className="absolute right-2 top-2.5 text-slate-400 pointer-events-none"/>
                         </div>
                     </div>
+                    
+                    {/* 🚨 ADDED: Print & Delta Buttons */}
+                    <div className="hidden sm:block h-6 w-px bg-slate-200"></div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        <button onClick={onPrint} className="flex-1 sm:flex-none justify-center px-3 py-2 bg-white text-slate-700 hover:text-[#9575cd] border border-slate-200 hover:border-[#9575cd] text-xs font-bold rounded flex items-center gap-1.5 transition-colors">
+                            <Printer size={14}/> <span className="hidden lg:inline">Print</span>
+                        </button>
+                        <button onClick={onDeltaPrint} className="flex-1 sm:flex-none justify-center px-3 py-2 bg-white text-slate-700 hover:text-indigo-500 border border-slate-200 hover:border-indigo-300 text-xs font-bold rounded flex items-center gap-1.5 transition-colors">
+                            <Activity size={14}/> <span className="hidden lg:inline">Delta</span>
+                        </button>
+                    </div>
+
                     <div className="hidden sm:block h-6 w-px bg-slate-200"></div>
                     <div className="flex gap-2 w-full sm:w-auto">
                         {allApproved ? (
