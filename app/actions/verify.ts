@@ -5,16 +5,24 @@ import { unstable_noStore as noStore } from 'next/cache';
 
 const prisma = new PrismaClient();
 
-export async function getPublicDocumentData(billId: number) {
-    noStore(); // 🚨 FIX: This strictly disables caching so you always get the latest graph styles!
+export async function getPublicDocumentData(identifier: string) {
+    noStore(); // Strictly disable caching
 
     try {
-        if (!billId) {
-            return { success: false, message: "Invalid Bill ID provided." };
+        if (!identifier) {
+            return { success: false, message: "Invalid Bill identifier provided." };
         }
 
-        const bill = await prisma.bill.findUnique({
-            where: { id: billId },
+        const numId = Number(identifier);
+
+        // 🚨 FIX: Search by numeric ID (from Report QR) OR string BillNumber (from Invoice QR)
+        const bill = await prisma.bill.findFirst({
+            where: {
+                OR: [
+                    { id: isNaN(numId) ? -1 : numId },
+                    { billNumber: identifier }
+                ]
+            },
             include: {
                 patient: true,
                 organization: true,

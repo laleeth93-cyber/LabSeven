@@ -21,10 +21,12 @@ function VerifyDocumentContent() {
         async function generateAndOpenPdf() {
             try {
                 if (!params?.id) return;
-                const billId = Number(params.id);
+                
+                // 🚨 FIX: Pass identifier as a string to support both numeric IDs and Bill Numbers
+                const identifier = Array.isArray(params.id) ? params.id[0] : params.id;
                 const isSmartReport = searchParams.get('type') === 'smart';
                 
-                const res = await getPublicDocumentData(billId);
+                const res = await getPublicDocumentData(identifier);
                 if (!res.success) {
                     setError(res.message || "Invalid verification link or document not found.");
                     setLoading(false); return;
@@ -43,16 +45,14 @@ function VerifyDocumentContent() {
                 settingsData.website = profileData.website;
                 settingsData.logoUrl = profileData.logoUrl;
 
-                // 🚨 FIX: Bulletproof parsing to ensure custom graph styles never fail
+                // Safely parse deltaSettings
                 let deltaSettingsData: any = {};
                 if (settingsData.deltaSettings) {
                     try { 
                         deltaSettingsData = typeof settingsData.deltaSettings === 'string' 
                             ? JSON.parse(settingsData.deltaSettings) 
                             : settingsData.deltaSettings; 
-                    } catch(e){
-                        console.error("Delta Settings Parse Error:", e);
-                    }
+                    } catch(e) {}
                 }
 
                 if (bill.items) {
@@ -103,9 +103,6 @@ function VerifyDocumentContent() {
 
                 let documentElement;
 
-                // ==========================================
-                // DELTA (SMART) REPORT GENERATOR
-                // ==========================================
                 if (isSmartReport) {
                     let groupedData: any = {};
                     
@@ -147,11 +144,7 @@ function VerifyDocumentContent() {
                         />
                     );
 
-                } 
-                // ==========================================
-                // ROUTINE (NORMAL) REPORT GENERATOR
-                // ==========================================
-                else {
+                } else {
                     let barcodeUrl = '';
                     try {
                         const canvas = document.createElement('canvas');

@@ -50,8 +50,10 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
       try {
         const canvas = document.createElement('canvas');
         const shortBillId = String(data.billId || '').slice(-4);
+        
+        // 🚨 FIX: Made Barcode much thinner and lighter
         JsBarcode(canvas, shortBillId, {
-          format: "CODE128", displayValue: false, height: 35, width: 1.3, margin: 0, background: "transparent"
+          format: "CODE128", displayValue: false, height: 25, width: 1.1, margin: 0, background: "transparent"
         });
         setBarcodeUrl(canvas.toDataURL());
       } catch (e) { console.error(e); }
@@ -96,16 +98,22 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
     } catch (e) { alert("Failed to open TRF."); } finally { setIsTrfLoading(false); }
   };
 
-  // 🚨 FIX: Replaced API server crash with reliable, instant native browser printing
+  // 🚨 FIX: Invisible iFrame approach prevents new tabs/popups entirely!
   const handlePrintInvoice = () => {
       const element = document.getElementById('invoice-printable-area');
       if (!element) return;
 
-      const printWindow = window.open('', '_blank', 'width=800,height=900');
-      if (!printWindow) {
-          alert("Please allow pop-ups to print the invoice.");
-          return;
-      }
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentWindow?.document;
+      if (!iframeDoc) return;
 
       const htmlContent = `
           <!DOCTYPE html>
@@ -128,23 +136,28 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
           <body>
               <div class="invoice-container">${element.innerHTML}</div>
               <script>
-                  // Wait for Tailwind and images (like QR code) to load before printing
+                  // Wait for Tailwind to load and trigger the print dialog in the center of the screen
                   setTimeout(() => {
                       window.print();
-                      window.close();
                   }, 800);
               </script>
           </body>
           </html>
       `;
 
-      printWindow.document.open();
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
+      iframeDoc.open();
+      iframeDoc.write(htmlContent);
+      iframeDoc.close();
+
+      // Clean up iframe after 60 seconds to be safe
+      setTimeout(() => {
+          if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+          }
+      }, 60000); 
   };
 
   const handleDownloadInvoice = () => {
-      // The native print dialog allows saving directly to PDF natively and instantly
       handlePrintInvoice();
   };
 
@@ -225,12 +238,12 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
                         <div className="w-[50%] flex items-end gap-6 pb-1">
                             {barcodeUrl && (
                             <div className="opacity-90 flex flex-col items-center">
-                                <img src={barcodeUrl} alt="Barcode" className="h-10 w-[140px] mb-1" />
+                                {/* 🚨 FIX: Adjusted sizing for lighter look */}
+                                <img src={barcodeUrl} alt="Barcode" className="h-8 w-[110px] mb-1" />
                                 <p className="text-[10px] text-slate-500 font-mono tracking-widest">{String(data.billId || '').slice(-4)}</p>
                             </div>
                             )}
                             
-                            {/* 🚨 FIX: Embedded verification link URL into QR code */}
                             <div className="opacity-90 flex flex-col items-center">
                                 <div className="p-1 bg-white border border-slate-200 rounded">
                                     <QRCodeSVG value={`${typeof window !== 'undefined' ? window.location.origin : 'https://labseven.in'}/verify/${data.billId}`} size={44} level="L" />
