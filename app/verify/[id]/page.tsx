@@ -1,4 +1,3 @@
-// --- BLOCK app/verify/[id]/page.tsx OPEN ---
 "use client";
 
 import React, { useEffect, useState, Suspense } from "react";
@@ -33,7 +32,6 @@ function VerifyDocumentContent() {
 
                 const { bill, reportSettings, labProfile } = res.data as any; 
 
-                // --- 1. PREPARE SETTINGS & LAB PROFILE ---
                 let settingsData: any = reportSettings || {};
                 let profileData: any = labProfile || {};
 
@@ -45,12 +43,18 @@ function VerifyDocumentContent() {
                 settingsData.website = profileData.website;
                 settingsData.logoUrl = profileData.logoUrl;
 
+                // 🚨 FIX: Bulletproof parsing to ensure custom graph styles never fail
                 let deltaSettingsData: any = {};
-                if (isSmartReport && settingsData.deltaSettings) {
-                    try { deltaSettingsData = JSON.parse(settingsData.deltaSettings); } catch(e){}
+                if (settingsData.deltaSettings) {
+                    try { 
+                        deltaSettingsData = typeof settingsData.deltaSettings === 'string' 
+                            ? JSON.parse(settingsData.deltaSettings) 
+                            : settingsData.deltaSettings; 
+                    } catch(e){
+                        console.error("Delta Settings Parse Error:", e);
+                    }
                 }
 
-                // --- 2. FILTER APPROVED ITEMS ---
                 if (bill.items) {
                     bill.items = bill.items.filter((item: any) => {
                         const isCult = item.test?.isCulture;
@@ -58,7 +62,6 @@ function VerifyDocumentContent() {
                     });
                 }
 
-                // --- 3. PROCESS SIGNATURES ---
                 if (bill.approvedBy1) {
                     const u = bill.approvedBy1;
                     let formattedDesignation = u.designation || '';
@@ -83,7 +86,6 @@ function VerifyDocumentContent() {
                     settingsData.doc2Name = null; settingsData.doc2SignUrl = null; settingsData.doc2Designation = null;
                 }
 
-                // --- 4. FORMAT DATES ---
                 const baseDate = bill.date ? new Date(bill.date) : new Date();
                 const collectedDateStr = baseDate.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).replace(',', '');
 
@@ -129,7 +131,7 @@ function VerifyDocumentContent() {
                                     currentFlag: r.flag || 'Normal',
                                     deltaPercent: r.deltaPercent || null,
                                     isClinicallySignificant: r.isClinicallySignificant || false,
-                                    history: r.history || [] // If your backend attaches history, it graphs it automatically
+                                    history: r.history || [] 
                                 });
                             });
                         });
@@ -343,7 +345,6 @@ function VerifyDocumentContent() {
                     );
                 }
 
-                // Convert selected document to PDF blob and render
                 const blob = await pdf(documentElement).toBlob();
                 const url = URL.createObjectURL(blob);
                 
@@ -420,4 +421,3 @@ export default function VerifyDocumentPage() {
         </Suspense>
     );
 }
-// --- BLOCK app/verify/[id]/page.tsx CLOSE ---

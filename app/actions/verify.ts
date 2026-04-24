@@ -1,16 +1,18 @@
 "use server";
 
 import { PrismaClient } from '@prisma/client';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const prisma = new PrismaClient();
 
 export async function getPublicDocumentData(billId: number) {
+    noStore(); // 🚨 FIX: This strictly disables caching so you always get the latest graph styles!
+
     try {
         if (!billId) {
             return { success: false, message: "Invalid Bill ID provided." };
         }
 
-        // 1. Fetch the Bill and all its deeply nested relationships
         const bill = await prisma.bill.findUnique({
             where: { id: billId },
             include: {
@@ -66,14 +68,10 @@ export async function getPublicDocumentData(billId: number) {
             return { success: false, message: "Document not found or has been deleted." };
         }
 
-        // 2. Fetch the Lab Profile (Logo, Address, Phone, etc.)
         const labProfile = await prisma.labProfile.findFirst({
             where: { organizationId: bill.organizationId }
         });
 
-        // 3. Fetch Report Settings 
-        // 🚨 By NOT using a "select" statement, Prisma automatically fetches ALL columns, 
-        // including your newly added 'deltaSettings' for the graph styles!
         const reportSettings = await prisma.reportSettings.findFirst({
             where: { organizationId: bill.organizationId }
         });
