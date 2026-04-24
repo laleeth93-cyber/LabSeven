@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { getPublicDocumentData } from "@/app/actions/verify";
+// 🚨 FIX: Imported getPublicDeltaCheckData to get graph history
+import { getPublicDocumentData, getPublicDeltaCheckData } from "@/app/actions/verify";
 import { Loader2, AlertTriangle, FileText, CheckCircle2 } from "lucide-react";
 import { pdf } from '@react-pdf/renderer';
 import PatientReportDocument from '@/app/list/components/PatientReportDocument';
@@ -113,7 +114,6 @@ function VerifyDocumentContent() {
                     try {
                         const canvas = document.createElement('canvas');
                         const shortBarcodeText = String(bill.billNumber || '').slice(-4);
-                        // 🚨 FIX: Replicated identical barcode configuration as the HTML view
                         JsBarcode(canvas, shortBarcodeText, { 
                             format: "CODE128", 
                             displayValue: false, 
@@ -170,35 +170,18 @@ function VerifyDocumentContent() {
                 else if (isSmartReport) {
                     let groupedData: any = {};
                     
-                    if (bill.items && Array.isArray(bill.items)) {
-                        bill.items.forEach((item: any) => {
-                            const testName = item.test?.displayName || item.test?.name || item.testName || 'TEST';
-                            if (!groupedData[testName]) groupedData[testName] = [];
-                            
-                            const results = item.results || [];
-                            results.forEach((r: any) => {
-                                const actualParam = r.parameter || {};
-                                const pName = actualParam.displayName || actualParam.name || '-';
-                                if (pName === '-') return;
-
-                                let val = r.resultValue ?? r.value ?? r.result ?? '';
-                                if (val === null || val === undefined || String(val).trim() === '') return;
-
-                                groupedData[testName].push({
-                                    parameterName: pName,
-                                    unit: actualParam.unit || '',
-                                    currentValue: String(val),
-                                    currentDate: bill.date,
-                                    currentFlag: r.flag || 'Normal',
-                                    deltaPercent: r.deltaPercent || null,
-                                    isClinicallySignificant: r.isClinicallySignificant || false,
-                                    history: r.history || [] 
-                                });
-                            });
-                        });
+                    // 🚨 FIX: Now securely fetching the historical trend/graph data exactly as the internal modal does
+                    const deltaRes = await getPublicDeltaCheckData(bill.id, bill.patientId);
+                    
+                    if (deltaRes.success && deltaRes.data) {
+                        const withHistory = deltaRes.data.filter((d: any) => d.previousValue !== null);
+                        groupedData = withHistory.reduce((acc: any, curr: any) => {
+                            if (!acc[curr.testName]) acc[curr.testName] = [];
+                            acc[curr.testName].push(curr);
+                            return acc;
+                        }, {});
                     }
 
-                    // 🚨 FIX: Pass Dynamic QR Code using full current browser URL here too
                     const qrUrlString = window.location.href;
                     const qrDataUrl = await QRCode.toDataURL(qrUrlString, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
 
