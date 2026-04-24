@@ -1,74 +1,94 @@
-// --- BLOCK app/actions/verify.ts OPEN ---
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function getPublicDocumentData(billId: number) {
     try {
-        if (!billId || isNaN(billId)) {
-            return { success: false, message: "Invalid verification link." };
+        if (!billId) {
+            return { success: false, message: "Invalid Bill ID provided." };
         }
 
-        // Fetch everything required to build the PDF report exactly like the internal app does
+        // 1. Fetch the Bill and all its deeply nested relationships
         const bill = await prisma.bill.findUnique({
             where: { id: billId },
             include: {
-                organization: true,
                 patient: true,
-                doctor: true,
+                organization: true,
                 approvedBy1: true,
                 approvedBy2: true,
                 items: {
                     include: {
                         test: {
                             include: {
-                                department: true,
                                 parameters: {
-                                    include: { parameter: { include: { ranges: true } } },
+                                    include: {
+                                        parameter: {
+                                            include: {
+                                                ranges: true
+                                            }
+                                        }
+                                    },
                                     orderBy: { order: 'asc' }
                                 },
                                 packageTests: {
                                     include: {
                                         test: {
                                             include: {
-                                                department: true,
                                                 parameters: {
-                                                    include: { parameter: { include: { ranges: true } } },
+                                                    include: {
+                                                        parameter: {
+                                                            include: {
+                                                                ranges: true
+                                                            }
+                                                        }
+                                                    },
                                                     orderBy: { order: 'asc' }
                                                 }
                                             }
                                         }
-                                    },
-                                    orderBy: { id: 'asc' }
+                                    }
                                 }
                             }
                         },
                         results: {
-                            include: { parameter: { include: { ranges: true } } }
+                            include: {
+                                parameter: true
+                            }
                         }
                     }
                 }
             }
         });
 
-        if (!bill) return { success: false, message: "Document not found." };
-        if (bill.isDeleted) return { success: false, message: "This document has been revoked by the laboratory." };
+        if (!bill) {
+            return { success: false, message: "Document not found or has been deleted." };
+        }
 
-        const reportSettings = await prisma.reportSettings.findFirst({
-            where: { organizationId: bill.organizationId }
-        });
-
+        // 2. Fetch the Lab Profile (Logo, Address, Phone, etc.)
         const labProfile = await prisma.labProfile.findFirst({
             where: { organizationId: bill.organizationId }
         });
 
-        return { 
-            success: true, 
-            data: { bill, reportSettings, labProfile } 
+        // 3. Fetch Report Settings 
+        // 🚨 By NOT using a "select" statement, Prisma automatically fetches ALL columns, 
+        // including your newly added 'deltaSettings' for the graph styles!
+        const reportSettings = await prisma.reportSettings.findFirst({
+            where: { organizationId: bill.organizationId }
+        });
+
+        return {
+            success: true,
+            data: {
+                bill,
+                labProfile,
+                reportSettings
+            }
         };
-    } catch (error) {
-        console.error("Verification Error:", error);
-        return { success: false, message: "System error while loading the document." };
+
+    } catch (error: any) {
+        console.error("Error in getPublicDocumentData:", error);
+        return { success: false, message: "An error occurred while fetching the document." };
     }
 }
-// --- BLOCK app/actions/verify.ts CLOSE ---
