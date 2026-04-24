@@ -51,9 +51,9 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
         const canvas = document.createElement('canvas');
         const shortBillId = String(data.billId || '').slice(-4);
         
-        // 🚨 FIX: Made Barcode much thinner and lighter
+        // 🚨 FIX: Made Barcode much thinner and lighter (width: 1, height: 20)
         JsBarcode(canvas, shortBillId, {
-          format: "CODE128", displayValue: false, height: 25, width: 1.1, margin: 0, background: "transparent"
+          format: "CODE128", displayValue: false, height: 20, width: 1, margin: 0, background: "transparent"
         });
         setBarcodeUrl(canvas.toDataURL());
       } catch (e) { console.error(e); }
@@ -98,7 +98,7 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
     } catch (e) { alert("Failed to open TRF."); } finally { setIsTrfLoading(false); }
   };
 
-  // 🚨 FIX: Invisible iFrame approach prevents new tabs/popups entirely!
+  // 🚨 FIX: Invisible iFrame trick opens the print dialog centrally WITHOUT opening any blank tabs!
   const handlePrintInvoice = () => {
       const element = document.getElementById('invoice-printable-area');
       if (!element) return;
@@ -112,8 +112,9 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
       iframe.style.border = 'none';
       document.body.appendChild(iframe);
 
-      const iframeDoc = iframe.contentWindow?.document;
-      if (!iframeDoc) return;
+      const iframeWindow = iframe.contentWindow;
+      const iframeDoc = iframeWindow?.document;
+      if (!iframeDoc || !iframeWindow) return;
 
       const htmlContent = `
           <!DOCTYPE html>
@@ -125,22 +126,16 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
               <style>
                   *, *::before, *::after { box-sizing: border-box !important; }
                   body { background: white; font-family: sans-serif; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                  .invoice-container { width: 100%; max-width: 800px; margin: 0 auto; padding: 40px; background: white; }
+                  .invoice-container { width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; background: white; }
                   @media print {
                       @page { size: A4 portrait; margin: 0; }
                       body { padding: 0; }
-                      .invoice-container { padding: 20px; width: 100%; box-shadow: none; border: none; }
+                      .invoice-container { padding: 10px; width: 100%; box-shadow: none; border: none; }
                   }
               </style>
           </head>
           <body>
               <div class="invoice-container">${element.innerHTML}</div>
-              <script>
-                  // Wait for Tailwind to load and trigger the print dialog in the center of the screen
-                  setTimeout(() => {
-                      window.print();
-                  }, 800);
-              </script>
           </body>
           </html>
       `;
@@ -149,12 +144,16 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
       iframeDoc.write(htmlContent);
       iframeDoc.close();
 
-      // Clean up iframe after 60 seconds to be safe
       setTimeout(() => {
-          if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-          }
-      }, 60000); 
+          iframeWindow.focus();
+          iframeWindow.print();
+          
+          setTimeout(() => {
+              if (document.body.contains(iframe)) {
+                  document.body.removeChild(iframe);
+              }
+          }, 1000);
+      }, 500); 
   };
 
   const handleDownloadInvoice = () => {
@@ -238,15 +237,16 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
                         <div className="w-[50%] flex items-end gap-6 pb-1">
                             {barcodeUrl && (
                             <div className="opacity-90 flex flex-col items-center">
-                                {/* 🚨 FIX: Adjusted sizing for lighter look */}
-                                <img src={barcodeUrl} alt="Barcode" className="h-8 w-[110px] mb-1" />
+                                {/* 🚨 FIX: Image made smaller so the Barcode is light and thin */}
+                                <img src={barcodeUrl} alt="Barcode" className="h-5 w-[80px] mb-1" />
                                 <p className="text-[10px] text-slate-500 font-mono tracking-widest">{String(data.billId || '').slice(-4)}</p>
                             </div>
                             )}
                             
                             <div className="opacity-90 flex flex-col items-center">
+                                {/* 🚨 FIX: Added ?type=invoice so Verification Page knows what to load! */}
                                 <div className="p-1 bg-white border border-slate-200 rounded">
-                                    <QRCodeSVG value={`${typeof window !== 'undefined' ? window.location.origin : 'https://labseven.in'}/verify/${data.billId}`} size={44} level="L" />
+                                    <QRCodeSVG value={`${typeof window !== 'undefined' ? window.location.origin : 'https://labseven.in'}/verify/${data.billId}?type=invoice`} size={44} level="L" />
                                 </div>
                                 <p className="text-[8px] text-slate-400 font-bold uppercase mt-1 tracking-wider">Scan to Verify</p>
                             </div>

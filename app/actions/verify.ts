@@ -5,8 +5,9 @@ import { unstable_noStore as noStore } from 'next/cache';
 
 const prisma = new PrismaClient();
 
-export async function getPublicDocumentData(identifier: string) {
-    noStore(); // Strictly disable caching
+// 🚨 FIX: Added _cacheBuster to permanently prevent Next.js from serving stale data
+export async function getPublicDocumentData(identifier: string, _cacheBuster?: string) {
+    noStore(); 
 
     try {
         if (!identifier) {
@@ -15,7 +16,6 @@ export async function getPublicDocumentData(identifier: string) {
 
         const numId = Number(identifier);
 
-        // 🚨 FIX: Search by numeric ID (from Report QR) OR string BillNumber (from Invoice QR)
         const bill = await prisma.bill.findFirst({
             where: {
                 OR: [

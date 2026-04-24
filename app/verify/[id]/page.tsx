@@ -7,6 +7,7 @@ import { Loader2, AlertTriangle, FileText, CheckCircle2 } from "lucide-react";
 import { pdf } from '@react-pdf/renderer';
 import PatientReportDocument from '@/app/list/components/PatientReportDocument';
 import SmartReportDocument from '@/app/list/components/SmartReportDocument';
+import { InvoiceDocument } from '@/app/registration/InvoiceDocument';
 import JsBarcode from 'jsbarcode';
 import QRCode from 'qrcode';
 
@@ -22,11 +23,13 @@ function VerifyDocumentContent() {
             try {
                 if (!params?.id) return;
                 
-                // 🚨 FIX: Pass identifier as a string to support both numeric IDs and Bill Numbers
                 const identifier = Array.isArray(params.id) ? params.id[0] : params.id;
                 const isSmartReport = searchParams.get('type') === 'smart';
+                const isInvoice = searchParams.get('type') === 'invoice';
                 
-                const res = await getPublicDocumentData(identifier);
+                // 🚨 FIX: Pass Date.now() to absolutely force fresh data from the server
+                const res = await getPublicDocumentData(identifier, Date.now().toString());
+                
                 if (!res.success) {
                     setError(res.message || "Invalid verification link or document not found.");
                     setLoading(false); return;
@@ -45,13 +48,14 @@ function VerifyDocumentContent() {
                 settingsData.website = profileData.website;
                 settingsData.logoUrl = profileData.logoUrl;
 
-                // Safely parse deltaSettings
+                // 🚨 FIX: Double-parse to ensure nested stringified graphs work
                 let deltaSettingsData: any = {};
                 if (settingsData.deltaSettings) {
                     try { 
-                        deltaSettingsData = typeof settingsData.deltaSettings === 'string' 
-                            ? JSON.parse(settingsData.deltaSettings) 
-                            : settingsData.deltaSettings; 
+                        let parsed = settingsData.deltaSettings;
+                        if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                        if (typeof parsed === 'string') parsed = JSON.parse(parsed); // Double check
+                        deltaSettingsData = parsed;
                     } catch(e) {}
                 }
 
@@ -103,7 +107,41 @@ function VerifyDocumentContent() {
 
                 let documentElement;
 
-                if (isSmartReport) {
+                // 🚨 FIX: Generate Invoice PDF if Bill QR is scanned
+                if (isInvoice) {
+                    let barcodeUrl = '';
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const shortBarcodeText = String(bill.billNumber || '').slice(-4);
+                        JsBarcode(canvas, shortBarcodeText, { displayValue: false, height: 30, width: 1.2, margin: 0, background: "transparent", lineColor: "#000000" });
+                        barcodeUrl = canvas.toDataURL();
+                    } catch(e){}
+
+                    const invoiceData = {
+                        billId: bill.billNumber,
+                        billDate: new Date(bill.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+                        patientName: `${bill.patient?.designation || ''} ${bill.patient?.firstName || ''} ${bill.patient?.lastName || ''}`.trim(),
+                        ageGender: `${bill.patient?.ageY || 0}Y ${bill.patient?.ageM || 0}M / ${bill.patient?.gender || 'Unknown'}`,
+                        referredBy: bill.patient?.refDoctor || 'Self',
+                        paymentType: bill.paymentMode || 'Cash',
+                        items: (bill.items || []).map((i: any) => ({ 
+                            id: i.id, 
+                            name: i.test?.displayName || i.test?.name || i.testName || 'Test', 
+                            price: Number(i.price || 0) 
+                        })),
+                        subTotal: Number(bill.totalAmount || 0),
+                        discount: Number(bill.discount || 0),
+                        totalAmount: Number(bill.netAmount || bill.totalAmount || 0),
+                        paidAmount: Number(bill.paidAmount || 0),
+                        balanceDue: Number(bill.balanceAmount || 0),
+                        barcodeUrl: barcodeUrl,
+                        labProfile: profileData,
+                        note: bill.note || ''
+                    };
+
+                    documentElement = <InvoiceDocument data={invoiceData as any} />;
+
+                } else if (isSmartReport) {
                     let groupedData: any = {};
                     
                     if (bill.items && Array.isArray(bill.items)) {
