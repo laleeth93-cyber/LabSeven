@@ -1,4 +1,3 @@
-// FILE: app/list/components/SmartReportDocument.tsx
 import React from 'react';
 import { Document, Page, StyleSheet, View, Text, Svg, Circle, Line, G, Path, Image } from '@react-pdf/renderer';
 
@@ -226,8 +225,8 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
                         <View style={{ flexDirection: 'row', gap: 15, alignItems: 'flex-end' }}>
                             {reportSettings?.showQrCode !== false && (
                                 <View style={{ alignItems: 'center' }}>
-                                    {/* 🚨 FIX: QR Code URL is now properly embedding the verification link */}
-                                    <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`https://labseven.in/verify/${bill?.id}`)}`} style={{ width: 50, height: 50 }} />
+                                    {/* 🚨 FIX: ADDED ?type=smart TO THE QR CODE LINK */}
+                                    <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`https://labseven.in/verify/${bill?.id}?type=smart`)}`} style={{ width: 50, height: 50 }} />
                                     <Text style={{ fontSize: 6, color: '#64748b', marginTop: 4 }}>{reportSettings?.qrText || 'Scan to validate'}</Text>
                                 </View>
                             )}

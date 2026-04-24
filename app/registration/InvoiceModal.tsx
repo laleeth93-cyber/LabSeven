@@ -1,4 +1,3 @@
-// FILE: app/registration/InvoiceModal.tsx
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Printer, Download, CheckCircle, ScanBarcode, ArrowRight, FileText, Send, Loader2 } from 'lucide-react';
@@ -97,32 +96,56 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
     } catch (e) { alert("Failed to open TRF."); } finally { setIsTrfLoading(false); }
   };
 
-  const generateInvoicePDF = async (): Promise<string | null> => {
+  // 🚨 FIX: Replaced API server crash with reliable, instant native browser printing
+  const handlePrintInvoice = () => {
       const element = document.getElementById('invoice-printable-area');
-      if (!element) return null;
-      const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Invoice - ${data.billId}</title><script src="https://cdn.tailwindcss.com"></script><style>*, *::before, *::after { box-sizing: border-box !important; } body { background: white; font-family: sans-serif; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .invoice-container { width: 794px; min-height: 1122px; padding: 50px; background: white; display: flex; flex-direction: column; }</style></head><body><div class="invoice-container">${element.innerHTML}</div></body></html>`;
-      try {
-          const response = await fetch('/api/generate-pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html: htmlContent, paperSize: 'A4', printOrientation: 'portrait' }) });
-          if (!response.ok) throw new Error("PDF generation failed");
-          return URL.createObjectURL(await response.blob());
-      } catch (error) { alert("Failed to generate PDF invoice."); return null; }
-  };
+      if (!element) return;
 
-  const handleDownloadInvoice = async () => {
-      setIsInvoiceLoading(true);
-      const url = await generateInvoicePDF();
-      if (url) {
-          const a = document.createElement('a'); a.href = url; a.download = `Invoice_${data.billId}.pdf`;
-          document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      const printWindow = window.open('', '_blank', 'width=800,height=900');
+      if (!printWindow) {
+          alert("Please allow pop-ups to print the invoice.");
+          return;
       }
-      setIsInvoiceLoading(false);
+
+      const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="utf-8">
+              <title>Invoice - ${data.billId}</title>
+              <script src="https://cdn.tailwindcss.com"></script>
+              <style>
+                  *, *::before, *::after { box-sizing: border-box !important; }
+                  body { background: white; font-family: sans-serif; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                  .invoice-container { width: 100%; max-width: 800px; margin: 0 auto; padding: 40px; background: white; }
+                  @media print {
+                      @page { size: A4 portrait; margin: 0; }
+                      body { padding: 0; }
+                      .invoice-container { padding: 20px; width: 100%; box-shadow: none; border: none; }
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="invoice-container">${element.innerHTML}</div>
+              <script>
+                  // Wait for Tailwind and images (like QR code) to load before printing
+                  setTimeout(() => {
+                      window.print();
+                      window.close();
+                  }, 800);
+              </script>
+          </body>
+          </html>
+      `;
+
+      printWindow.document.open();
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
   };
 
-  const handlePrintInvoice = async () => {
-      setIsInvoiceLoading(true);
-      const url = await generateInvoicePDF();
-      if (url) window.open(url, '_blank'); 
-      setIsInvoiceLoading(false);
+  const handleDownloadInvoice = () => {
+      // The native print dialog allows saving directly to PDF natively and instantly
+      handlePrintInvoice();
   };
 
   const handleEnterResults = () => {
@@ -207,7 +230,7 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
                             </div>
                             )}
                             
-                            {/* 🚨 FIX: QR Code now properly embeds the verification link directly */}
+                            {/* 🚨 FIX: Embedded verification link URL into QR code */}
                             <div className="opacity-90 flex flex-col items-center">
                                 <div className="p-1 bg-white border border-slate-200 rounded">
                                     <QRCodeSVG value={`${typeof window !== 'undefined' ? window.location.origin : 'https://labseven.in'}/verify/${data.billId}`} size={44} level="L" />
