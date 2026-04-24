@@ -27,7 +27,6 @@ function VerifyDocumentContent() {
                 const isSmartReport = searchParams.get('type') === 'smart';
                 const isInvoice = searchParams.get('type') === 'invoice';
                 
-                // 🚨 FIX: Pass Date.now() to absolutely force fresh data from the server
                 const res = await getPublicDocumentData(identifier, Date.now().toString());
                 
                 if (!res.success) {
@@ -48,13 +47,12 @@ function VerifyDocumentContent() {
                 settingsData.website = profileData.website;
                 settingsData.logoUrl = profileData.logoUrl;
 
-                // 🚨 FIX: Double-parse to ensure nested stringified graphs work
                 let deltaSettingsData: any = {};
                 if (settingsData.deltaSettings) {
                     try { 
                         let parsed = settingsData.deltaSettings;
                         if (typeof parsed === 'string') parsed = JSON.parse(parsed);
-                        if (typeof parsed === 'string') parsed = JSON.parse(parsed); // Double check
+                        if (typeof parsed === 'string') parsed = JSON.parse(parsed); 
                         deltaSettingsData = parsed;
                     } catch(e) {}
                 }
@@ -107,7 +105,9 @@ function VerifyDocumentContent() {
 
                 let documentElement;
 
-                // 🚨 FIX: Generate Invoice PDF if Bill QR is scanned
+                // ==========================================
+                // INVOICE (BILL) REPORT GENERATOR
+                // ==========================================
                 if (isInvoice) {
                     let barcodeUrl = '';
                     try {
@@ -116,6 +116,20 @@ function VerifyDocumentContent() {
                         JsBarcode(canvas, shortBarcodeText, { displayValue: false, height: 30, width: 1.2, margin: 0, background: "transparent", lineColor: "#000000" });
                         barcodeUrl = canvas.toDataURL();
                     } catch(e){}
+
+                    // 🚨 FIX: Generate QR Data dynamically for the Invoice PDF
+                    const qrUrlString = window.location.href;
+                    const qrDataUrl = await QRCode.toDataURL(qrUrlString, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
+
+                    const subTotal = Number(bill.totalAmount || 0);
+                    const discount = Number(bill.discount || bill.discountAmount || 0);
+                    const totalAmount = Number(bill.netAmount || bill.totalAmount || 0);
+                    const paidAmount = Number(bill.paidAmount || 0);
+                    
+                    // 🚨 FIX: Forcefully calculate the Balance Due to ensure it displays even if the DB field differs
+                    const dbBalance = Number(bill.balanceAmount || bill.balanceDue || bill.dueAmount || 0);
+                    const computedBalance = Math.max(0, totalAmount - paidAmount);
+                    const finalBalanceDue = dbBalance > 0 ? dbBalance : computedBalance;
 
                     const invoiceData = {
                         billId: bill.billNumber,
@@ -129,19 +143,24 @@ function VerifyDocumentContent() {
                             name: i.test?.displayName || i.test?.name || i.testName || 'Test', 
                             price: Number(i.price || 0) 
                         })),
-                        subTotal: Number(bill.totalAmount || 0),
-                        discount: Number(bill.discount || 0),
-                        totalAmount: Number(bill.netAmount || bill.totalAmount || 0),
-                        paidAmount: Number(bill.paidAmount || 0),
-                        balanceDue: Number(bill.balanceAmount || 0),
+                        subTotal: subTotal,
+                        discount: discount,
+                        totalAmount: totalAmount,
+                        paidAmount: paidAmount,
+                        balanceDue: finalBalanceDue, // Guaranteed to show correctly
                         barcodeUrl: barcodeUrl,
+                        qrUrl: qrDataUrl, // Passed down to InvoiceDocument
                         labProfile: profileData,
                         note: bill.note || ''
                     };
 
                     documentElement = <InvoiceDocument data={invoiceData as any} />;
 
-                } else if (isSmartReport) {
+                } 
+                // ==========================================
+                // SMART (DELTA) REPORT GENERATOR
+                // ==========================================
+                else if (isSmartReport) {
                     let groupedData: any = {};
                     
                     if (bill.items && Array.isArray(bill.items)) {
@@ -182,7 +201,11 @@ function VerifyDocumentContent() {
                         />
                     );
 
-                } else {
+                } 
+                // ==========================================
+                // ROUTINE (NORMAL) REPORT GENERATOR
+                // ==========================================
+                else {
                     let barcodeUrl = '';
                     try {
                         const canvas = document.createElement('canvas');

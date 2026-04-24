@@ -1,4 +1,3 @@
-// --- app/components/InvoiceDocument.tsx Block Open ---
 // FILE: app/components/InvoiceDocument.tsx
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image, Font } from '@react-pdf/renderer';
@@ -102,7 +101,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f1f5f9' 
   },
-  barcodeBox: { width: '45%', justifyContent: 'flex-end', paddingBottom: 5 },
+  barcodeBox: { width: '50%', justifyContent: 'flex-end', paddingBottom: 5 },
   totalsBox: { width: '45%' },
   totalRow: { 
     flexDirection: 'row', 
@@ -168,7 +167,7 @@ export interface InvoiceData {
   referredBy: string; paymentType: string; items: InvoiceItem[];
   subTotal: number; discount: number; totalAmount: number;
   paidAmount: number; balanceDue: number;
-  barcodeUrl?: string; note?: string; noteImage?: string; 
+  barcodeUrl?: string; qrUrl?: string; note?: string; noteImage?: string; 
   labProfile?: any;
 }
 
@@ -240,14 +239,27 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
 
         {/* 4. FINANCIALS */}
         <View style={styles.totalsContainer}>
+            
+            {/* 🚨 FIX: Added QR Code container inside the Barcode Box */}
             <View style={styles.barcodeBox}>
-                {data.barcodeUrl && (
-                    <>
-                    <Image src={data.barcodeUrl} style={{ width: 120, height: 30 }} />
-                    <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>{data.billId}</Text>
-                    </>
-                )}
+                <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                    {data.barcodeUrl && (
+                        <View style={{ alignItems: 'center', marginRight: 20 }}>
+                            <Image src={data.barcodeUrl} style={{ width: 80, height: 20 }} />
+                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>{data.billId}</Text>
+                        </View>
+                    )}
+                    {data.qrUrl && (
+                        <View style={{ alignItems: 'center' }}>
+                            <View style={{ padding: 2, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 2 }}>
+                                <Image src={data.qrUrl} style={{ width: 35, height: 35 }} />
+                            </View>
+                            <Text style={{ fontSize: 6, color: '#64748b', marginTop: 2, textTransform: 'uppercase' }}>Scan to Verify</Text>
+                        </View>
+                    )}
+                </View>
             </View>
+
             <View style={styles.totalsBox}>
                 <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>Sub Total</Text>
@@ -313,4 +325,3 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
   </Document>
   );
 };
-// --- app/components/InvoiceDocument.tsx Block Close ---
