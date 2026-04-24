@@ -1,4 +1,3 @@
-// --- BLOCK app/list/components/SmartReportModal.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -9,6 +8,7 @@ import { pdf } from '@react-pdf/renderer';
 import { getReportSettings } from '@/app/actions/reports';
 import { getLabProfile } from '@/app/actions/lab-profile';
 import SmartReportDocument from './SmartReportDocument';
+import QRCode from 'qrcode'; // 🚨 FIX: Imported QRCode generation library
 
 // ============================================================================
 // WEB CHART ENGINE (Dynamic Settings Applied)
@@ -172,8 +172,16 @@ export default function SmartReportModal({ isOpen, onClose, bill }: SmartReportM
         setIsGeneratingPdf(true);
         try {
             const reportedDate = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+            
+            // 🚨 FIX: Generate the dynamic QR Code here and inject it into the Document.
+            let qrDataUrl = '';
+            try {
+                const qrUrl = `${window.location.origin}/verify/${bill.id}?type=smart`;
+                qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
+            } catch(e) {}
+
             const blob = await pdf(
-                <SmartReportDocument bill={bill} groupedData={grouped} reportSettings={reportSettings} reportedDate={reportedDate} deltaSettings={deltaSettings} />
+                <SmartReportDocument bill={bill} groupedData={grouped} reportSettings={reportSettings} reportedDate={reportedDate} deltaSettings={deltaSettings} qrDataUrl={qrDataUrl} />
             ).toBlob();
             
             const url = URL.createObjectURL(blob);
@@ -395,4 +403,3 @@ export default function SmartReportModal({ isOpen, onClose, bill }: SmartReportM
         </div>
     );
 }
-// --- BLOCK app/list/components/SmartReportModal.tsx CLOSE ---

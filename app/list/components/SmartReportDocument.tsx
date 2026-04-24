@@ -81,7 +81,8 @@ function PdfDynamicChart({ dataPoints, isAlert, deltaSettings }: { dataPoints: {
     );
 }
 
-export default function SmartReportDocument({ bill, groupedData, reportSettings, reportedDate, deltaSettings }: any) {
+// 🚨 FIX: Accept qrDataUrl dynamically directly via props
+export default function SmartReportDocument({ bill, groupedData, reportSettings, reportedDate, deltaSettings, qrDataUrl }: any) {
     
     const primaryTheme = deltaSettings?.primaryColor || '#9575cd';
     const alertTheme = deltaSettings?.alertColor || '#e11d48';
@@ -225,8 +226,8 @@ export default function SmartReportDocument({ bill, groupedData, reportSettings,
                         <View style={{ flexDirection: 'row', gap: 15, alignItems: 'flex-end' }}>
                             {reportSettings?.showQrCode !== false && (
                                 <View style={{ alignItems: 'center' }}>
-                                    {/* 🚨 FIX: ADDED ?type=smart TO THE QR CODE LINK */}
-                                    <Image src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`https://labseven.in/verify/${bill?.id}?type=smart`)}`} style={{ width: 50, height: 50 }} />
+                                    {/* 🚨 FIX: Pass the dynamic qrDataUrl directly so the environment logic matches */}
+                                    <Image src={qrDataUrl || `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`https://labseven.in/verify/${bill?.id}?type=smart`)}`} style={{ width: 50, height: 50 }} />
                                     <Text style={{ fontSize: 6, color: '#64748b', marginTop: 4 }}>{reportSettings?.qrText || 'Scan to validate'}</Text>
                                 </View>
                             )}

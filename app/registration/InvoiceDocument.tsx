@@ -246,7 +246,8 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
                     {data.barcodeUrl && (
                         <View style={{ alignItems: 'center', marginRight: 20 }}>
                             <Image src={data.barcodeUrl} style={{ width: 80, height: 20 }} />
-                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>{data.billId}</Text>
+                            {/* 🚨 FIX: Force only the last 4 digits beneath the barcode to match the HTML preview exactly! */}
+                            <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>{String(data.billId || '').slice(-4)}</Text>
                         </View>
                     )}
                     {data.qrUrl && (

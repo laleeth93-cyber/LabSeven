@@ -113,11 +113,19 @@ function VerifyDocumentContent() {
                     try {
                         const canvas = document.createElement('canvas');
                         const shortBarcodeText = String(bill.billNumber || '').slice(-4);
-                        JsBarcode(canvas, shortBarcodeText, { displayValue: false, height: 30, width: 1.2, margin: 0, background: "transparent", lineColor: "#000000" });
+                        // 🚨 FIX: Replicated identical barcode configuration as the HTML view
+                        JsBarcode(canvas, shortBarcodeText, { 
+                            format: "CODE128", 
+                            displayValue: false, 
+                            height: 20, 
+                            width: 1, 
+                            margin: 0, 
+                            background: "transparent", 
+                            lineColor: "#000000" 
+                        });
                         barcodeUrl = canvas.toDataURL();
                     } catch(e){}
 
-                    // 🚨 FIX: Generate QR Data dynamically for the Invoice PDF
                     const qrUrlString = window.location.href;
                     const qrDataUrl = await QRCode.toDataURL(qrUrlString, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
 
@@ -126,7 +134,6 @@ function VerifyDocumentContent() {
                     const totalAmount = Number(bill.netAmount || bill.totalAmount || 0);
                     const paidAmount = Number(bill.paidAmount || 0);
                     
-                    // 🚨 FIX: Forcefully calculate the Balance Due to ensure it displays even if the DB field differs
                     const dbBalance = Number(bill.balanceAmount || bill.balanceDue || bill.dueAmount || 0);
                     const computedBalance = Math.max(0, totalAmount - paidAmount);
                     const finalBalanceDue = dbBalance > 0 ? dbBalance : computedBalance;
@@ -147,9 +154,9 @@ function VerifyDocumentContent() {
                         discount: discount,
                         totalAmount: totalAmount,
                         paidAmount: paidAmount,
-                        balanceDue: finalBalanceDue, // Guaranteed to show correctly
+                        balanceDue: finalBalanceDue,
                         barcodeUrl: barcodeUrl,
-                        qrUrl: qrDataUrl, // Passed down to InvoiceDocument
+                        qrUrl: qrDataUrl, 
                         labProfile: profileData,
                         note: bill.note || ''
                     };
@@ -191,6 +198,10 @@ function VerifyDocumentContent() {
                         });
                     }
 
+                    // 🚨 FIX: Pass Dynamic QR Code using full current browser URL here too
+                    const qrUrlString = window.location.href;
+                    const qrDataUrl = await QRCode.toDataURL(qrUrlString, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
+
                     documentElement = (
                         <SmartReportDocument 
                             bill={bill}
@@ -198,6 +209,7 @@ function VerifyDocumentContent() {
                             reportSettings={settingsData}
                             reportedDate={reportedDateStr}
                             deltaSettings={deltaSettingsData}
+                            qrDataUrl={qrDataUrl}
                         />
                     );
 
