@@ -14,26 +14,22 @@ import {
 } from 'recharts';
 import DateRangeFilter from '@/app/results/entry/components/DateRangeFilter';
 
+// 🚨 FIX: Ensure the default load explicitly labels itself "Today"
 const getTodayRange = () => {
     const from = new Date();
     from.setHours(0, 0, 0, 0);
     const to = new Date();
     to.setHours(23, 59, 59, 999);
-    return { from, to };
+    return { from, to, label: 'Today' }; 
 };
 
-// 🚨 FIX: Added globalDateRange prop to sync with master dashboard filter
 function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "end", initialData, globalDateRange }: any) {
-    const [dateRange, setDateRange] = useState<{from: Date | null, to: Date | null}>(getTodayRange());
+    const [dateRange, setDateRange] = useState<any>(getTodayRange());
     
-    // Instantly use Server Data!
     const [data, setData] = useState<any>(initialData);
     const [loading, setLoading] = useState(!initialData);
-    
-    // Flag to ensure we don't trigger the fetcher on the first load
     const isFirstRender = useRef(true);
     
-    // 🚨 FIX: Listen for Global Master Date Range changes to update this widget
     const prevGlobalRange = useRef(globalDateRange);
     useEffect(() => {
         const prev = prevGlobalRange.current;
@@ -41,7 +37,8 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "
             prev?.from?.getTime() !== globalDateRange?.from?.getTime() || 
             prev?.to?.getTime() !== globalDateRange?.to?.getTime()
         ) {
-            setDateRange({ from: globalDateRange?.from, to: globalDateRange?.to });
+            // 🚨 FIX: Pass entire object, including the label to local state!
+            setDateRange(globalDateRange); 
             prevGlobalRange.current = globalDateRange;
         }
     }, [globalDateRange]);
@@ -49,7 +46,7 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "
     useEffect(() => {
         if (isFirstRender.current) {
             isFirstRender.current = false;
-            return; // SKIP the initial fetch!
+            return;
         }
 
         let active = true;
@@ -73,7 +70,8 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "
                     <Icon size={16} className="text-[#9575cd] shrink-0"/> {title}
                 </h3>
                 <div className={`w-full xl:w-[240px] z-20 ${alignPopover === 'left' ? '[&>div>div]:!left-0 [&>div>div]:!right-auto origin-top-left' : ''}`}>
-                    <DateRangeFilter align={alignPopover === 'left' ? 'start' : 'end'} onFilterChange={(range) => setDateRange({ from: range.from, to: range.to })} />
+                    {/* 🚨 FIX: Push the local state containing the global label to initialRange */}
+                    <DateRangeFilter align={alignPopover === 'left' ? 'start' : 'end'} initialRange={dateRange} onFilterChange={(range) => setDateRange(range)} />
                 </div>
             </div>
             
@@ -94,13 +92,11 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "
     );
 }
 
-// 🚨 FIX: Added globalDateRange prop to sync with master dashboard filter
 function SpecificReferralWidget({ initialRefs, initialRefData, globalDateRange }: { initialRefs: string[], initialRefData: any, globalDateRange: any }) {
-    const [dateRange, setDateRange] = useState<{from: Date | null, to: Date | null}>(getTodayRange());
+    const [dateRange, setDateRange] = useState<any>(getTodayRange());
     const [referrals, setReferrals] = useState<string[]>(initialRefs);
     const [selectedRef, setSelectedRef] = useState<string>(initialRefs.length > 0 ? initialRefs[0] : '');
     
-    // Instantly use Server Data!
     const [data, setData] = useState<any>(initialRefData);
     const [loading, setLoading] = useState(!initialRefData);
     const [searchQuery, setSearchQuery] = useState('');
@@ -108,7 +104,6 @@ function SpecificReferralWidget({ initialRefs, initialRefData, globalDateRange }
     const searchRef = useRef<HTMLDivElement>(null);
     const isFirstRender = useRef(true);
 
-    // 🚨 FIX: Listen for Global Master Date Range changes to update this widget
     const prevGlobalRange = useRef(globalDateRange);
     useEffect(() => {
         const prev = prevGlobalRange.current;
@@ -116,7 +111,7 @@ function SpecificReferralWidget({ initialRefs, initialRefData, globalDateRange }
             prev?.from?.getTime() !== globalDateRange?.from?.getTime() || 
             prev?.to?.getTime() !== globalDateRange?.to?.getTime()
         ) {
-            setDateRange({ from: globalDateRange?.from, to: globalDateRange?.to });
+            setDateRange(globalDateRange);
             prevGlobalRange.current = globalDateRange;
         }
     }, [globalDateRange]);
@@ -136,7 +131,7 @@ function SpecificReferralWidget({ initialRefs, initialRefData, globalDateRange }
 
         if (isFirstRender.current) {
             isFirstRender.current = false;
-            return; // SKIP the initial fetch!
+            return;
         }
 
         let active = true;
@@ -194,7 +189,7 @@ function SpecificReferralWidget({ initialRefs, initialRefData, globalDateRange }
                     </div>
                 </div>
                 <div className="w-full xl:w-[240px] z-20">
-                    <DateRangeFilter onFilterChange={(range) => setDateRange({ from: range.from, to: range.to })} />
+                    <DateRangeFilter initialRange={dateRange} onFilterChange={(range) => setDateRange(range)} />
                 </div>
             </div>
             
@@ -222,10 +217,8 @@ function SpecificReferralWidget({ initialRefs, initialRefData, globalDateRange }
 
 export default function DashboardOverview({ initialData }: { initialData: any }) {
     
-    // Master KPI Date Range State
-    const [kpiRange, setKpiRange] = useState<{from: Date | null, to: Date | null}>(getTodayRange());
+    const [kpiRange, setKpiRange] = useState<any>(getTodayRange());
     
-    // Instantly use Server Data!
     const [kpiData, setKpiData] = useState<any>(initialData.kpiData);
     const [kpiLoading, setKpiLoading] = useState(!initialData.kpiData);
     const isFirstKpiRender = useRef(true);
@@ -233,7 +226,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
     useEffect(() => {
         if (isFirstKpiRender.current) {
             isFirstKpiRender.current = false;
-            return; // SKIP initial fetch
+            return;
         }
 
         setKpiLoading(true);
@@ -267,7 +260,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
                     <span className="text-xs font-bold text-slate-500 uppercase whitespace-nowrap">KPI Date Range:</span>
                     <div className="w-full sm:w-[260px]">
-                        <DateRangeFilter onFilterChange={(range) => setKpiRange({ from: range.from, to: range.to })} />
+                        <DateRangeFilter initialRange={kpiRange} onFilterChange={(range) => setKpiRange(range)} />
                     </div>
                 </div>
             </div>
@@ -287,7 +280,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                 <ChartWidget 
                     title="Patient Demographics Trend" icon={Users} fetcher={getPatientData} 
                     initialData={initialData.patientData}
-                    globalDateRange={kpiRange} // 🚨 FIX: Syncing Master Date Range
+                    globalDateRange={kpiRange} 
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <ComposedChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: -20 }}>
@@ -306,7 +299,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                 <ChartWidget 
                     title="Revenue Generation Trend" icon={TrendingUp} fetcher={getRevenueData} 
                     initialData={initialData.revenueData}
-                    globalDateRange={kpiRange} // 🚨 FIX: Syncing Master Date Range
+                    globalDateRange={kpiRange} 
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
@@ -322,7 +315,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                 <ChartWidget 
                     title="Tests Volume Trend" icon={TestTube} fetcher={getTestTrendData} 
                     initialData={initialData.testTrendData}
-                    globalDateRange={kpiRange} // 🚨 FIX: Syncing Master Date Range
+                    globalDateRange={kpiRange} 
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: -20 }}>
@@ -338,7 +331,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                 <ChartWidget 
                     title="Top 5 Most Ordered Tests" icon={Activity} fetcher={getTopTestsData} 
                     initialData={initialData.topTestsData}
-                    globalDateRange={kpiRange} // 🚨 FIX: Syncing Master Date Range
+                    globalDateRange={kpiRange} 
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 0 }}>
@@ -361,7 +354,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                 <SpecificReferralWidget 
                     initialRefs={initialData.referralList} 
                     initialRefData={initialData.specificReferralData}
-                    globalDateRange={kpiRange} // 🚨 FIX: Syncing Master Date Range 
+                    globalDateRange={kpiRange} 
                 />
             </div>
 
@@ -371,7 +364,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                     title="Top Referring Entities" icon={Stethoscope} fetcher={getTopReferralsData} 
                     alignPopover="left"
                     initialData={initialData.topReferralsData}
-                    globalDateRange={kpiRange} // 🚨 FIX: Syncing Master Date Range
+                    globalDateRange={kpiRange} 
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={data} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 0 }}>
@@ -393,7 +386,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                     title="Self vs Referred" icon={UserPlus} fetcher={getSelfVsReferralData} 
                     alignPopover="left"
                     initialData={initialData.selfVsReferralData}
-                    globalDateRange={kpiRange} // 🚨 FIX: Syncing Master Date Range
+                    globalDateRange={kpiRange} 
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -410,7 +403,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                 <ChartWidget 
                     title="In-House vs Outsourced" icon={Building2} fetcher={getOutsourceData} 
                     initialData={initialData.outsourceData}
-                    globalDateRange={kpiRange} // 🚨 FIX: Syncing Master Date Range
+                    globalDateRange={kpiRange} 
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -426,7 +419,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                 <ChartWidget 
                     title="Test Status Pipeline" icon={Activity} fetcher={getTestStatusData} 
                     initialData={initialData.testStatusData}
-                    globalDateRange={kpiRange} // 🚨 FIX: Syncing Master Date Range
+                    globalDateRange={kpiRange} 
                     renderChart={(data: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>

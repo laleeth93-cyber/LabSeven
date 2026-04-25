@@ -13,6 +13,7 @@ interface DateRangeFilterProps {
   onFilterChange: (range: DateRange) => void;
   buttonClassName?: string;
   align?: "start" | "center" | "end";
+  initialRange?: DateRange; // 🚨 FIX: Accept external range to sync text labels
 }
 
 // --- HELPER: CUSTOM CALENDAR (DATE ONLY) ---
@@ -117,7 +118,7 @@ const MiniCalendar = ({ value, onChange, label }: { value: Date | null, onChange
 };
 
 // --- MAIN FILTER COMPONENT ---
-export default function DateRangeFilter({ onFilterChange, buttonClassName, align = "end" }: DateRangeFilterProps) {
+export default function DateRangeFilter({ onFilterChange, buttonClassName, align = "end", initialRange }: DateRangeFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activePreset, setActivePreset] = useState('Today');
   const [displayLabel, setDisplayLabel] = useState('Today'); 
@@ -126,6 +127,22 @@ export default function DateRangeFilter({ onFilterChange, buttonClassName, align
   const [tempTo, setTempTo] = useState<Date | null>(new Date());
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // 🚨 FIX: Force synchronization of the label and preset if a master initialRange is provided
+  useEffect(() => {
+    if (initialRange && initialRange.label) {
+        setDisplayLabel(initialRange.label);
+        setTempFrom(initialRange.from);
+        setTempTo(initialRange.to);
+        
+        const presets = ['Today', 'Yesterday', 'Last 7 Days', 'Month to Date', 'Last Month', 'Year to Date', 'Last Year', 'Specific Date', 'Date Range'];
+        if (presets.includes(initialRange.label)) {
+            setActivePreset(initialRange.label);
+        } else {
+            setActivePreset(initialRange.from?.getTime() === initialRange.to?.getTime() ? 'Specific Date' : 'Date Range');
+        }
+    }
+  }, [initialRange?.from, initialRange?.to, initialRange?.label]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
