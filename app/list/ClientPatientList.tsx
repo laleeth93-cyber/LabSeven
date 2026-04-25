@@ -39,9 +39,10 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
         testSearch: '', statusFilter: 'All', refDocFilter: 'All', isUrgentFilter: false
     });
     
-    // 🚨 FIXED: Changed default filter to 'All' instead of 'Today'
-    const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>({
-        from: null, to: null, label: 'All'
+    // 🚨 FIX: Initialized explicitly to 'Today' so it matches the Date picker and filters old data on load.
+    const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>(() => {
+        const today = new Date();
+        return { from: today, to: today, label: 'Today' };
     });
 
     const filtersList = ['All', 'Pending', 'Partial', 'Completed', 'Printed'];

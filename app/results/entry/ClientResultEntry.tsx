@@ -55,8 +55,10 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
   const [activeTab, setActiveTab] = useState('Pending'); 
   const [searchTerm, setSearchTerm] = useState('');
   
-  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>({
-    from: null, to: null, label: 'All'
+  // 🚨 FIX: Initialized explicitly to 'Today' to hide old data by default on load.
+  const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>(() => {
+      const today = new Date();
+      return { from: today, to: today, label: 'Today' };
   });
 
   const [isManualTime, setIsManualTime] = useState(false);
