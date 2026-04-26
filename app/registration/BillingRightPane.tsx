@@ -1,4 +1,3 @@
-// --- BLOCK app/components/BillingRightPane.tsx OPEN ---
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -40,8 +39,14 @@ export default function BillingRightPane({
   const [testSearchResults, setTestSearchResults] = useState<any[]>([]);
   const [isSearchingTests, setIsSearchingTests] = useState(false);
   const testSearchTimeout = useRef<NodeJS.Timeout | null>(null);
+  
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchResultsRef = useRef<HTMLDivElement>(null); // 🚨 Ref for scrolling the dropdown
+  
   const [activeTab, setActiveTab] = useState('Tests/Packages');
+  
+  // 🚨 FIX: State to keep track of the currently selected test via keyboard
+  const [focusedTestIndex, setFocusedTestIndex] = useState<number>(-1);
 
   useEffect(() => {
     if (testSearchTimeout.current) clearTimeout(testSearchTimeout.current);
@@ -51,12 +56,25 @@ export default function BillingRightPane({
         const results = await searchTests(testSearchQuery);
         setTestSearchResults(results);
         setIsSearchingTests(false);
+        setFocusedTestIndex(-1); // 🚨 Reset selection when results change
       }, 300);
     } else {
       setTestSearchResults([]);
       setIsSearchingTests(false);
+      setFocusedTestIndex(-1);
     }
   }, [testSearchQuery]);
+
+  // 🚨 FIX: Auto-scroll the dropdown when navigating with arrows
+  useEffect(() => {
+    if (focusedTestIndex >= 0 && searchResultsRef.current) {
+        const container = searchResultsRef.current;
+        const focusedElement = container.children[focusedTestIndex] as HTMLElement;
+        if (focusedElement) {
+            focusedElement.scrollIntoView({ block: 'nearest' });
+        }
+    }
+  }, [focusedTestIndex]);
 
   const handleAddTest = (test: any) => {
     if (!billItems.find(item => item.id === test.id)) {
@@ -65,7 +83,32 @@ export default function BillingRightPane({
     }
     setTestSearchQuery(''); 
     setTestSearchResults([]);
-    setTimeout(() => { if (searchInputRef.current) searchInputRef.current.focus(); }, 50);
+    setFocusedTestIndex(-1);
+    setTimeout(() => { if (searchInputRef.current) searchInputRef.current.focus(); }, 50); // Refocus input
+  };
+
+  // 🚨 FIX: Keyboard navigation logic (Arrows and Enter)
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (testSearchResults.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setFocusedTestIndex(prev => (prev < testSearchResults.length - 1 ? prev + 1 : prev));
+      } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setFocusedTestIndex(prev => (prev > 0 ? prev - 1 : -1));
+      } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (focusedTestIndex >= 0 && focusedTestIndex < testSearchResults.length) {
+              handleAddTest(testSearchResults[focusedTestIndex]);
+          } else if (testSearchResults.length === 1) {
+              // Automatically select the only test available if Enter is pressed
+              handleAddTest(testSearchResults[0]);
+          }
+      } else if (e.key === 'Escape') {
+          setTestSearchResults([]);
+          setFocusedTestIndex(-1);
+      }
   };
 
   const handleRemoveTest = (index: number) => {
@@ -80,7 +123,6 @@ export default function BillingRightPane({
   };
 
   return (
-    // FIX: Changed from 'overflow-hidden' to 'overflow-y-auto md:overflow-hidden' so the whole mobile pane scrolls
     <div className="w-full h-full flex flex-col bg-white rounded-[10px] md:shadow-xl shadow-slate-200/50 md:border border-slate-200 overflow-y-auto md:overflow-hidden z-20 relative">
        
        {/* --- TOP HEADER --- */}
@@ -113,29 +155,44 @@ export default function BillingRightPane({
        </div>
 
        {/* --- SEARCH BAR SECTION --- */}
-       <div className="p-3 border-b border-slate-200 bg-white shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div className="flex items-center gap-3 w-full md:flex-1 max-w-md relative">
+       <div className="p-3 border-b border-slate-200 bg-white shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 overflow-visible">
+          <div className="flex items-center gap-3 w-full md:flex-1 max-w-md relative overflow-visible">
              <input 
                 ref={searchInputRef}
                 type="text" 
                 value={testSearchQuery} 
                 onChange={(e) => setTestSearchQuery(e.target.value)} 
+                onKeyDown={handleSearchKeyDown} // 🚨 FIX: Attached Keyboard Event
                 placeholder="Search tests (e.g., CBC)..." 
                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#9575cd]/50 focus:border-[#9575cd] transition-all bg-slate-50 focus:bg-white" 
              />
              {isSearchingTests ? <Loader2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9575cd] animate-spin" /> : <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />}
              
              {testSearchResults.length > 0 && (
-                 <div className="absolute top-[calc(100%+4px)] left-0 w-full md:w-[120%] bg-white border border-slate-200 rounded-lg shadow-2xl max-h-[250px] overflow-y-auto z-50">
-                    {testSearchResults.map((test) => (
-                       <div key={test.id} onClick={() => handleAddTest(test)} className="px-4 py-2.5 border-b border-slate-50 hover:bg-purple-50 cursor-pointer flex justify-between items-center group">
-                          <div className="min-w-0 flex-1 pr-2">
-                              <p className="text-[13px] font-bold text-slate-700 group-hover:text-[#7e57c2] truncate">{test.isOutsourced && test.outsourceLab ? `${test.name} (${test.outsourceLab.name})` : test.name}</p>
-                              <p className="text-[10px] text-slate-400 mt-0.5 truncate">{test.code} • {test.department?.name || 'General'}</p>
-                          </div>
-                          <span className="text-sm font-black text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 group-hover:bg-white group-hover:border-purple-200 transition-colors shrink-0">₹{test.price}</span>
-                       </div>
-                    ))}
+                 <div ref={searchResultsRef} className="absolute top-[calc(100%+4px)] left-0 w-full md:w-[120%] bg-white border border-slate-200 rounded-lg shadow-2xl max-h-[250px] overflow-y-auto z-[9999]">
+                    {testSearchResults.map((test, index) => {
+                       const isFocused = focusedTestIndex === index;
+                       return (
+                           <div 
+                              key={test.id} 
+                              onClick={() => handleAddTest(test)} 
+                              onMouseEnter={() => setFocusedTestIndex(index)} // Sync mouse hover with keyboard focus
+                              className={`px-4 py-2.5 border-b border-slate-50 cursor-pointer flex justify-between items-center group transition-colors ${isFocused ? 'bg-purple-100' : 'hover:bg-purple-50'}`}
+                           >
+                              <div className="min-w-0 flex-1 pr-2">
+                                  <p className={`text-[13px] font-bold truncate ${isFocused ? 'text-[#7e57c2]' : 'text-slate-700 group-hover:text-[#7e57c2]'}`}>
+                                      {test.isOutsourced && test.outsourceLab ? `${test.name} (${test.outsourceLab.name})` : test.name}
+                                  </p>
+                                  <p className={`text-[10px] mt-0.5 truncate ${isFocused ? 'text-[#9575cd]' : 'text-slate-400'}`}>
+                                      {test.code} • {test.department?.name || 'General'}
+                                  </p>
+                              </div>
+                              <span className={`text-sm font-black px-2 py-0.5 rounded border transition-colors shrink-0 ${isFocused ? 'bg-white border-purple-200 text-slate-800 shadow-sm' : 'text-slate-800 bg-slate-100 border-slate-200 group-hover:bg-white group-hover:border-purple-200'}`}>
+                                  ₹{test.price}
+                              </span>
+                           </div>
+                       );
+                    })}
                  </div>
              )}
           </div>
@@ -148,8 +205,7 @@ export default function BillingRightPane({
        </div>
 
        {/* --- TEST LIST TABLE --- */}
-       {/* FIX: Gave mobile a fixed min-height of 250px so it's always visible! */}
-       <div className="flex-none md:flex-1 h-[250px] md:h-auto overflow-auto bg-slate-50/30 custom-scrollbar border-b border-slate-200 md:border-none">
+       <div className="flex-none md:flex-1 h-[250px] md:h-auto overflow-auto bg-slate-50/30 custom-scrollbar border-b border-slate-200 md:border-none z-10">
           <div className="min-w-[450px] md:min-w-0">
             <table className="w-full text-left border-collapse">
                 <thead className="bg-slate-100/80 sticky top-0 z-10 backdrop-blur-sm shadow-sm">
@@ -276,4 +332,3 @@ export default function BillingRightPane({
     </div>
   );
 }
-// --- BLOCK app/components/BillingRightPane.tsx CLOSE ---

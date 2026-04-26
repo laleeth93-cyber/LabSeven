@@ -3,24 +3,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, User, TestTube, Search, Tag, Calculator, Loader2, Printer, Trash2 } from 'lucide-react';
 import { searchTests } from '@/app/actions/billing';
-import { getLabProfile } from '@/app/actions/lab-profile'; // 🚨 FIX: Import lab profile fetcher
+import { getLabProfile } from '@/app/actions/lab-profile';
 import { pdf, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 // --- PDF STYLES ---
 const pdfStyles = StyleSheet.create({
   page: { padding: 40, fontSize: 10, fontFamily: 'Helvetica', color: '#334155', backgroundColor: '#ffffff' },
-  
-  // 🚨 FIX: Added header styles for the Lab Profile
   headerContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottomWidth: 2, borderBottomColor: '#1e293b', paddingBottom: 15, marginBottom: 15 },
   brandColumn: { flexDirection: 'row', alignItems: 'center', width: '60%' },
   brandName: { fontSize: 20, fontWeight: 'black', textTransform: 'uppercase', color: '#0f172a', lineHeight: 1 },
   brandSub: { fontSize: 8, fontWeight: 'bold', textTransform: 'uppercase', color: '#64748b', letterSpacing: 1, marginTop: 4 },
   contactColumn: { width: '40%', alignItems: 'flex-end' },
   addressLine: { fontSize: 8, color: '#64748b', marginBottom: 2, textAlign: 'right' },
-  
   docTitleBox: { backgroundColor: '#f8fafc', padding: 8, marginBottom: 20, alignItems: 'center', borderRadius: 4, borderWidth: 1, borderColor: '#e2e8f0' },
   docTitle: { fontSize: 12, fontWeight: 'bold', color: '#1e293b', textTransform: 'uppercase', letterSpacing: 2 },
-  
   grid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   col: { width: '45%' },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 4, marginBottom: 4, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
@@ -44,7 +40,6 @@ const QuotationDocument = ({ data }: { data: any }) => (
   <Document>
     <Page size="A4" style={pdfStyles.page}>
       
-      {/* 🚨 FIX: Dynamic Lab Header */}
       <View style={pdfStyles.headerContainer}>
         <View style={pdfStyles.brandColumn}>
             {data.labProfile?.logoUrl && (
@@ -137,7 +132,7 @@ interface QuotationTestItem {
 
 export default function QuotationModal({ isOpen, onClose }: QuotationModalProps) {
   
-  const [labProfile, setLabProfile] = useState<any>(null); // 🚨 FIX: State to hold lab profile
+  const [labProfile, setLabProfile] = useState<any>(null); 
   const [patientName, setPatientName] = useState('');
   const [patientGender, setPatientGender] = useState('Select');
   const [patientAge, setPatientAge] = useState('');
@@ -147,6 +142,11 @@ export default function QuotationModal({ isOpen, onClose }: QuotationModalProps)
   const [testSearchResults, setTestSearchResults] = useState<any[]>([]);
   const [isSearchingTests, setIsSearchingTests] = useState(false);
   const testSearchTimeout = useRef<NodeJS.Timeout | null>(null);
+  
+  // 🚨 FIX: Keyboard Navigation Refs and State
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchResultsRef = useRef<HTMLDivElement>(null);
+  const [focusedTestIndex, setFocusedTestIndex] = useState<number>(-1);
   
   const [cartItems, setCartItems] = useState<QuotationTestItem[]>([]);
   const [discountPercent, setDiscountPercent] = useState('');
@@ -168,8 +168,8 @@ export default function QuotationModal({ isOpen, onClose }: QuotationModalProps)
     setDiscountPercent('');
     setDiscountAmount('');
     setTestSearchQuery('');
+    setFocusedTestIndex(-1);
     
-    // 🚨 FIX: Fetch Lab Profile when modal opens
     getLabProfile().then((res) => {
         if (res.success) setLabProfile(res.data);
     });
@@ -183,12 +183,25 @@ export default function QuotationModal({ isOpen, onClose }: QuotationModalProps)
         const results = await searchTests(testSearchQuery);
         setTestSearchResults(results);
         setIsSearchingTests(false);
+        setFocusedTestIndex(-1); // 🚨 Reset selection when search changes
       }, 300);
     } else {
       setTestSearchResults([]);
       setIsSearchingTests(false);
+      setFocusedTestIndex(-1);
     }
   }, [testSearchQuery]);
+
+  // 🚨 FIX: Auto-scroll dropdown when using arrow keys
+  useEffect(() => {
+    if (focusedTestIndex >= 0 && searchResultsRef.current) {
+        const container = searchResultsRef.current;
+        const focusedElement = container.children[focusedTestIndex] as HTMLElement;
+        if (focusedElement) {
+            focusedElement.scrollIntoView({ block: 'nearest' });
+        }
+    }
+  }, [focusedTestIndex]);
 
   const handleAddTest = (test: any) => {
     if (!cartItems.find(item => item.id === test.id)) {
@@ -197,6 +210,32 @@ export default function QuotationModal({ isOpen, onClose }: QuotationModalProps)
     }
     setTestSearchQuery(''); 
     setTestSearchResults([]);
+    setFocusedTestIndex(-1);
+    setTimeout(() => { if (searchInputRef.current) searchInputRef.current.focus(); }, 50); // Refocus input
+  };
+
+  // 🚨 FIX: Keyboard event handler
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (testSearchResults.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setFocusedTestIndex(prev => (prev < testSearchResults.length - 1 ? prev + 1 : prev));
+      } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setFocusedTestIndex(prev => (prev > 0 ? prev - 1 : -1));
+      } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (focusedTestIndex >= 0 && focusedTestIndex < testSearchResults.length) {
+              handleAddTest(testSearchResults[focusedTestIndex]);
+          } else if (testSearchResults.length === 1) {
+              // Automatically select the only test available if Enter is pressed
+              handleAddTest(testSearchResults[0]);
+          }
+      } else if (e.key === 'Escape') {
+          setTestSearchResults([]);
+          setFocusedTestIndex(-1);
+      }
   };
 
   const handleRemoveTest = (index: number) => {
@@ -208,7 +247,6 @@ export default function QuotationModal({ isOpen, onClose }: QuotationModalProps)
   const handlePrint = async () => {
       setIsPrinting(true);
       try {
-          // 🚨 FIX: Added labProfile to the data payload passed to the PDF
           const quotationData = {
               patientName, patientGender, patientAge, patientPhone,
               cartItems, subTotal, finalDiscount, netAmount, notes,
@@ -253,7 +291,7 @@ export default function QuotationModal({ isOpen, onClose }: QuotationModalProps)
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4 relative">
+        <div className="flex-1 overflow-y-auto p-3 space-y-4 relative overflow-visible">
           
           {/* Section: Patient Information */}
           <div>
@@ -295,12 +333,14 @@ export default function QuotationModal({ isOpen, onClose }: QuotationModalProps)
               <h4 className="font-bold text-xs">Add Tests to Quote</h4>
             </div>
 
-            <div className="mb-3 relative">
+            <div className="mb-3 relative overflow-visible">
                <div className="relative w-full">
                  <input 
+                    ref={searchInputRef} // 🚨 FIX: Attached Ref
                     type="text" 
                     value={testSearchQuery}
                     onChange={(e) => setTestSearchQuery(e.target.value)}
+                    onKeyDown={handleSearchKeyDown} // 🚨 FIX: Attached Keyboard Event Handler
                     placeholder="Search from your test library..." 
                     className="w-full pl-7 pr-2 py-1.5 rounded border border-slate-300 text-[11px] focus:outline-none focus:ring-2 focus:ring-[#4dd0e1]" 
                  />
@@ -309,16 +349,30 @@ export default function QuotationModal({ isOpen, onClose }: QuotationModalProps)
 
                {/* Live Search Results Dropdown */}
                {testSearchResults.length > 0 && (
-                   <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-slate-200 rounded-lg shadow-xl max-h-[150px] overflow-y-auto z-[300]">
-                      {testSearchResults.map((test) => (
-                         <div key={test.id} onClick={() => handleAddTest(test)} className="px-3 py-2 border-b border-slate-50 hover:bg-cyan-50 cursor-pointer flex justify-between items-center group">
-                            <div className="min-w-0 flex-1 pr-2">
-                                <p className="text-[11px] font-bold text-slate-700 truncate">{test.isOutsourced && test.outsourceLab ? `${test.name} (${test.outsourceLab.name})` : test.name}</p>
-                                <p className="text-[9px] text-slate-400 mt-0.5 truncate">{test.code}</p>
-                            </div>
-                            <span className="text-[11px] font-black text-slate-800 shrink-0">₹{test.price}</span>
-                         </div>
-                      ))}
+                   <div ref={searchResultsRef} className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-slate-200 rounded-lg shadow-xl max-h-[150px] overflow-y-auto z-[300]">
+                      {testSearchResults.map((test, index) => {
+                         const isFocused = focusedTestIndex === index;
+                         return (
+                             <div 
+                                key={test.id} 
+                                onClick={() => handleAddTest(test)} 
+                                onMouseEnter={() => setFocusedTestIndex(index)} // Sync mouse hover with keyboard focus
+                                className={`px-3 py-2 border-b border-slate-50 cursor-pointer flex justify-between items-center transition-colors group ${isFocused ? 'bg-cyan-50' : 'hover:bg-cyan-50'}`}
+                             >
+                                <div className="min-w-0 flex-1 pr-2">
+                                    <p className={`text-[11px] font-bold truncate ${isFocused ? 'text-[#00acc1]' : 'text-slate-700'}`}>
+                                        {test.isOutsourced && test.outsourceLab ? `${test.name} (${test.outsourceLab.name})` : test.name}
+                                    </p>
+                                    <p className={`text-[9px] mt-0.5 truncate ${isFocused ? 'text-[#4dd0e1]' : 'text-slate-400'}`}>
+                                        {test.code}
+                                    </p>
+                                </div>
+                                <span className={`text-[11px] font-black shrink-0 ${isFocused ? 'text-[#00acc1]' : 'text-slate-800'}`}>
+                                    ₹{test.price}
+                                </span>
+                             </div>
+                         );
+                      })}
                    </div>
                )}
             </div>
