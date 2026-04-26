@@ -16,6 +16,7 @@ export interface InvoiceData {
   paidAmount: number; balanceDue: number;
   barcodeUrl?: string; note?: string; noteImage?: string; 
   labProfile?: any;
+  authorSign?: any;
 }
 
 interface InvoiceModalProps {
@@ -51,7 +52,6 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
         const canvas = document.createElement('canvas');
         const shortBillId = String(data.billId || '').slice(-4);
         
-        // 🚨 FIX: Made Barcode much thinner and lighter (width: 1, height: 20)
         JsBarcode(canvas, shortBillId, {
           format: "CODE128", displayValue: false, height: 20, width: 1, margin: 0, background: "transparent"
         });
@@ -98,7 +98,6 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
     } catch (e) { alert("Failed to open TRF."); } finally { setIsTrfLoading(false); }
   };
 
-  // 🚨 FIX: Invisible iFrame trick opens the print dialog centrally WITHOUT opening any blank tabs!
   const handlePrintInvoice = () => {
       const element = document.getElementById('invoice-printable-area');
       if (!element) return;
@@ -237,14 +236,12 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
                         <div className="w-[50%] flex items-end gap-6 pb-1">
                             {barcodeUrl && (
                             <div className="opacity-90 flex flex-col items-center">
-                                {/* 🚨 FIX: Image made smaller so the Barcode is light and thin */}
                                 <img src={barcodeUrl} alt="Barcode" className="h-5 w-[80px] mb-1" />
                                 <p className="text-[10px] text-slate-500 font-mono tracking-widest">{String(data.billId || '').slice(-4)}</p>
                             </div>
                             )}
                             
                             <div className="opacity-90 flex flex-col items-center">
-                                {/* 🚨 FIX: Added ?type=invoice so Verification Page knows what to load! */}
                                 <div className="p-1 bg-white border border-slate-200 rounded">
                                     <QRCodeSVG value={`${typeof window !== 'undefined' ? window.location.origin : 'https://labseven.in'}/verify/${data.billId}?type=invoice`} size={44} level="L" />
                                 </div>
@@ -270,9 +267,23 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
                     </div>
                     )}
 
-                    <div className="mt-16 text-center self-end w-32 ml-auto">
-                        <div className="border-b border-dashed border-slate-400 mb-1"></div>
-                        <p className="text-[9px] font-bold text-slate-600 uppercase">Authorized Signatory</p>
+                    <div className="mt-12 text-center self-end w-48 ml-auto flex flex-col items-center justify-end min-h-[60px]">
+                        {data.authorSign ? (
+                            <>
+                                {data.authorSign.signatureUrl ? (
+                                    <img src={data.authorSign.signatureUrl} alt="Signature" className="h-10 w-auto object-contain mb-1" />
+                                ) : (
+                                    <div className="w-32 border-b border-dashed border-slate-400 mb-1 mt-6"></div>
+                                )}
+                                <p className="text-[10px] font-bold text-slate-800 leading-tight">{data.authorSign.name}</p>
+                                {data.authorSign.designation && <p className="text-[8px] text-slate-500 leading-tight">{data.authorSign.designation}</p>}
+                            </>
+                        ) : (
+                            <>
+                                <div className="w-32 border-b border-dashed border-slate-400 mb-1 mt-6"></div>
+                                <p className="text-[9px] font-bold text-slate-600 uppercase">Authorized Signatory</p>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

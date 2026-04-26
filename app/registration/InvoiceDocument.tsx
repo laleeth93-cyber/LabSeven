@@ -1,162 +1,42 @@
-// FILE: app/components/InvoiceDocument.tsx
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Image, Font } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
-  page: { 
-    padding: 40, 
-    fontSize: 9, 
-    fontFamily: 'Helvetica', 
-    color: '#334155', 
-    backgroundColor: '#ffffff' 
-  },
-  mainContainer: {
-    flex: 1,
-    flexDirection: 'column',
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    borderBottomWidth: 2, 
-    borderBottomColor: '#1e293b', 
-    paddingBottom: 20,
-    marginBottom: 20
-  },
+  page: { padding: 40, fontSize: 9, fontFamily: 'Helvetica', color: '#334155', backgroundColor: '#ffffff' },
+  mainContainer: { flex: 1, flexDirection: 'column' },
+  headerContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottomWidth: 2, borderBottomColor: '#1e293b', paddingBottom: 20, marginBottom: 20 },
   brandColumn: { flexDirection: 'row', alignItems: 'center', width: '60%' },
-  brandName: { 
-    fontSize: 26, 
-    fontWeight: 'black', 
-    textTransform: 'uppercase', 
-    color: '#0f172a', 
-    lineHeight: 1
-  },
-  brandSub: { 
-    fontSize: 9, 
-    fontWeight: 'bold', 
-    textTransform: 'uppercase', 
-    color: '#64748b', 
-    letterSpacing: 2, 
-    marginTop: 4 
-  },
+  brandName: { fontSize: 26, fontWeight: 'black', textTransform: 'uppercase', color: '#0f172a', lineHeight: 1 },
+  brandSub: { fontSize: 9, fontWeight: 'bold', textTransform: 'uppercase', color: '#64748b', letterSpacing: 2, marginTop: 4 },
   contactColumn: { width: '40%', alignItems: 'flex-end' },
-  addressLine: { 
-    fontSize: 9, 
-    color: '#64748b', 
-    marginBottom: 2, 
-    textAlign: 'right' 
-  },
+  addressLine: { fontSize: 9, color: '#64748b', marginBottom: 2, textAlign: 'right' },
   grid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
   col: { width: '46%' },
-  row: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#f1f5f9', 
-    paddingBottom: 3, 
-    marginBottom: 3 
-  },
-  label: { 
-    fontSize: 9, 
-    color: '#64748b', 
-    fontWeight: 'bold' 
-  },
-  value: { 
-    fontSize: 9, 
-    fontWeight: 'bold', 
-    color: '#334155', 
-    textAlign: 'right'
-  },
+  row: { flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingBottom: 3, marginBottom: 3 },
+  label: { fontSize: 9, color: '#64748b', fontWeight: 'bold' },
+  value: { fontSize: 9, fontWeight: 'bold', color: '#334155', textAlign: 'right' },
   table: { width: '100%', marginBottom: 10 },
-  tableHeader: { 
-    flexDirection: 'row', 
-    backgroundColor: '#1e293b', 
-    paddingVertical: 8, 
-    paddingHorizontal: 8,
-    borderTopLeftRadius: 2,
-    borderTopRightRadius: 2
-  },
-  th: { 
-    fontSize: 9, 
-    fontWeight: 'bold', 
-    color: '#ffffff', 
-    textTransform: 'uppercase' 
-  },
-  tableRow: { 
-    flexDirection: 'row', 
-    paddingVertical: 8, 
-    paddingHorizontal: 8, 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#f1f5f9' 
-  },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#1e293b', paddingVertical: 8, paddingHorizontal: 8, borderTopLeftRadius: 2, borderTopRightRadius: 2 },
+  th: { fontSize: 9, fontWeight: 'bold', color: '#ffffff', textTransform: 'uppercase' },
+  tableRow: { flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   col1: { width: '75%', textAlign: 'left' },
   col2: { width: '25%', textAlign: 'right' },
   td: { fontSize: 10, color: '#334155', fontWeight: 'medium' }, 
   tdAmount: { fontSize: 10, fontWeight: 'bold', color: '#1e293b' }, 
-  totalsContainer: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    marginTop: 10, 
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9' 
-  },
+  totalsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
   barcodeBox: { width: '50%', justifyContent: 'flex-end', paddingBottom: 5 },
   totalsBox: { width: '45%' },
-  totalRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    marginBottom: 6,
-    paddingHorizontal: 2
-  },
-  netAmountRow: {
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    marginTop: 4,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#0f172a', 
-    marginBottom: 8
-  },
-  badgeRow: {
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    paddingVertical: 4,
-    paddingHorizontal: 6,
-    borderRadius: 4,
-    marginBottom: 4
-  },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, paddingHorizontal: 2 },
+  netAmountRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: '#0f172a', marginBottom: 8 },
+  badgeRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, paddingHorizontal: 6, borderRadius: 4, marginBottom: 4 },
   totalLabel: { fontSize: 9, color: '#64748b' }, 
   totalValue: { fontSize: 9, color: '#1e293b', fontWeight: 'bold' }, 
   netLabel: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' }, 
   netValue: { fontSize: 11, fontWeight: 'bold', color: '#0f172a' },
-  signatureBox: {
-    alignSelf: 'flex-end',
-    width: 140,
-    textAlign: 'center',
-    marginBottom: 40 
-  },
-  signatureLine: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#94a3b8', 
-    borderBottomStyle: 'dashed',
-    marginBottom: 4
-  },
-  signatureText: {
-    fontSize: 8,
-    fontWeight: 'bold',
-    color: '#475569', 
-    textTransform: 'uppercase'
-  },
-  footer: { 
-    position: 'absolute', 
-    bottom: 30, 
-    left: 40, 
-    right: 40, 
-    borderTopWidth: 1, 
-    borderTopColor: '#e2e8f0', 
-    paddingTop: 10 
-  },
+  signatureBox: { alignSelf: 'flex-end', width: 140, textAlign: 'center', marginBottom: 40 },
+  signatureLine: { borderBottomWidth: 1, borderBottomColor: '#94a3b8', borderBottomStyle: 'dashed', marginBottom: 4 },
+  signatureText: { fontSize: 8, fontWeight: 'bold', color: '#475569', textTransform: 'uppercase' },
+  footer: { position: 'absolute', bottom: 30, left: 40, right: 40, borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 10 },
   termTitle: { fontSize: 8, fontWeight: 'bold', marginBottom: 2, color: '#334155' },
   termText: { fontSize: 7, color: '#64748b', marginBottom: 1 }
 });
@@ -169,7 +49,7 @@ export interface InvoiceData {
   paidAmount: number; balanceDue: number;
   barcodeUrl?: string; qrUrl?: string; note?: string; noteImage?: string; 
   labProfile?: any;
-  authorSign?: any; // 🚨 FIX: Accept the signature object payload!
+  authorSign?: any;
 }
 
 export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
@@ -186,7 +66,6 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
     <Page size="A4" style={styles.page}>
       <View style={styles.mainContainer}>
 
-        {/* 1. DYNAMIC HEADER */}
         <View style={styles.headerContainer}>
             <View style={styles.brandColumn}>
                 {data.labProfile?.logoUrl && (
@@ -210,7 +89,6 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
             </View>
         </View>
 
-        {/* 2. PATIENT GRID */}
         <View style={styles.grid}>
             <View style={styles.col}>
             <View style={styles.row}><Text style={styles.label}>Bill ID:</Text><Text style={styles.value}>{data.billId}</Text></View>
@@ -224,7 +102,6 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
             </View>
         </View>
 
-        {/* 3. ITEMS TABLE */}
         <View style={styles.table}>
             <View style={styles.tableHeader}>
             <Text style={[styles.th, styles.col1]}>Test Description</Text>
@@ -238,7 +115,6 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
             ))}
         </View>
 
-        {/* 4. FINANCIALS */}
         <View style={styles.totalsContainer}>
             <View style={styles.barcodeBox}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
@@ -301,13 +177,16 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
 
         <View style={{ flex: 1 }} />
 
-        {/* 5. 🚨 FIX: DYNAMIC USER SIGNATURE */}
         <View style={styles.signatureBox}>
-            {data.authorSign?.signatureUrl ? (
+            {data.authorSign ? (
                 <View style={{ alignItems: 'center' }}>
-                    <Image src={data.authorSign.signatureUrl} style={{ height: 40, width: 80, objectFit: 'contain', marginBottom: 2 }} />
-                    <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#1e293b' }}>{data.authorSign.name}</Text>
-                    {data.authorSign.designation && <Text style={{ fontSize: 6, color: '#64748b', marginTop: 2 }}>{data.authorSign.designation}</Text>}
+                    {data.authorSign.signatureUrl ? (
+                        <Image src={data.authorSign.signatureUrl} style={{ height: 40, width: 80, objectFit: 'contain', marginBottom: 2 }} />
+                    ) : (
+                        <View style={[styles.signatureLine, { marginTop: 25, width: 100 }]} />
+                    )}
+                    <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e293b' }}>{data.authorSign.name}</Text>
+                    {data.authorSign.designation && <Text style={{ fontSize: 7, color: '#64748b', marginTop: 2 }}>{data.authorSign.designation}</Text>}
                 </View>
             ) : (
                 <View>
@@ -319,7 +198,6 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
 
       </View>
 
-      {/* 6. FIXED FOOTER (Terms) */}
       <View style={styles.footer} fixed>
          <View>
             <Text style={styles.termTitle}>Terms & Conditions:</Text>

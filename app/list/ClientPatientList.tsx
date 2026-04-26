@@ -20,6 +20,8 @@ import MusicBarLoader from '@/app/components/MusicBarLoader';
 
 import { usePermissions } from '@/app/context/PermissionContext';
 import { getPatientList, deleteBill } from '@/app/actions/patient-list';
+// 🚨 FIX: Imported getCurrentUserSignature to fetch signature on the List Page
+import { getCurrentUserSignature } from '@/app/actions/billing';
 
 // 🚨 ACCEPTS THE PRE-LOADED SERVER DATA
 export default function ClientPatientList({ initialBills }: { initialBills: any[] }) {
@@ -39,7 +41,6 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
         testSearch: '', statusFilter: 'All', refDocFilter: 'All', isUrgentFilter: false
     });
     
-    // 🚨 FIX: Initialized explicitly to 'Today' so it matches the Date picker and filters old data on load.
     const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>(() => {
         const today = new Date();
         return { from: today, to: today, label: 'Today' };
@@ -75,11 +76,25 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
 
     const bills = fetchRes?.success && fetchRes?.data ? fetchRes.data : [];
 
+    // 🚨 FIX: State to hold the logged-in user's signature for printing old bills
+    const [userSignature, setUserSignature] = useState<any>(null);
+
     useEffect(() => {
         const savedView = localStorage.getItem('patientListViewPref');
         if (savedView === 'list' || savedView === 'grid') {
             setViewMode(savedView);
         }
+
+        // 🚨 FIX: Fetch the user's signature when the list loads
+        const fetchSignature = async () => {
+            try {
+                const sigRes = await getCurrentUserSignature();
+                if (sigRes.success) setUserSignature(sigRes.data);
+            } catch (e) {
+                console.error("Failed to load user signature", e);
+            }
+        };
+        fetchSignature();
     }, []);
 
     const handleSetViewMode = (mode: 'list' | 'grid') => {
@@ -225,7 +240,8 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
             totalAmount: Number(bill.netAmount || 0),
             paidAmount: Number(bill.paidAmount || 0),
             balanceDue: Number(bill.dueAmount || 0),
-            note: bill.discountReason || ''
+            note: bill.discountReason || '',
+            authorSign: userSignature // 🚨 FIX: Injected the signature payload here!
         });
         
         setIsInvoiceOpen(true);

@@ -164,7 +164,7 @@ export async function getNextBillNumber() {
   }
 }
 
-// 🚨 FIX: ADDED THIS FUNCTION TO FETCH CURRENT USER'S SIGNATURE
+// 4. FETCH CURRENT USER'S SIGNATURE
 export async function getCurrentUserSignature() {
   try {
     const { user } = await requireAuth();
@@ -172,7 +172,7 @@ export async function getCurrentUserSignature() {
       where: { id: parseInt(user.id) }
     });
 
-    if (dbUser && dbUser.signatureUrl) {
+    if (dbUser) {
       let designation = dbUser.designation || '';
       if (dbUser.degree) designation += ` | ${dbUser.degree}`;
       
@@ -181,7 +181,7 @@ export async function getCurrentUserSignature() {
         data: {
            name: dbUser.signName || dbUser.name,
            designation: designation,
-           signatureUrl: dbUser.signatureUrl
+           signatureUrl: dbUser.signatureUrl || null
         }
       };
     }

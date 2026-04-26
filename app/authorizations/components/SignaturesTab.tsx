@@ -4,9 +4,8 @@ import { saveUserSignatureDetails } from '@/app/actions/authorizations';
 
 export default function SignaturesTab({ users, loadData }: any) {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isSaving, setIsSaving] = useState(false); // 🚨 NEW LOADING STATE
+    const [isSaving, setIsSaving] = useState(false); 
     
-    // Original upload state for the cropper
     const [originalUpload, setOriginalUpload] = useState<string | null>(null);
     const [crop, setCrop] = useState({ top: 0, bottom: 0, left: 0, right: 0 });
 
@@ -63,25 +62,32 @@ export default function SignaturesTab({ users, loadData }: any) {
         }
 
         const img = new window.Image();
+        // 🚨 FIX: Add crossOrigin attribute to prevent "Tainted canvases" CORS error!
+        img.crossOrigin = "anonymous"; 
         img.src = originalUpload;
+        
         img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
 
-            const sX = img.width * (crop.left / 100);
-            const sY = img.height * (crop.top / 100);
-            const sW = img.width * (1 - (crop.left + crop.right) / 100);
-            const sH = img.height * (1 - (crop.top + crop.bottom) / 100);
+                const sX = img.width * (crop.left / 100);
+                const sY = img.height * (crop.top / 100);
+                const sW = img.width * (1 - (crop.left + crop.right) / 100);
+                const sH = img.height * (1 - (crop.top + crop.bottom) / 100);
 
-            if (sW <= 0 || sH <= 0) return; 
+                if (sW <= 0 || sH <= 0) return; 
 
-            canvas.width = sW;
-            canvas.height = sH;
+                canvas.width = sW;
+                canvas.height = sH;
 
-            ctx.drawImage(img, sX, sY, sW, sH, 0, 0, sW, sH);
-            
-            setForm(prev => ({ ...prev, signatureUrl: canvas.toDataURL('image/png') }));
+                ctx.drawImage(img, sX, sY, sW, sH, 0, 0, sW, sH);
+                
+                setForm(prev => ({ ...prev, signatureUrl: canvas.toDataURL('image/png') }));
+            } catch (err) {
+                console.error("Canvas Cropping Error:", err);
+            }
         };
     }, [crop, originalUpload]);
 
@@ -90,15 +96,12 @@ export default function SignaturesTab({ users, loadData }: any) {
         setCrop({ top: 0, bottom: 0, left: 0, right: 0 });
     };
 
-    // 🚨 REWRITTEN TO INTERCEPT BASE64 AND UPLOAD TO R2 BEFORE SAVING
     const handleSave = async () => {
         setIsSaving(true);
         let finalSignatureUrl = form.signatureUrl;
 
-        // If the signature is a base64 string, we need to upload it to R2 first
         if (finalSignatureUrl && finalSignatureUrl.startsWith('data:image')) {
             try {
-                // Convert Base64 back to a File
                 const res = await fetch(finalSignatureUrl);
                 const blob = await res.blob();
                 const file = new File([blob], `signature-${form.id || Date.now()}.png`, { type: 'image/png' });
@@ -107,7 +110,6 @@ export default function SignaturesTab({ users, loadData }: any) {
                 formData.append("file", file);
                 formData.append("folder", "signatures");
 
-                // Upload to our new R2 route
                 const uploadRes = await fetch('/api/upload', {
                     method: 'POST',
                     body: formData,
@@ -116,7 +118,7 @@ export default function SignaturesTab({ users, loadData }: any) {
                 const uploadResult = await uploadRes.json();
 
                 if (uploadResult.success) {
-                    finalSignatureUrl = uploadResult.url; // Replace Base64 with real R2 URL
+                    finalSignatureUrl = uploadResult.url; 
                 } else {
                     alert("Failed to upload signature image to R2: " + uploadResult.error);
                     setIsSaving(false);
@@ -130,7 +132,6 @@ export default function SignaturesTab({ users, loadData }: any) {
             }
         }
 
-        // Save the profile with the final URL
         const res = await saveUserSignatureDetails({ ...form, signatureUrl: finalSignatureUrl });
         if (res.success) {
             setIsModalOpen(false);
@@ -190,7 +191,6 @@ export default function SignaturesTab({ users, loadData }: any) {
                 )}
             </div>
 
-            {/* EDIT SIGNATURE PROFILE MODAL */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-200">
@@ -202,7 +202,6 @@ export default function SignaturesTab({ users, loadData }: any) {
                         </div>
                         
                         <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Left Side: Text Fields */}
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-600 mb-1">Printed Name (for reports)</label>
@@ -229,7 +228,6 @@ export default function SignaturesTab({ users, loadData }: any) {
                                 </div>
                             </div>
 
-                            {/* Right Side: Signature Upload & Crop */}
                             <div className="flex flex-col h-full bg-white rounded-xl border border-slate-200 shadow-sm p-4">
                                 <label className="block text-xs font-bold text-slate-800 mb-2 border-b border-slate-100 pb-2">Signature Image Manager</label>
                                 
@@ -262,7 +260,6 @@ export default function SignaturesTab({ users, loadData }: any) {
                                     )}
                                 </div>
 
-                                {/* LIVE CROPPER CONTROLS */}
                                 {originalUpload && !isSaving && (
                                     <div className="mt-4 bg-purple-50/50 border border-[#9575cd]/20 rounded-lg p-3">
                                         <div className="flex justify-between items-center mb-3">

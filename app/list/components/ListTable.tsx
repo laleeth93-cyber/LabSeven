@@ -1,9 +1,9 @@
-// --- BLOCK app/list/components/ListTable.tsx OPEN ---
 "use client";
 
 import React from 'react';
-import { Printer, FileText, Barcode, Banknote, RefreshCcw, Edit, History, CheckCircle2, AlertCircle, Sparkles, Trash2, Info, ChevronLeft, ChevronRight, Bug } from 'lucide-react';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW: Imported Loader!
+// 🚨 FIX: Swapped out CheckCircle2, Sparkles, and Bug for safe universally supported icons
+import { Printer, FileText, Barcode, Banknote, RefreshCcw, Edit, History, CheckCircle, AlertCircle, Zap, Trash2, Info, ChevronLeft, ChevronRight, Microscope } from 'lucide-react';
+import MusicBarLoader from '@/app/components/MusicBarLoader'; 
 
 interface ListTableProps {
     bills: any[];
@@ -56,7 +56,6 @@ export default function ListTable({
         return { doc, hosp, lab };
     };
 
-    // 🚨 REPLACED: Now using the cool music bar loader!
     if (isLoading) {
         return (
             <div className="h-full flex flex-col items-center justify-center">
@@ -149,17 +148,17 @@ export default function ListTable({
                                             {bill.dueAmount > 0 ? (
                                                 <div className="text-[10px] font-bold text-red-600 mt-0.5">Due: ₹{bill.dueAmount}</div>
                                             ) : (
-                                                <div className="text-[10px] font-bold text-green-600 mt-0.5 flex items-center justify-end gap-1"><CheckCircle2 size={10}/> Paid</div>
+                                                <div className="text-[10px] font-bold text-green-600 mt-0.5 flex items-center justify-end gap-1"><CheckCircle size={10}/> Paid</div>
                                             )}
                                         </td>
                                         
                                         <td className="py-3 px-2 align-top text-center border-l border-slate-100"><ActionButton icon={Printer} onClick={() => onPrintBill(bill)} tooltip="Print Bill" colorClass="text-blue-600 hover:bg-blue-50 border-blue-100" /></td>
                                         <td className="py-3 px-2 align-top text-center"><ActionButton icon={Barcode} onClick={() => onPrintBarcode(bill)} tooltip="Print Barcode" colorClass="text-indigo-600 hover:bg-indigo-50 border-indigo-100" /></td>
                                         <td className="py-3 px-2 align-top text-center"><ActionButton icon={FileText} onClick={() => onOpenReport(bill)} disabled={!hasPrintableRoutine} tooltip={hasPrintableRoutine ? "Print Report" : "No routine results ready"} colorClass="text-purple-600 hover:bg-purple-50 border-purple-100" /></td>
-                                        <td className="py-3 px-2 align-top text-center"><ActionButton icon={Sparkles} onClick={() => onOpenSmartReport(bill)} tooltip="Smart Report" colorClass="text-amber-500 hover:text-amber-600 hover:bg-amber-50 border-amber-100" /></td>
+                                        <td className="py-3 px-2 align-top text-center"><ActionButton icon={Zap} onClick={() => onOpenSmartReport(bill)} tooltip="Smart Report" colorClass="text-amber-500 hover:text-amber-600 hover:bg-amber-50 border-amber-100" /></td>
 
                                         <td className="py-3 px-2 align-top text-center hidden md:table-cell">
-                                            {hasCultureTest && onOpenCultureReport ? <ActionButton icon={Bug} onClick={() => onOpenCultureReport(bill)} tooltip="Culture Report" colorClass="text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-100" /> : <span className="text-[10px] text-slate-300">-</span>}
+                                            {hasCultureTest && onOpenCultureReport ? <ActionButton icon={Microscope} onClick={() => onOpenCultureReport(bill)} tooltip="Culture Report" colorClass="text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-100" /> : <span className="text-[10px] text-slate-300">-</span>}
                                         </td>
                                         <td className="py-3 px-2 align-top text-center hidden md:table-cell"><ActionButton icon={RefreshCcw} onClick={() => onOpenRefund(bill)} disabled={bill.paidAmount <= 0} tooltip="Refund" colorClass="text-orange-600 hover:bg-orange-50 border-orange-100" /></td>
                                         <td className="py-3 px-2 align-top text-center hidden md:table-cell"><ActionButton icon={Banknote} onClick={() => onOpenClearDue(bill)} tooltip={bill.dueAmount > 0 ? "Clear Due" : "No Due Pending"} colorClass="text-emerald-600 hover:bg-emerald-50 border-emerald-100" disabled={bill.dueAmount <= 0} /></td>
@@ -219,7 +218,7 @@ export default function ListTable({
                                                 {bill.dueAmount > 0 ? (
                                                     <span className="text-xs font-black text-red-500">Due: ₹{bill.dueAmount}</span>
                                                 ) : (
-                                                    <span className="text-xs font-black text-emerald-500 flex items-center gap-1"><CheckCircle2 size={12}/> Paid</span>
+                                                    <span className="text-xs font-black text-emerald-500 flex items-center gap-1"><CheckCircle size={12}/> Paid</span>
                                                 )}
                                             </div>
                                         </div>
@@ -252,12 +251,12 @@ export default function ListTable({
                                             <ActionButton icon={FileText} label="Report" onClick={() => onOpenReport(bill)} disabled={!hasPrintableRoutine} colorClass="text-purple-600 hover:bg-purple-50 border-purple-100" />
                                             <ActionButton icon={Printer} label="Invoice" onClick={() => onPrintBill(bill)} colorClass="text-blue-600 hover:bg-blue-50 border-blue-100" />
                                             <ActionButton icon={Barcode} onClick={() => onPrintBarcode(bill)} tooltip="Barcode" colorClass="text-indigo-600 hover:bg-indigo-50 border-indigo-100" />
-                                            <ActionButton icon={Sparkles} onClick={() => onOpenSmartReport(bill)} tooltip="Smart Report" colorClass="text-amber-500 hover:bg-amber-50 border-amber-100" />
+                                            <ActionButton icon={Zap} onClick={() => onOpenSmartReport(bill)} tooltip="Smart Report" colorClass="text-amber-500 hover:bg-amber-50 border-amber-100" />
                                         </div>
                                         <div className="w-full flex gap-1">
                                             <ActionButton icon={Banknote} onClick={() => onOpenClearDue(bill)} tooltip="Clear Due" colorClass="text-emerald-600 hover:bg-emerald-50 border-emerald-100" disabled={bill.dueAmount <= 0} />
                                             <ActionButton icon={RefreshCcw} onClick={() => onOpenRefund(bill)} tooltip="Refund" colorClass="text-orange-600 hover:bg-orange-50 border-orange-100" disabled={bill.paidAmount <= 0} />
-                                            {hasCultureTest && onOpenCultureReport && <ActionButton icon={Bug} onClick={() => onOpenCultureReport(bill)} tooltip="Culture Report" colorClass="text-rose-500 hover:bg-rose-50 border-rose-100" />}
+                                            {hasCultureTest && onOpenCultureReport && <ActionButton icon={Microscope} onClick={() => onOpenCultureReport(bill)} tooltip="Culture Report" colorClass="text-rose-500 hover:bg-rose-50 border-rose-100" />}
                                             <ActionButton icon={Edit} onClick={() => onEditBill(bill)} tooltip="Edit Details" colorClass="text-teal-600 hover:bg-teal-50 border-teal-100" />
                                             <ActionButton icon={Trash2} onClick={() => onDeleteBill(bill)} tooltip="Delete Bill" colorClass="text-rose-600 hover:bg-rose-50 border-rose-100" />
                                         </div>
@@ -309,4 +308,3 @@ export default function ListTable({
         </div>
     );
 }
-// --- BLOCK app/list/components/ListTable.tsx CLOSE ---

@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { registerPatient, getNextPatientId } from '@/app/actions/patient'; 
 import { getReferrals } from '@/app/actions/referral'; 
-import { createBill, getNextBillNumber } from '@/app/actions/billing'; 
+import { createBill, getNextBillNumber, getCurrentUserSignature } from '@/app/actions/billing'; 
 
 // Import our new Offline-First tools!
 import { localDB } from '@/lib/local-db/db';
@@ -73,6 +73,8 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [invoiceData, setInvoiceData] = useState<any>(null);
+  
+  const [userSignature, setUserSignature] = useState<any>(null);
 
   const getLocalISOString = () => {
     const now = new Date();
@@ -81,18 +83,28 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   };
 
   useEffect(() => {
+    const fetchSignature = async () => {
+      try {
+        const sigRes = await getCurrentUserSignature();
+        if (sigRes.success) setUserSignature(sigRes.data);
+      } catch (e) {
+        console.error("Failed to load user signature", e);
+      }
+    };
+    fetchSignature();
+  }, []);
+
+  useEffect(() => {
     const initializeSerialNumbers = async () => {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       
       if (isOnline) {
-        // Fetch exact serial numbers from the database
         const nextPatId = await getNextPatientId();
         const nextBillId = await getNextBillNumber();
         
         setCurrentPatientId(nextPatId || `${dateStr}-0001`);
         setCurrentBillNumber(nextBillId || `INV-${dateStr}-0001`);
       } else {
-        // Fallback for when the clinic's internet goes down
         setCurrentPatientId(`${dateStr}-OFF-${Math.floor(1000 + Math.random() * 9000)}`);
         setCurrentBillNumber(`INV-${dateStr}-OFF-${Math.floor(1000 + Math.random() * 9000)}`);
       }
@@ -199,7 +211,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         refDoctor: finalReferralString.trim(),
       };
 
-      // 🚨 FIX: Forcefully convert browser local time into an Absolute UTC string to prevent Vercel timezone shifting
       const [datePart, timePart] = billingDate.split('T');
       const [year, month, day] = datePart.split('-').map(Number);
       const [hour, minute, second] = (timePart || '00:00:00').split(':').map(Number);
@@ -208,7 +219,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
 
       const billPayload = {
         billNumber: currentBillNumber, 
-        date: absoluteUtcDate, // 🚨 Now properly sends the exact time
+        date: absoluteUtcDate,
         patientId: currentPatientId,
         subTotal, discountPercent: parseFloat(discountPercent) || 0, discountAmount: finalDiscount,
         netAmount, paidAmount: totalPaid, dueAmount, paymentMode: selectedModes[0] || 'Cash',
@@ -223,7 +234,8 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         billId: currentBillNumber, billDate: new Date(billingDate).toLocaleString('en-GB'),
         patientName: fullName, ageGender: ageString, referredBy: dbPatientData.refDoctor || 'Self',
         paymentType: selectedModes.join(', '), items: billItems.map(item => ({ id: item.id, name: item.name, price: item.price })),
-        subTotal, discount: finalDiscount, totalAmount: netAmount, paidAmount: totalPaid, balanceDue: dueAmount, note: notesContent
+        subTotal, discount: finalDiscount, totalAmount: netAmount, paidAmount: totalPaid, balanceDue: dueAmount, note: notesContent,
+        authorSign: userSignature 
       };
 
       setInvoiceData(finalInvoiceData);
