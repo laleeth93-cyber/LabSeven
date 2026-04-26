@@ -163,3 +163,30 @@ export async function getNextBillNumber() {
     return null;
   }
 }
+
+// 🚨 FIX: ADDED THIS FUNCTION TO FETCH CURRENT USER'S SIGNATURE
+export async function getCurrentUserSignature() {
+  try {
+    const { user } = await requireAuth();
+    const dbUser = await prisma.user.findUnique({
+      where: { id: parseInt(user.id) }
+    });
+
+    if (dbUser && dbUser.signatureUrl) {
+      let designation = dbUser.designation || '';
+      if (dbUser.degree) designation += ` | ${dbUser.degree}`;
+      
+      return { 
+        success: true, 
+        data: {
+           name: dbUser.signName || dbUser.name,
+           designation: designation,
+           signatureUrl: dbUser.signatureUrl
+        }
+      };
+    }
+    return { success: false };
+  } catch (error) {
+    return { success: false };
+  }
+}

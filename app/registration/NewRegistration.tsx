@@ -5,9 +5,9 @@ import dynamic from 'next/dynamic';
 import { Loader2, CheckCircle, Type, X, User, Receipt, WifiOff } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid'; 
 
-import { registerPatient, getNextPatientId } from '@/app/actions/patient'; // 🚨 Added sequence generator
+import { registerPatient, getNextPatientId } from '@/app/actions/patient'; 
 import { getReferrals } from '@/app/actions/referral'; 
-import { createBill, getNextBillNumber } from '@/app/actions/billing'; // 🚨 Added sequence generator
+import { createBill, getNextBillNumber } from '@/app/actions/billing'; 
 
 // Import our new Offline-First tools!
 import { localDB } from '@/lib/local-db/db';
@@ -80,7 +80,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
     return (new Date(now.getTime() - tzOffset)).toISOString().slice(0, 19);
   };
 
-  // 🚨 REPLACED RANDOM ID LOGIC WITH DATABASE SEQUENCE FETCH
   useEffect(() => {
     const initializeSerialNumbers = async () => {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -114,7 +113,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
       } catch (e) { console.error("Failed to load referrals", e); }
     };
     fetchRefs();
-  }, [isOnline]); // Reacts when internet comes back online
+  }, [isOnline]); 
 
   useEffect(() => {
     if (isManualTime) return;
@@ -200,8 +199,17 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         refDoctor: finalReferralString.trim(),
       };
 
+      // 🚨 FIX: Forcefully convert browser local time into an Absolute UTC string to prevent Vercel timezone shifting
+      const [datePart, timePart] = billingDate.split('T');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hour, minute, second] = (timePart || '00:00:00').split(':').map(Number);
+      const safeLocalDate = new Date(year, month - 1, day, hour, minute, second || 0);
+      const absoluteUtcDate = safeLocalDate.toISOString();
+
       const billPayload = {
-        billNumber: currentBillNumber, date: billingDate, patientId: currentPatientId,
+        billNumber: currentBillNumber, 
+        date: absoluteUtcDate, // 🚨 Now properly sends the exact time
+        patientId: currentPatientId,
         subTotal, discountPercent: parseFloat(discountPercent) || 0, discountAmount: finalDiscount,
         netAmount, paidAmount: totalPaid, dueAmount, paymentMode: selectedModes[0] || 'Cash',
         discountReason: discountReason, items: billItems.map(item => ({ testId: item.id, price: item.price })),

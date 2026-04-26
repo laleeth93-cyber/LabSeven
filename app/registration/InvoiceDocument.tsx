@@ -169,6 +169,7 @@ export interface InvoiceData {
   paidAmount: number; balanceDue: number;
   barcodeUrl?: string; qrUrl?: string; note?: string; noteImage?: string; 
   labProfile?: any;
+  authorSign?: any; // 🚨 FIX: Accept the signature object payload!
 }
 
 export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
@@ -239,14 +240,11 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
 
         {/* 4. FINANCIALS */}
         <View style={styles.totalsContainer}>
-            
-            {/* 🚨 FIX: Added QR Code container inside the Barcode Box */}
             <View style={styles.barcodeBox}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
                     {data.barcodeUrl && (
                         <View style={{ alignItems: 'center', marginRight: 20 }}>
                             <Image src={data.barcodeUrl} style={{ width: 80, height: 20 }} />
-                            {/* 🚨 FIX: Force only the last 4 digits beneath the barcode to match the HTML preview exactly! */}
                             <Text style={{ fontSize: 8, color: '#64748b', marginTop: 2 }}>{String(data.billId || '').slice(-4)}</Text>
                         </View>
                     )}
@@ -289,7 +287,6 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
             </View>
         </View>
 
-        {/* NOTE SECTION */}
         {data.noteImage ? (
             <View style={{ marginTop: 10, marginBottom: 10 }}>
                 <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#64748b', marginBottom: 4, textTransform: 'uppercase' }}>Note / Instructions:</Text>
@@ -304,10 +301,20 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
 
         <View style={{ flex: 1 }} />
 
-        {/* 5. SIGNATURE */}
+        {/* 5. 🚨 FIX: DYNAMIC USER SIGNATURE */}
         <View style={styles.signatureBox}>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureText}>Authorized Signatory</Text>
+            {data.authorSign?.signatureUrl ? (
+                <View style={{ alignItems: 'center' }}>
+                    <Image src={data.authorSign.signatureUrl} style={{ height: 40, width: 80, objectFit: 'contain', marginBottom: 2 }} />
+                    <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#1e293b' }}>{data.authorSign.name}</Text>
+                    {data.authorSign.designation && <Text style={{ fontSize: 6, color: '#64748b', marginTop: 2 }}>{data.authorSign.designation}</Text>}
+                </View>
+            ) : (
+                <View>
+                    <View style={styles.signatureLine} />
+                    <Text style={styles.signatureText}>Authorized Signatory</Text>
+                </View>
+            )}
         </View>
 
       </View>
