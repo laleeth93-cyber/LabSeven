@@ -1,8 +1,8 @@
-// --- BLOCK app/super-admin/page.tsx OPEN ---
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import SuperAdminTable from "./components/SuperAdminTable";
-import GlobalSyncWidget from "./components/GlobalSyncWidget"; // 🚨 ADDED IMPORT
+import GlobalSyncWidget from "./components/GlobalSyncWidget"; 
+import GlobalWipeButton from "./components/GlobalWipeButton"; // 🚨 ADDED IMPORT
 
 export default async function SuperAdminPage() {
   const labs = await prisma.organization.findMany({
@@ -34,8 +34,9 @@ export default async function SuperAdminPage() {
           <p className="text-sm font-medium text-slate-500 mt-1">Manage tenant lifecycle, subscriptions, and system security.</p>
         </div>
         
-        {/* 🚨 ADDED THE GLOBAL SYNC WIDGET HERE */}
-        <div className="flex items-center">
+        {/* 🚨 ADDED GLOBAL WIPE BUTTON NEXT TO SYNC WIDGET */}
+        <div className="flex items-center gap-3">
+            <GlobalWipeButton />
             <GlobalSyncWidget />
         </div>
       </div>
@@ -68,4 +69,3 @@ export default async function SuperAdminPage() {
     </div>
   );
 }
-// --- BLOCK app/super-admin/page.tsx CLOSE ---

@@ -1,11 +1,10 @@
-// --- BLOCK lib/server-auth.ts OPEN ---
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 /**
  * A secure helper function for Server Actions and API Routes.
- * It strictly enforces that a user is logged in and returns their Organization ID.
+ * It strictly enforces that a user is logged in and returns their Organization ID and Role.
  */
 export async function requireAuth() {
   const session = await getServerSession(authOptions);
@@ -18,6 +17,6 @@ export async function requireAuth() {
   return {
     user: session.user,
     orgId: (session.user as any).orgId as number,
+    userRole: (session.user as any).role as string, // 🚨 FIX: Added userRole here!
   };
 }
-// --- BLOCK lib/server-auth.ts CLOSE ---

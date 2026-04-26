@@ -1,8 +1,8 @@
-// --- BLOCK app/actions/super-admin.ts OPEN ---
 "use server";
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/server-auth"; // 🚨 REQUIRED FOR SECURITY CHECK
 
 // 1. Toggle Active/Suspended Status
 export async function toggleLabStatus(orgId: number, currentStatus: boolean) {
@@ -94,4 +94,32 @@ export async function toggleSensitivityModule(orgId: number, currentStatus: bool
         return { success: false, message: "Failed to update module settings." };
     }
 }
-// --- BLOCK app/actions/super-admin.ts CLOSE ---
+
+// 5. Global Wipe: Delete ALL patient data across ALL laboratories
+export async function wipeAllTenantData() {
+    try {
+        const { orgId } = await requireAuth();
+        
+        // 🚨 FIX: Security Check - Only Master HQ (orgId 1) can execute a global wipe!
+        if (orgId !== 1) {
+            throw new Error("Only Super Administrators (Master HQ) have permission to wipe global clinic data.");
+        }
+
+        // Delete all patient-related data across the entire database
+        // Order matters to prevent foreign key constraint errors
+        await prisma.$transaction([
+            prisma.testResult.deleteMany(),
+            prisma.payment.deleteMany(),
+            prisma.billItem.deleteMany(),
+            prisma.bill.deleteMany(),
+            prisma.patient.deleteMany()
+        ]);
+
+        revalidatePath("/", "layout");
+
+        return { success: true, message: "All Patients, Bills, and Results across ALL clients have been permanently deleted." };
+    } catch (error: any) {
+        console.error("Global Wipe Error:", error);
+        return { success: false, message: error.message || "Failed to wipe global data." };
+    }
+}
