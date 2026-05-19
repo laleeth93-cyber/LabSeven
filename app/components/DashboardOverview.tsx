@@ -14,7 +14,6 @@ import {
 } from 'recharts';
 import DateRangeFilter from '@/app/results/entry/components/DateRangeFilter';
 
-// 🚨 FIX: Ensure the default load explicitly labels itself "Today"
 const getTodayRange = () => {
     const from = new Date();
     from.setHours(0, 0, 0, 0);
@@ -37,7 +36,6 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "
             prev?.from?.getTime() !== globalDateRange?.from?.getTime() || 
             prev?.to?.getTime() !== globalDateRange?.to?.getTime()
         ) {
-            // 🚨 FIX: Pass entire object, including the label to local state!
             setDateRange(globalDateRange); 
             prevGlobalRange.current = globalDateRange;
         }
@@ -66,11 +64,11 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "
     return (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col h-full relative group">
             <div className="flex flex-col xl:flex-row justify-between xl:items-center mb-6 shrink-0 gap-3">
-                <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                {/* 🚨 FIX: Added whitespace-nowrap to guarantee the title stays on one line */}
+                <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 whitespace-nowrap">
                     <Icon size={16} className="text-[#9575cd] shrink-0"/> {title}
                 </h3>
                 <div className={`w-full xl:w-[240px] z-20 ${alignPopover === 'left' ? '[&>div>div]:!left-0 [&>div>div]:!right-auto origin-top-left' : ''}`}>
-                    {/* 🚨 FIX: Push the local state containing the global label to initialRange */}
                     <DateRangeFilter align={alignPopover === 'left' ? 'start' : 'end'} initialRange={dateRange} onFilterChange={(range) => setDateRange(range)} />
                 </div>
             </div>
@@ -154,7 +152,7 @@ function SpecificReferralWidget({ initialRefs, initialRefData, globalDateRange }
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col h-full relative group">
             <div className="flex flex-col xl:flex-row justify-between xl:items-center mb-6 shrink-0 gap-3">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 whitespace-nowrap">
                         <Users size={16} className="text-[#9575cd] shrink-0"/> Specific Referral Performance:
                     </h3>
                     <div className="relative w-full sm:w-72" ref={searchRef}>
@@ -358,8 +356,8 @@ export default function DashboardOverview({ initialData }: { initialData: any })
                 />
             </div>
 
-            {/* CHARTS GRID 2 - 4 COLUMNS */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+            {/* 🚨 FIX: CHARTS GRID 2 - CHANGED FROM 4 COLUMNS TO 2 COLUMNS (lg:grid-cols-2) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <ChartWidget 
                     title="Top Referring Entities" icon={Stethoscope} fetcher={getTopReferralsData} 
                     alignPopover="left"

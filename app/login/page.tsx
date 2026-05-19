@@ -1,4 +1,3 @@
-// --- BLOCK app/login/page.tsx OPEN ---
 "use client";
 
 import React, { useState } from "react";
@@ -14,7 +13,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
-      <div className="relative w-full max-w-4xl h-[600px] md:h-[500px] bg-white rounded-2xl shadow-2xl shadow-slate-300 overflow-hidden flex flex-col md:flex-row">
+      {/* 🚨 MICRO REDESIGN: max-w-2xl (672px) and h-[400px] */}
+      <div className="relative w-full max-w-2xl h-[520px] md:h-[400px] bg-white rounded-2xl shadow-2xl shadow-slate-300 overflow-hidden flex flex-col md:flex-row">
         
         {/* ==================== MOBILE TOGGLE ==================== */}
         <div className="md:hidden flex justify-center pt-4 px-5 bg-white z-10 shrink-0">
@@ -35,4 +35,3 @@ export default function LoginPage() {
     </div>
   );
 }
-// --- BLOCK app/login/page.tsx CLOSE ---

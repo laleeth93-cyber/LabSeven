@@ -121,8 +121,6 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
         <nav className="flex-1 py-4 flex flex-col justify-between h-full w-full">
           <div className="space-y-1 w-full"> 
             
-            {/* 🚨 THE FIX: Added prefetch={false} to EVERY link below to stop the connection pool explosion! */}
-
             {canSee(['Dashboard']) && (
                 <Link href="/" prefetch={false} onClick={() => setActiveView('dashboard')} className={getResponsiveLiClass(currentView === 'dashboard', false)}>
                   {currentView === 'dashboard' ? <Home size={isSidebarOpen ? 18 : 20} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" /> : <LayoutDashboard size={isSidebarOpen ? 18 : 20} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />}
@@ -189,7 +187,7 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
             {canSee(['Header Setup', 'Body Settings', 'Footer Layout', 'Page Formatting']) && (
                 <Link href="/reports" prefetch={false} onClick={() => setActiveView('reports')} className={getResponsiveLiClass(currentView === 'reports', false)}>
                   {currentView === 'reports' ? <LayoutTemplate size={isSidebarOpen ? 18 : 20} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" /> : <Layout size={isSidebarOpen ? 18 : 20} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />}
-                  {isSidebarOpen ? <span className={`text-[12px] tracking-wide whitespace-normal leading-snug ${currentView === 'reports' ? 'font-bold' : 'font-medium'}`}>Reports Formating</span> : <span className={`text-[9px] tracking-tight text-center leading-[1.15] whitespace-normal w-full ${currentView === 'reports' ? 'font-bold' : 'font-medium'}`}>Reports Formating</span>}
+                  {isSidebarOpen ? <span className={`text-[12px] tracking-wide whitespace-normal leading-snug ${currentView === 'reports' ? 'font-bold' : 'font-medium'}`}>Formatting</span> : <span className={`text-[9px] tracking-tight text-center leading-[1.15] whitespace-normal w-full ${currentView === 'reports' ? 'font-bold' : 'font-medium'}`}>Formatting</span>}
                 </Link>
             )}
 
