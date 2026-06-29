@@ -249,64 +249,63 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
         <HistoryModal show={showHistoryModal} onClose={() => setShowHistoryModal(false)} paramName={selectedHistoryParam} isLoading={isHistoryLoading} data={historyData} />
         <CultureSensitivityModal isOpen={isCultureModalOpen} onClose={() => setIsCultureModalOpen(false)} onSave={handleSaveCultureData} initialData={activeCultureItem?.initialData} />
 
-        {/* 1. TOP ACTION BAR */}
         <div className="w-full bg-white shrink-0 border-b border-slate-200 shadow-sm relative z-10">
-            <div className="w-full px-4 sm:px-6 py-4 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
+            <div className="w-full px-4 sm:px-6 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div className="shrink-0 pb-1">
                     <h3 className="text-lg md:text-base font-bold text-slate-800">Result Entry Form</h3>
                     <p className="text-sm md:text-xs text-slate-500">Selected <span className="font-bold text-[#9575cd]">{visibleItems.length}</span> tests</p>
                 </div>
                 
                 {validItems.length > 0 && (
-                    <div className="flex items-end gap-4 w-full xl:w-auto overflow-x-auto pb-2 xl:pb-1 custom-scrollbar shrink-0">
+                    /* 🚨 FIXED: Changed from items-center to items-end so the bottoms lock together perfectly */
+                    <div className="flex items-end gap-2 lg:gap-1.5 xl:gap-4 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 custom-scrollbar shrink-0 flex-nowrap">
                         
-                        {/* SIGNATURES - FIXED: Stacked Layout, Native Arrows Only */}
-                        <div className="flex items-center gap-3 shrink-0">
-                            <div className="flex flex-col gap-1.5">
+                        <div className="flex items-end gap-2 xl:gap-3 shrink-0">
+                            <div className="flex flex-col gap-1">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Sig 1</label>
-                                <select value={sig1Id} onChange={handleSig1Change} disabled={allApproved} className="cursor-pointer h-11 md:h-9 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 px-3 outline-none focus:ring-2 focus:ring-[#9575cd] bg-slate-50 w-36 hover:bg-slate-100 transition-colors">
+                                <select value={sig1Id} onChange={handleSig1Change} disabled={allApproved} className="cursor-pointer h-10 lg:h-8 xl:h-9 border border-slate-200 rounded-lg text-sm lg:text-xs xl:text-sm font-semibold text-slate-700 px-2 outline-none focus:ring-2 focus:ring-[#9575cd] bg-slate-50 w-32 lg:w-24 xl:w-36 hover:bg-slate-100 transition-colors">
                                     <option value="" className="font-normal text-slate-500">-- None --</option>
                                     {signatureUsers.map(u => <option key={u.id} value={String(u.id)} className="font-medium text-slate-800">{u.signName || u.name}</option>)}
                                 </select>
                             </div>
-                            <div className="flex flex-col gap-1.5">
+                            <div className="flex flex-col gap-1">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Sig 2</label>
-                                <select value={sig2Id} onChange={(e) => setSig2Id(e.target.value)} disabled={allApproved} className="cursor-pointer h-11 md:h-9 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 px-3 outline-none focus:ring-2 focus:ring-[#9575cd] bg-slate-50 w-36 hover:bg-slate-100 transition-colors">
+                                <select value={sig2Id} onChange={(e) => setSig2Id(e.target.value)} disabled={allApproved} className="cursor-pointer h-10 lg:h-8 xl:h-9 border border-slate-200 rounded-lg text-sm lg:text-xs xl:text-sm font-semibold text-slate-700 px-2 outline-none focus:ring-2 focus:ring-[#9575cd] bg-slate-50 w-32 lg:w-24 xl:w-36 hover:bg-slate-100 transition-colors">
                                     <option value="" className="font-normal text-slate-500">-- None --</option>
                                     {signatureUsers.filter(u => String(u.id) !== sig1Id).map(u => <option key={u.id} value={String(u.id)} className="font-medium text-slate-800">{u.signName || u.name}</option>)}
                                 </select>
                             </div>
                         </div>
                         
-                        <div className="h-8 w-px bg-slate-200 shrink-0 mb-0.5"></div>
+                        {/* 🚨 FIXED: Dividers properly centered using mb-2 / mb-1.5 margins */}
+                        <div className="h-6 lg:h-5 xl:h-6 w-px bg-slate-200 shrink-0 mb-2 lg:mb-1.5 xl:mb-1.5 rounded-full"></div>
                         
-                        {/* Print Buttons */}
-                        <div className="flex items-center gap-2 shrink-0 mb-0.5">
-                            <button onClick={onPrint} className="whitespace-nowrap px-4 py-2.5 md:py-2 bg-white text-slate-700 hover:text-[#9575cd] border border-slate-200 hover:border-[#9575cd] text-base md:text-sm font-bold rounded-lg flex items-center gap-2 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
+                            {/* 🚨 FIXED: Buttons use strict explicit heights (h-10 / h-8 / h-9) to identically match the dropdowns */}
+                            <button onClick={onPrint} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-3 lg:px-2 xl:px-4 bg-white text-slate-700 hover:text-[#9575cd] border border-slate-200 hover:border-[#9575cd] text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                                 Print
                             </button>
-                            <button onClick={onDeltaPrint} className="whitespace-nowrap px-4 py-2.5 md:py-2 bg-white text-slate-700 hover:text-indigo-500 border border-slate-200 hover:border-indigo-300 text-base md:text-sm font-bold rounded-lg flex items-center gap-2 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                            <button onClick={onDeltaPrint} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-3 lg:px-2 xl:px-4 bg-white text-slate-700 hover:text-indigo-500 border border-slate-200 hover:border-indigo-300 text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                                 Delta
                             </button>
                         </div>
 
-                        <div className="h-8 w-px bg-slate-200 shrink-0 mb-0.5"></div>
+                        <div className="h-6 lg:h-5 xl:h-6 w-px bg-slate-200 shrink-0 mb-2 lg:mb-1.5 xl:mb-1.5 rounded-full"></div>
                         
-                        {/* Save & Approve Buttons */}
-                        <div className="flex items-center gap-2 shrink-0 mb-0.5">
+                        <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
                             {allApproved ? (
-                                <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="whitespace-nowrap px-5 py-2.5 md:py-2 bg-red-50 text-red-600 border border-red-200 text-base md:text-sm font-bold rounded-lg flex items-center gap-2">
-                                    {isSaving ? <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>} Unapprove All
+                                <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-3 xl:px-5 bg-red-50 text-red-600 border border-red-200 text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2">
+                                    {isSaving ? <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>} Unapprove All
                                 </button>
                             ) : (
                                 <>
-                                    <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="whitespace-nowrap px-5 py-2.5 md:py-2 bg-white text-slate-600 border border-slate-200 text-base md:text-sm font-bold rounded-lg flex items-center gap-2 shadow-sm hover:bg-slate-50 transition-colors">
-                                        {isSaving ? <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>} Save Draft
+                                    <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-2 xl:px-5 bg-white text-slate-600 border border-slate-200 text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2 shadow-sm hover:bg-slate-50 transition-colors">
+                                        {isSaving ? <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>} Save Draft
                                     </button>
-                                    <button onClick={() => handleBulkSubmit('Approved')} disabled={isSaving} className="whitespace-nowrap px-5 py-2.5 md:py-2 bg-[#9575cd] text-white text-base md:text-sm font-bold rounded-lg flex items-center gap-2 shadow-md hover:bg-[#8565bd] transition-colors">
-                                        {isSaving ? <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>} Approve All
+                                    <button onClick={() => handleBulkSubmit('Approved')} disabled={isSaving} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-2 xl:px-5 bg-[#9575cd] text-white text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2 shadow-md hover:bg-[#8565bd] transition-colors">
+                                        {isSaving ? <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>} Approve All
                                     </button>
                                 </>
                             )}
@@ -316,7 +315,6 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
             </div>
         </div>
 
-        {/* 2. FORM BODY */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 w-full">
             <div className="w-full flex flex-col gap-6">
                 {visibleItems.map((item: any) => (
@@ -333,7 +331,6 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
             </div>
         </div>
 
-        {/* Success Popup */}
         {showSuccessPopup && (
           <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300 w-full max-w-[100vw]">
             <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-sm w-full mx-4 border border-slate-100">
