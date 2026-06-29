@@ -2,7 +2,7 @@ import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 9, fontFamily: 'Helvetica', color: '#334155', backgroundColor: '#ffffff' },
+  page: { fontSize: 9, fontFamily: 'Helvetica', color: '#334155', backgroundColor: '#ffffff' },
   mainContainer: { flex: 1, flexDirection: 'column' },
   headerContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', borderBottomWidth: 2, borderBottomColor: '#1e293b', paddingBottom: 20, marginBottom: 20 },
   brandColumn: { flexDirection: 'row', alignItems: 'center', width: '60%' },
@@ -61,33 +61,65 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
   };
   const cleanNote = getCleanText(data.note);
 
+  const hasLetterhead = data.labProfile?.letterheadUrl && 
+                        data.labProfile.letterheadUrl !== 'null' && 
+                        data.labProfile.letterheadUrl !== 'undefined' && 
+                        data.labProfile.letterheadUrl.trim() !== '';
+
   return (
   <Document>
-    <Page size="A4" style={styles.page}>
+    <Page size="A4" style={{
+        ...styles.page,
+        paddingTop: hasLetterhead ? Number(data.labProfile.lhMt || 120) : 40,
+        paddingBottom: hasLetterhead ? Number(data.labProfile.lhMb || 80) : 40,
+        paddingLeft: hasLetterhead ? Number(data.labProfile.lhMl || 40) : 40,
+        paddingRight: hasLetterhead ? Number(data.labProfile.lhMr || 40) : 40,
+    }}>
+        
+      {/* BACKGROUND LETTERHEAD LAYER */}
+      {hasLetterhead && (
+          <Image 
+              src={data.labProfile.letterheadUrl} 
+              fixed 
+              style={{ 
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: data.labProfile.lhWidth ? Number(data.labProfile.lhWidth) : '100%',
+                  height: data.labProfile.lhHeight ? Number(data.labProfile.lhHeight) : '100%',
+                  zIndex: -1 
+              }} 
+          />
+      )}
+
       <View style={styles.mainContainer}>
 
-        <View style={styles.headerContainer}>
-            <View style={styles.brandColumn}>
-                {data.labProfile?.logoUrl && (
-                    <Image src={data.labProfile.logoUrl} style={{ width: 45, height: 45, marginRight: 12 }} />
-                )}
-                <View style={{ flexDirection: 'column' }}>
-                    <Text style={styles.brandName}>{data.labProfile?.name || 'Smart Lab'}</Text>
-                    <Text style={styles.brandSub}>{data.labProfile?.tagline || 'Pathology & Diagnostics'}</Text>
+        {!hasLetterhead && (
+            <View style={styles.headerContainer}>
+                <View style={styles.brandColumn}>
+                    {data.labProfile?.logoUrl && (
+                        <Image src={data.labProfile.logoUrl} style={{ width: 45, height: 45, marginRight: 12 }} />
+                    )}
+                    <View style={{ flexDirection: 'column' }}>
+                        <Text style={styles.brandName}>{data.labProfile?.name || 'Smart Lab'}</Text>
+                        <Text style={styles.brandSub}>{data.labProfile?.tagline || 'Pathology & Diagnostics'}</Text>
+                    </View>
+                </View>
+                <View style={styles.contactColumn}>
+                    {data.labProfile?.address ? (
+                        <Text style={styles.addressLine}>{data.labProfile.address}</Text>
+                    ) : (
+                        <>
+                            <Text style={styles.addressLine}>123, Health Avenue, Medical District</Text>
+                            <Text style={styles.addressLine}>City - 500010, State</Text>
+                        </>
+                    )}
+                    <Text style={styles.addressLine}>Ph: {data.labProfile?.phone || '+91 98765 43210'}</Text>
                 </View>
             </View>
-            <View style={styles.contactColumn}>
-                {data.labProfile?.address ? (
-                    <Text style={styles.addressLine}>{data.labProfile.address}</Text>
-                ) : (
-                    <>
-                        <Text style={styles.addressLine}>123, Health Avenue, Medical District</Text>
-                        <Text style={styles.addressLine}>City - 500010, State</Text>
-                    </>
-                )}
-                <Text style={styles.addressLine}>Ph: {data.labProfile?.phone || '+91 98765 43210'}</Text>
-            </View>
-        </View>
+        )}
 
         <View style={styles.grid}>
             <View style={styles.col}>
@@ -198,16 +230,21 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
 
       </View>
 
-      <View style={styles.footer} fixed>
-         <View>
-            <Text style={styles.termTitle}>Terms & Conditions:</Text>
-            <Text style={styles.termText}>1. Results are for clinical reference only.</Text>
-            <Text style={styles.termText}>2. Please collect reports within 30 days.</Text>
-            <Text style={styles.termText}>3. Valid only with authorized signature.</Text>
-         </View>
-      </View>
+      {!hasLetterhead && (
+        <View style={styles.footer} fixed>
+            <View>
+                <Text style={styles.termTitle}>Terms & Conditions:</Text>
+                <Text style={styles.termText}>1. Results are for clinical reference only.</Text>
+                <Text style={styles.termText}>2. Please collect reports within 30 days.</Text>
+                <Text style={styles.termText}>3. Valid only with authorized signature.</Text>
+            </View>
+        </View>
+      )}
 
     </Page>
   </Document>
   );
 };
+
+// 🚨 FIXED: This default export prevents the "Element type is invalid" crash!
+export default InvoiceDocument;

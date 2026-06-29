@@ -1,4 +1,3 @@
-// --- BLOCK app/actions/lab-profile.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
@@ -39,7 +38,16 @@ export async function updateLabProfile(data: any) {
             phone: data.phone, 
             email: data.email, 
             website: data.website, 
-            logoUrl: data.logoUrl
+            logoUrl: data.logoUrl,
+            
+            // 🚨 ADDED: The 7 new letterhead fields mapped to the payload
+            letterheadUrl: data.letterheadUrl,
+            lhWidth: data.lhWidth,
+            lhHeight: data.lhHeight,
+            lhMt: data.lhMt,
+            lhMb: data.lhMb,
+            lhMl: data.lhMl,
+            lhMr: data.lhMr
         };
 
         if (profile) {
@@ -64,4 +72,3 @@ export async function updateLabProfile(data: any) {
         return { success: false, message: error.message };
     }
 }
-// --- BLOCK app/actions/lab-profile.ts CLOSE ---

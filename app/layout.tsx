@@ -1,17 +1,25 @@
-// --- BLOCK app/layout.tsx OPEN ---
 import type { Metadata } from "next";
 import "./globals.css";
 import ClientLayout from "./components/layout/ClientLayout"; 
 import ExpirationBanner from "@/app/components/ExpirationBanner";
 import KeepAlive from "@/app/components/KeepAlive";
 import { NextAuthProvider } from "@/app/components/NextAuthProvider"; 
-import { PermissionProvider } from "@/app/context/PermissionContext"; // 🚨 ADDED PERMISSION PROVIDER
+import { PermissionProvider } from "@/app/context/PermissionContext";
 import { Toaster } from "react-hot-toast";
 import { Suspense } from "react"; 
 
 export const metadata: Metadata = {
   title: "Lab Seven",
   description: "Laboratory Management System",
+  // 🚨 UPDATED: Explicitly telling the browser this is a 512x512 high-res image
+  icons: {
+    icon: [
+      { url: '/favicon.png', sizes: '512x512', type: 'image/png' }
+    ],
+    apple: [
+      { url: '/favicon.png', sizes: '512x512', type: 'image/png' }
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -24,7 +32,7 @@ export default function RootLayout({
       <body className="bg-gray-50 antialiased flex flex-col h-screen overflow-hidden">
         
         <NextAuthProvider>
-            {/* 🚨 WRAP THE APP IN THE PERMISSION PROVIDER */}
+            {/* WRAP THE APP IN THE PERMISSION PROVIDER */}
             <PermissionProvider>
                 <Toaster 
                     position="top-center" 
@@ -69,4 +77,3 @@ export default function RootLayout({
     </html>
   );
 }
-// --- BLOCK app/layout.tsx CLOSE ---

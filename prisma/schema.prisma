@@ -41,11 +41,13 @@ model Organization {
   parameters                Parameter[]
   parameterRanges           ParameterRange[]
   departments               Department[]
+  
   specimens                 Specimen[]
   vacutainers               Vacutainer[]
   methods                   Method[]
   uoms                      UOM[]
   operators                 Operator[]
+  
   labLists                  LabList[]
   labProfiles               LabProfile[]
   reportSettings            ReportSettings[]
@@ -435,6 +437,7 @@ model ParameterRange {
   minAgeUnit    String   @default("Years")
   maxAgeUnit    String   @default("Years")
   
+ 
   normalOperator  String  @default("Between")
   lowRange      Float?
   highRange     Float?
@@ -588,6 +591,15 @@ model LabProfile {
   website   String?
   logoUrl   String?  @db.Text
 
+  // 🚨 ADDED FIELDS FOR LETTERHEAD
+  letterheadUrl   String?  @db.Text
+  lhWidth         String?
+  lhHeight        String?
+  lhMt            String?
+  lhMb            String?
+  lhMl            String?
+  lhMr            String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 }
@@ -630,7 +642,7 @@ model ReportSettings {
   highlightAbnormal   Boolean  @default(true)
   stripedRows         Boolean  @default(false)
   
-  testColumnWidth      String   @default("auto") 
+  testColumnWidth     String   @default("auto") 
   
   colWidthParam       String?
   colWidthResult      String?
@@ -676,7 +688,7 @@ model ReportSettings {
   paperSize           String   @default("A4")
   printOrientation    String   @default("portrait")
 
-  customHeader1        String?  @db.Text
+  customHeader1       String?  @db.Text
   customHeader2       String?  @db.Text
   customHeader3       String?  @db.Text
   customHeader4       String?  @db.Text
@@ -771,7 +783,7 @@ model RolePermission {
 }
 
 model UserPermission {
-  id             Int        @id @default(autoincrement())
+  id              Int        @id @default(autoincrement())
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   permissionId Int

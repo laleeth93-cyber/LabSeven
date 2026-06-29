@@ -1,19 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Building2, Save, Upload, Loader2, Image as ImageIcon, MapPin, Phone, Mail, Globe, Info, Hash, CheckCircle } from 'lucide-react';
+import { Building2, Save, Upload, Loader2, Image as ImageIcon, MapPin, Phone, Mail, Globe, Info, Hash, CheckCircle, LayoutTemplate, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { getLabProfile, updateLabProfile } from '@/app/actions/lab-profile';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 
 export default function LabProfilePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [isUploading, setIsUploading] = useState(false); // 🚨 NEW STATE FOR R2 UPLOAD
+    
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const [isUploadingLetterhead, setIsUploadingLetterhead] = useState(false);
     
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
     const [settings, setSettings] = useState<any>({
-        name: '', tagline: '', address: '', phone: '', email: '', website: '', logoUrl: ''
+        name: '', tagline: '', address: '', phone: '', email: '', website: '', logoUrl: '', letterheadUrl: '',
+        lhWidth: '', lhHeight: '', lhMt: '', lhMb: '', lhMl: '', lhMr: ''
     });
 
     useEffect(() => {
@@ -42,27 +45,22 @@ export default function LabProfilePage() {
         setIsSaving(false);
     };
 
-    // 🚨 REWRITTEN TO UPLOAD DIRECTLY TO CLOUDFLARE R2
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'logoUrl' | 'letterheadUrl') => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        setIsUploading(true);
+        const setLoading = field === 'logoUrl' ? setIsUploadingLogo : setIsUploadingLetterhead;
+        setLoading(true);
 
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("folder", "logos"); 
+        formData.append("folder", field === 'logoUrl' ? "logos" : "letterheads"); 
 
         try {
-            const res = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            });
-
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
             const result = await res.json();
             if (result.success) {
-                // Set the R2 public URL directly to the settings
-                setSettings({ ...settings, logoUrl: result.url });
+                setSettings({ ...settings, [field]: result.url });
             } else {
                 alert("Upload failed: " + result.error);
             }
@@ -70,7 +68,7 @@ export default function LabProfilePage() {
             console.error("R2 Upload Error:", error);
             alert("An error occurred while uploading to the storage server.");
         } finally {
-            setIsUploading(false);
+            setLoading(false);
         }
     };
 
@@ -112,7 +110,7 @@ export default function LabProfilePage() {
                     </div>
                     <button 
                         onClick={handleSave} 
-                        disabled={isSaving || isUploading} 
+                        disabled={isSaving || isUploadingLogo || isUploadingLetterhead} 
                         className="bg-[#9575cd] text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-[#7e57c2] flex items-center gap-2 transition-all disabled:opacity-70 shadow-md hover:shadow-lg active:scale-95 relative z-10 w-full sm:w-auto justify-center"
                     >
                         {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} 
@@ -123,17 +121,19 @@ export default function LabProfilePage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
                     <div className="lg:col-span-1 space-y-6">
+                        
+                        {/* LOGO UPLOAD */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                             <h3 className="font-bold text-slate-800 text-base mb-1 flex items-center gap-2">
                                 <ImageIcon size={18} className="text-[#9575cd]"/> Lab Logo
                             </h3>
-                            <p className="text-xs text-slate-500 mb-6">This logo will appear on your printed reports and invoices.</p>
+                            <p className="text-xs text-slate-500 mb-6">A square logo used across the platform and standard headers.</p>
                             
                             <div className="w-full aspect-square max-w-[240px] mx-auto border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden group transition-colors hover:border-[#9575cd] hover:bg-purple-50/30">
-                                {isUploading ? (
+                                {isUploadingLogo ? (
                                     <div className="flex flex-col items-center">
                                         <Loader2 size={28} className="text-[#9575cd] animate-spin mb-2" />
-                                        <span className="text-xs font-bold text-slate-500">Uploading to R2...</span>
+                                        <span className="text-xs font-bold text-slate-500">Uploading...</span>
                                     </div>
                                 ) : settings.logoUrl ? (
                                     <img src={settings.logoUrl} alt="Lab Logo" className="w-full h-full object-contain p-4" />
@@ -142,12 +142,11 @@ export default function LabProfilePage() {
                                         <div className="p-3 bg-white rounded-full shadow-sm mb-3">
                                             <Upload size={24} className="text-slate-400 group-hover:text-[#9575cd] transition-colors" />
                                         </div>
-                                        <span className="text-sm font-bold text-slate-600">Upload Image</span>
-                                        <span className="text-[10px] text-slate-400 mt-1">PNG, JPG up to 2MB</span>
+                                        <span className="text-sm font-bold text-slate-600">Upload Logo</span>
                                     </div>
                                 )}
                                 
-                                {!isUploading && (
+                                {!isUploadingLogo && (
                                     <label className={`absolute inset-0 cursor-pointer flex flex-col items-center justify-center transition-all ${settings.logoUrl ? 'bg-slate-900/60 opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
                                         {settings.logoUrl && (
                                             <>
@@ -155,19 +154,97 @@ export default function LabProfilePage() {
                                                 <span className="text-xs font-bold text-white">Change Logo</span>
                                             </>
                                         )}
-                                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'logoUrl')} disabled={isUploadingLogo} />
                                     </label>
                                 )}
                             </div>
                             
-                            {settings.logoUrl && !isUploading && (
+                            {settings.logoUrl && !isUploadingLogo && (
                                 <div className="mt-4 flex justify-center">
-                                    <button 
-                                        onClick={() => setSettings({...settings, logoUrl: null})} 
-                                        className="text-xs text-rose-500 font-bold hover:bg-rose-50 px-4 py-2 rounded-lg transition-colors"
-                                    >
+                                    <button onClick={() => setSettings({...settings, logoUrl: null})} className="text-xs text-rose-500 font-bold hover:bg-rose-50 px-4 py-2 rounded-lg transition-colors">
                                         Remove Logo
                                     </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* LETTERHEAD UPLOAD */}
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 className="font-bold text-slate-800 text-base mb-1 flex items-center gap-2">
+                                <LayoutTemplate size={18} className="text-[#9575cd]"/> Invoice Letterhead
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-4">A wide banner image that replaces the standard text header on invoices.</p>
+                            
+                            <div className="w-full aspect-[2/1] mx-auto border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden group transition-colors hover:border-[#9575cd] hover:bg-purple-50/30">
+                                {isUploadingLetterhead ? (
+                                    <div className="flex flex-col items-center">
+                                        <Loader2 size={28} className="text-[#9575cd] animate-spin mb-2" />
+                                        <span className="text-xs font-bold text-slate-500">Uploading...</span>
+                                    </div>
+                                ) : settings.letterheadUrl ? (
+                                    <img src={settings.letterheadUrl} alt="Letterhead" className="w-full h-full object-contain p-2" />
+                                ) : (
+                                    <div className="text-center text-slate-400 flex flex-col items-center">
+                                        <div className="p-3 bg-white rounded-full shadow-sm mb-3">
+                                            <Upload size={24} className="text-slate-400 group-hover:text-[#9575cd] transition-colors" />
+                                        </div>
+                                        <span className="text-sm font-bold text-slate-600">Upload Banner</span>
+                                    </div>
+                                )}
+                                
+                                {!isUploadingLetterhead && (
+                                    <label className={`absolute inset-0 cursor-pointer flex flex-col items-center justify-center transition-all ${settings.letterheadUrl ? 'bg-slate-900/60 opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+                                        {settings.letterheadUrl && (
+                                            <>
+                                                <Upload size={24} className="mb-2 text-white" />
+                                                <span className="text-xs font-bold text-white">Change Banner</span>
+                                            </>
+                                        )}
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'letterheadUrl')} disabled={isUploadingLetterhead} />
+                                    </label>
+                                )}
+                            </div>
+                            
+                            {/* NEW: Letterhead Dimensions & Margins Configurator */}
+                            {settings.letterheadUrl && !isUploadingLetterhead && (
+                                <div className="mt-4 border-t border-slate-100 pt-4">
+                                    <h4 className="text-xs font-bold text-slate-600 mb-3 flex items-center gap-1.5"><SlidersHorizontal size={14}/> Size & Margins (in pixels)</h4>
+                                    
+                                    <div className="grid grid-cols-2 gap-3 mb-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Width (Leave empty for 100%)</label>
+                                            <input type="number" placeholder="100%" value={settings.lhWidth || ''} onChange={e => setSettings({...settings, lhWidth: e.target.value})} className="w-full h-8 px-2 text-xs border border-slate-200 rounded outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Height (Leave empty for Auto)</label>
+                                            <input type="number" placeholder="Auto" value={settings.lhHeight || ''} onChange={e => setSettings({...settings, lhHeight: e.target.value})} className="w-full h-8 px-2 text-xs border border-slate-200 rounded outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 mb-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Top Margin</label>
+                                            <input type="number" placeholder="0" value={settings.lhMt || ''} onChange={e => setSettings({...settings, lhMt: e.target.value})} className="w-full h-8 px-2 text-xs border border-slate-200 rounded outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Bottom Margin</label>
+                                            <input type="number" placeholder="20" value={settings.lhMb || ''} onChange={e => setSettings({...settings, lhMb: e.target.value})} className="w-full h-8 px-2 text-xs border border-slate-200 rounded outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Left Margin</label>
+                                            <input type="number" placeholder="0" value={settings.lhMl || ''} onChange={e => setSettings({...settings, lhMl: e.target.value})} className="w-full h-8 px-2 text-xs border border-slate-200 rounded outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 block mb-1">Right Margin</label>
+                                            <input type="number" placeholder="0" value={settings.lhMr || ''} onChange={e => setSettings({...settings, lhMr: e.target.value})} className="w-full h-8 px-2 text-xs border border-slate-200 rounded outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-center border-t border-slate-100 pt-3">
+                                        <button onClick={() => setSettings({...settings, letterheadUrl: null})} className="text-xs text-rose-500 font-bold hover:bg-rose-50 px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+                                            <Trash2 size={14}/> Remove Banner
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -176,9 +253,9 @@ export default function LabProfilePage() {
                             <div className="flex items-start gap-3">
                                 <Info size={18} className="text-blue-500 mt-0.5 shrink-0" />
                                 <div>
-                                    <h4 className="text-sm font-bold text-slate-800 mb-1">Why complete your profile?</h4>
+                                    <h4 className="text-sm font-bold text-slate-800 mb-1">Header Priority</h4>
                                     <p className="text-xs text-slate-600 leading-relaxed">
-                                        The information provided here is directly linked to your PDF generator. Ensuring these details are accurate will make your patient reports look highly professional and compliant.
+                                        If an Invoice Letterhead is uploaded, it will completely replace the Lab Logo and textual General Information at the top of your invoices.
                                     </p>
                                 </div>
                             </div>
