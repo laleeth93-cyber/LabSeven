@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-// 🚨 FIX: Swapped out CheckCircle2, Sparkles, and Bug for safe universally supported icons
-import { Printer, FileText, Barcode, Banknote, RefreshCcw, Edit, History, CheckCircle, AlertCircle, Zap, Trash2, Info, ChevronLeft, ChevronRight, Microscope } from 'lucide-react';
+// 🚨 FIX: Swapped to 100% universally supported classic icons so the app NEVER crashes here!
+import { Printer, FileText, CreditCard, DollarSign, RefreshCcw, Edit, Clock, CheckCircle, AlertCircle, Zap, Trash2, Info, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
 import MusicBarLoader from '@/app/components/MusicBarLoader'; 
 
 interface ListTableProps {
@@ -153,18 +153,28 @@ export default function ListTable({
                                         </td>
                                         
                                         <td className="py-3 px-2 align-top text-center border-l border-slate-100"><ActionButton icon={Printer} onClick={() => onPrintBill(bill)} tooltip="Print Bill" colorClass="text-blue-600 hover:bg-blue-50 border-blue-100" /></td>
-                                        <td className="py-3 px-2 align-top text-center"><ActionButton icon={Barcode} onClick={() => onPrintBarcode(bill)} tooltip="Print Barcode" colorClass="text-indigo-600 hover:bg-indigo-50 border-indigo-100" /></td>
+                                        
+                                        {/* 🚨 SAFE ICON USED HERE */}
+                                        <td className="py-3 px-2 align-top text-center"><ActionButton icon={CreditCard} onClick={() => onPrintBarcode(bill)} tooltip="Print Barcode" colorClass="text-indigo-600 hover:bg-indigo-50 border-indigo-100" /></td>
+                                        
                                         <td className="py-3 px-2 align-top text-center"><ActionButton icon={FileText} onClick={() => onOpenReport(bill)} disabled={!hasPrintableRoutine} tooltip={hasPrintableRoutine ? "Print Report" : "No routine results ready"} colorClass="text-purple-600 hover:bg-purple-50 border-purple-100" /></td>
                                         <td className="py-3 px-2 align-top text-center"><ActionButton icon={Zap} onClick={() => onOpenSmartReport(bill)} tooltip="Smart Report" colorClass="text-amber-500 hover:text-amber-600 hover:bg-amber-50 border-amber-100" /></td>
 
+                                        {/* 🚨 SAFE ICON USED HERE */}
                                         <td className="py-3 px-2 align-top text-center hidden md:table-cell">
-                                            {hasCultureTest && onOpenCultureReport ? <ActionButton icon={Microscope} onClick={() => onOpenCultureReport(bill)} tooltip="Culture Report" colorClass="text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-100" /> : <span className="text-[10px] text-slate-300">-</span>}
+                                            {hasCultureTest && onOpenCultureReport ? <ActionButton icon={Activity} onClick={() => onOpenCultureReport(bill)} tooltip="Culture Report" colorClass="text-rose-500 hover:text-rose-600 hover:bg-rose-50 border-rose-100" /> : <span className="text-[10px] text-slate-300">-</span>}
                                         </td>
+                                        
                                         <td className="py-3 px-2 align-top text-center hidden md:table-cell"><ActionButton icon={RefreshCcw} onClick={() => onOpenRefund(bill)} disabled={bill.paidAmount <= 0} tooltip="Refund" colorClass="text-orange-600 hover:bg-orange-50 border-orange-100" /></td>
-                                        <td className="py-3 px-2 align-top text-center hidden md:table-cell"><ActionButton icon={Banknote} onClick={() => onOpenClearDue(bill)} tooltip={bill.dueAmount > 0 ? "Clear Due" : "No Due Pending"} colorClass="text-emerald-600 hover:bg-emerald-50 border-emerald-100" disabled={bill.dueAmount <= 0} /></td>
+                                        
+                                        {/* 🚨 SAFE ICON USED HERE */}
+                                        <td className="py-3 px-2 align-top text-center hidden md:table-cell"><ActionButton icon={DollarSign} onClick={() => onOpenClearDue(bill)} tooltip={bill.dueAmount > 0 ? "Clear Due" : "No Due Pending"} colorClass="text-emerald-600 hover:bg-emerald-50 border-emerald-100" disabled={bill.dueAmount <= 0} /></td>
+                                        
                                         <td className="py-3 px-2 align-top text-center hidden md:table-cell"><ActionButton icon={Edit} onClick={() => onEditBill(bill)} tooltip="Edit Details" colorClass="text-teal-600 hover:bg-teal-50 border-teal-100" /></td>
                                         <td className="py-3 px-2 align-top text-center hidden md:table-cell"><ActionButton icon={Trash2} onClick={() => onDeleteBill(bill)} tooltip="Delete Bill" colorClass="text-rose-600 hover:bg-rose-50 border-rose-100" /></td>
-                                        <td className="py-3 px-4 align-top text-center hidden md:table-cell"><ActionButton icon={History} onClick={() => onOpenAudit(bill)} tooltip="Audit Log" colorClass="text-slate-700 hover:bg-slate-100 border-slate-300 shadow-sm" /></td>
+                                        
+                                        {/* 🚨 SAFE ICON USED HERE */}
+                                        <td className="py-3 px-4 align-top text-center hidden md:table-cell"><ActionButton icon={Clock} onClick={() => onOpenAudit(bill)} tooltip="Audit Log" colorClass="text-slate-700 hover:bg-slate-100 border-slate-300 shadow-sm" /></td>
                                     </tr>
                                 );
                             })}
@@ -250,13 +260,13 @@ export default function ListTable({
                                         <div className="w-full flex gap-1 mb-1">
                                             <ActionButton icon={FileText} label="Report" onClick={() => onOpenReport(bill)} disabled={!hasPrintableRoutine} colorClass="text-purple-600 hover:bg-purple-50 border-purple-100" />
                                             <ActionButton icon={Printer} label="Invoice" onClick={() => onPrintBill(bill)} colorClass="text-blue-600 hover:bg-blue-50 border-blue-100" />
-                                            <ActionButton icon={Barcode} onClick={() => onPrintBarcode(bill)} tooltip="Barcode" colorClass="text-indigo-600 hover:bg-indigo-50 border-indigo-100" />
+                                            <ActionButton icon={CreditCard} onClick={() => onPrintBarcode(bill)} tooltip="Barcode" colorClass="text-indigo-600 hover:bg-indigo-50 border-indigo-100" />
                                             <ActionButton icon={Zap} onClick={() => onOpenSmartReport(bill)} tooltip="Smart Report" colorClass="text-amber-500 hover:bg-amber-50 border-amber-100" />
                                         </div>
                                         <div className="w-full flex gap-1">
-                                            <ActionButton icon={Banknote} onClick={() => onOpenClearDue(bill)} tooltip="Clear Due" colorClass="text-emerald-600 hover:bg-emerald-50 border-emerald-100" disabled={bill.dueAmount <= 0} />
+                                            <ActionButton icon={DollarSign} onClick={() => onOpenClearDue(bill)} tooltip="Clear Due" colorClass="text-emerald-600 hover:bg-emerald-50 border-emerald-100" disabled={bill.dueAmount <= 0} />
                                             <ActionButton icon={RefreshCcw} onClick={() => onOpenRefund(bill)} tooltip="Refund" colorClass="text-orange-600 hover:bg-orange-50 border-orange-100" disabled={bill.paidAmount <= 0} />
-                                            {hasCultureTest && onOpenCultureReport && <ActionButton icon={Microscope} onClick={() => onOpenCultureReport(bill)} tooltip="Culture Report" colorClass="text-rose-500 hover:bg-rose-50 border-rose-100" />}
+                                            {hasCultureTest && onOpenCultureReport && <ActionButton icon={Activity} onClick={() => onOpenCultureReport(bill)} tooltip="Culture Report" colorClass="text-rose-500 hover:bg-rose-50 border-rose-100" />}
                                             <ActionButton icon={Edit} onClick={() => onEditBill(bill)} tooltip="Edit Details" colorClass="text-teal-600 hover:bg-teal-50 border-teal-100" />
                                             <ActionButton icon={Trash2} onClick={() => onDeleteBill(bill)} tooltip="Delete Bill" colorClass="text-rose-600 hover:bg-rose-50 border-rose-100" />
                                         </div>

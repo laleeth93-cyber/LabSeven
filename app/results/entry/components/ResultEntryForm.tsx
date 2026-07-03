@@ -257,7 +257,6 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
                 </div>
                 
                 {validItems.length > 0 && (
-                    /* 🚨 FIXED: Changed from items-center to items-end so the bottoms lock together perfectly */
                     <div className="flex items-end gap-2 lg:gap-1.5 xl:gap-4 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 custom-scrollbar shrink-0 flex-nowrap">
                         
                         <div className="flex items-end gap-2 xl:gap-3 shrink-0">
@@ -277,11 +276,9 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
                             </div>
                         </div>
                         
-                        {/* 🚨 FIXED: Dividers properly centered using mb-2 / mb-1.5 margins */}
                         <div className="h-6 lg:h-5 xl:h-6 w-px bg-slate-200 shrink-0 mb-2 lg:mb-1.5 xl:mb-1.5 rounded-full"></div>
                         
                         <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
-                            {/* 🚨 FIXED: Buttons use strict explicit heights (h-10 / h-8 / h-9) to identically match the dropdowns */}
                             <button onClick={onPrint} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-3 lg:px-2 xl:px-4 bg-white text-slate-700 hover:text-[#9575cd] border border-slate-200 hover:border-[#9575cd] text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                                 Print

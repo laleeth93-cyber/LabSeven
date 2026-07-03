@@ -1,4 +1,3 @@
-// --- BLOCK app/list/components/report-pdf/ReportBody.tsx OPEN ---
 import React from 'react';
 import { View, Text } from '@react-pdf/renderer';
 import { getPdfFontName, cleanBasicHTML, parseInterpretation } from './reportUtils';
@@ -76,7 +75,6 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
         };
     };
 
-    // 🚨 FIX: Added strict padding and content justification to force spacing and stop overlaps
     const getCellBorder = (isLastCol: boolean) => {
         const cellStyle: any = { 
             paddingHorizontal: 6, 
@@ -237,7 +235,8 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                                     fontFamily: getPdfFontName(rawFont, isAbnormal),
                                                     fontWeight: isAbnormal ? 'bold' : 'normal'
                                                 }]}>
-                                                    {row.result}{isAbnormal ? '*' : ''}
+                                                    {/* 🚨 SAFEGUARD: Gets result even if mapped under different keys */}
+                                                    {row.result ?? row.value ?? row.resultValue ?? ''}{isAbnormal ? '*' : ''}
                                                 </Text>
                                             </View>
 
@@ -251,7 +250,10 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                                             {showRefRangeCol ? (
                                                 <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'))]}>
-                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any }]}>{cleanBasicHTML(row.ref || '')}</Text>
+                                                    {/* 🚨 FIX: Looks for EVERY possible reference range key name! */}
+                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any }]}>
+                                                        {cleanBasicHTML(row.range || row.normalRange || row.displayRange || row.referenceRange || row.refRange || row.ref || '')}
+                                                    </Text>
                                                 </View>
                                             ) : null}
 
@@ -360,4 +362,3 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
         </React.Fragment>
     );
 }
-// --- BLOCK app/list/components/report-pdf/ReportBody.tsx CLOSE ---

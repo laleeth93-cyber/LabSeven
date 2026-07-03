@@ -27,7 +27,7 @@ export async function getPendingWorklist(search?: string) {
     const { orgId } = await requireAuth(); 
     const where: any = {
       organizationId: orgId, 
-      isDeleted: false, // 🚨 Fixes the ghost bill blocking issue
+      isDeleted: false, 
       items: { some: { status: { not: "Printed" } } }
     };
 
@@ -48,7 +48,7 @@ export async function getPendingWorklist(search?: string) {
           select: { id: true, status: true, test: { select: { id: true, name: true } } }
         }
       },
-      orderBy: { date: 'desc' },
+      orderBy: { date: 'desc' }, // Safely back to using 'date'
       take: 50 
     });
     return { success: true, data: bills };
@@ -224,7 +224,6 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
   try {
     const { orgId } = await requireAuth(); 
     
-    // 1. Get current bill results
     const currentResults = await prisma.testResult.findMany({
       where: { organizationId: orgId, billItem: { billId: billId } },
       include: {
@@ -238,7 +237,6 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
     const currentBillDate = currentResults[0].billItem.bill.date;
     const parameterIds = currentResults.map((r: any) => r.parameterId);
 
-    // 2. Get all previous results for these parameters for this patient
     const previousResults = await prisma.testResult.findMany({
       where: {
         organizationId: orgId, 
@@ -259,7 +257,6 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
       }
     });
 
-    // 3. Process and calculate Delta Variance
     const deltaData = currentResults.map((curr: any) => {
        const history = previousResults.filter((p: any) => p.parameterId === curr.parameterId);
        const prev = history.length > 0 ? history[0] : null;
@@ -317,7 +314,7 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
   }
 }
 
-// 🚨 NEW FUNCTION: Fetch fully hydrated bill specifically for printing
+// 🚨 UPDATED FUNCTION: Fetch fully hydrated bill specifically for printing WITH RANGES
 export async function getPrintableBillData(billId: number) {
   try {
     const { orgId } = await requireAuth(); 
@@ -335,7 +332,11 @@ export async function getPrintableBillData(billId: number) {
             test: {
               include: {
                 parameters: {
-                  include: { parameter: true },
+                  include: { 
+                    parameter: {
+                      include: { ranges: true } // ✨ FIX: Fetches Bio Reference Ranges
+                    }
+                  },
                   orderBy: { order: 'asc' }
                 },
                 packageTests: {
@@ -343,7 +344,11 @@ export async function getPrintableBillData(billId: number) {
                     test: {
                       include: {
                         parameters: {
-                          include: { parameter: true },
+                          include: { 
+                            parameter: {
+                              include: { ranges: true } // ✨ FIX: Fetches ranges for packages
+                            }
+                          },
                           orderBy: { order: 'asc' }
                         }
                       }
@@ -352,7 +357,13 @@ export async function getPrintableBillData(billId: number) {
                 }
               }
             },
-            results: true
+            results: {
+              include: {
+                parameter: {
+                  include: { ranges: true } // ✨ FIX: Fetches ranges for dynamically added results
+                }
+              }
+            }
           }
         }
       }

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-// 🚨 CHANGED: Using the dedicated printing API
 import { getPrintableBillData } from '@/app/actions/result-entry'; 
 import { getReportSettings } from '@/app/actions/reports';
 import { getLabProfile } from '@/app/actions/lab-profile';
@@ -57,7 +56,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
         setIsPreviewLoading(true);
         
         const [billRes, settingsRes, profileRes] = await Promise.all([
-            getPrintableBillData(billId!), // 🚨 CHANGED: Fetching full parameter data
+            getPrintableBillData(billId!), 
             getReportSettings(),
             getLabProfile()
         ]);
@@ -111,7 +110,6 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             setOverrideReportedDate(defaultReportedDate.toISOString());
 
             if (billData.items) {
-                // 🚨 ALLOW ALL: Removed the Pending filter so blank worksheets can be printed
                 const printableItems = billData.items;
                 setSelectedItemIds(printableItems.map((item: any) => item.id));
             }
@@ -166,7 +164,6 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
     if (realData) {
         filteredRealData = {
             ...realData,
-            // 🚨 REMOVED STATUS CHECK: Will now map tests even if they are pending
             items: realData.items?.filter((item: any) => selectedItemIds.includes(item.id)) || []
         };
     }
@@ -205,20 +202,34 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             return null; 
         };
 
-        const getDisplayRange = (parameter: any) => {
-            if (!parameter) return '';
-            const range = getMatchedRange(parameter);
-            
-            if (range) {
-                if (range.normalRange && range.normalRange.trim() !== '') return range.normalRange;
-                if (range.normalValue && range.normalValue.trim() !== '') return range.normalValue;
-                if (range.lowRange !== null && range.highRange !== null) return `${range.lowRange} - ${range.highRange}`;
+        // 🚨 FIX 1: Extremely robust reference range finder
+        const getDisplayRange = (parameter: any, resultObj?: any) => {
+            // First check if the result itself has an overridden range
+            if (resultObj) {
+                if (resultObj.referenceRange) return resultObj.referenceRange;
+                if (resultObj.bioRefRange) return resultObj.bioRefRange;
             }
 
-            if (parameter.minVal !== null && parameter.maxVal !== null) {
+            if (!parameter) return '';
+            
+            // Check for Age/Gender specific ranges
+            const range = getMatchedRange(parameter);
+            if (range) {
+                if (range.normalRange && String(range.normalRange).trim() !== '') return String(range.normalRange);
+                if (range.displayRange && String(range.displayRange).trim() !== '') return String(range.displayRange);
+                if (range.normalValue && String(range.normalValue).trim() !== '') return String(range.normalValue);
+                if (range.lowRange !== null && range.lowRange !== undefined && range.highRange !== null && range.highRange !== undefined) {
+                    return `${range.lowRange} - ${range.highRange}`;
+                }
+            }
+
+            // Check for standard Min/Max fields
+            if (parameter.minVal !== null && parameter.minVal !== undefined && parameter.maxVal !== null && parameter.maxVal !== undefined) {
                 return `${parameter.minVal} - ${parameter.maxVal}`;
             }
-            return parameter.referenceRange ?? parameter.bioRefRange ?? parameter.normalRange ?? '';
+            
+            // Fallback: Check every possible name the database might use for the Normal Range
+            return parameter.normalRange ?? parameter.bioRefRange ?? parameter.referenceRange ?? parameter.displayRange ?? parameter.refRange ?? parameter.range ?? '';
         };
 
         let itemsToProcess = filteredRealData.items;
@@ -252,9 +263,6 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     }
 
                     if (!actualParam) {
-                        if (junctionOrParam.headingText || junctionOrParam.name) {
-                            displayData.push({ isGroup: false, param: junctionOrParam.headingText || junctionOrParam.name, result: '', unit: '', ref: '', method: '', abnormal: false });
-                        }
                         return; 
                     }
                     
@@ -267,7 +275,12 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
                     val = val !== null && val !== undefined ? String(val).trim() : '';
 
-                    const refRange = getDisplayRange(actualParam);
+                    // 🚨 FIX 2: Block empty parameters from ever being sent to the PDF
+                    if (val === '') {
+                        return; // Completely skips pushing this empty test row!
+                    }
+
+                    const refRange = getDisplayRange(actualParam, matchedResult);
                     const activeRange = getMatchedRange(actualParam);
                     const abnormalValues = activeRange?.abnormalValue ? activeRange.abnormalValue.split(',').map((v: string) => v.trim().toLowerCase()) : [];
 
@@ -312,7 +325,12 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     
                     val = val !== null && val !== undefined ? String(val).trim() : '';
 
-                    const refRange = getDisplayRange(actualParam);
+                    // 🚨 FIX 2 (Safety Check): Block empty un-mapped parameters
+                    if (val === '') {
+                        return; 
+                    }
+
+                    const refRange = getDisplayRange(actualParam, res);
                     const activeRange = getMatchedRange(actualParam);
                     const abnormalValues = activeRange?.abnormalValue ? activeRange.abnormalValue.split(',').map((v: string) => v.trim().toLowerCase()) : [];
 
@@ -337,6 +355,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             }
         });
 
+        // 🚨 CLEANUP: Removes hanging test headings if all their parameters were empty
         let cleanedDisplayData: any[] = [];
         for (let i = 0; i < displayData.length; i++) {
             const current = displayData[i];

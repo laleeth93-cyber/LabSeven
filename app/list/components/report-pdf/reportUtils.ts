@@ -1,4 +1,3 @@
-// --- BLOCK app/list/components/report-pdf/reportUtils.ts OPEN ---
 export const parseMargin = (val: any, defaultVal: number) => {
     if (val === undefined || val === null || val === '') return defaultVal;
     const num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
@@ -31,86 +30,44 @@ export const getFieldValue = (field: any, patient: any, realData: any, collected
     if (searchString === 'age' || searchString === 'patientage') return `${patient?.ageY || ''}${patient?.ageY ? 'Y' : ''} ${patient?.ageM ? patient.ageM + 'M' : ''}`.trim();
     if (searchString === 'gender' || searchString === 'sex' || searchString === 'patientgender') return patient?.gender || '';
     
-    // ==========================================
-    // ULTRA-STRICT REFERRAL PARSER
-    // ==========================================
     const docName = patient?.refDoctor || '';
-    
     let extractedDoc = '';
     let extractedHosp = '';
     let extractedLab = '';
 
     if (docName && docName.toLowerCase() !== 'self') {
         let tempStr = String(docName);
-        
         const hospMatch = tempStr.match(/\(([^)]+)\)/);
-        if (hospMatch) {
-            extractedHosp = hospMatch[1].trim();
-            tempStr = tempStr.replace(hospMatch[0], '');
-        }
-        
+        if (hospMatch) { extractedHosp = hospMatch[1].trim(); tempStr = tempStr.replace(hospMatch[0], ''); }
         const labMatch = tempStr.match(/-\s*(.+)$/);
-        if (labMatch) {
-            extractedLab = labMatch[1].trim();
-            tempStr = tempStr.replace(labMatch[0], '');
-        }
-        
+        if (labMatch) { extractedLab = labMatch[1].trim(); tempStr = tempStr.replace(labMatch[0], ''); }
         extractedDoc = tempStr.trim();
     }
 
     const isSelf = !extractedDoc && !extractedHosp && !extractedLab;
-
     if (exactKey === 'showReferringDoc' || exactKey === 'showReferredBy') return isSelf ? 'Self' : ''; 
     if (exactKey === 'showRefDoc') return extractedDoc ? extractedDoc : ''; 
     if (exactKey === 'showRefHospital' || searchString.includes('hospital')) return extractedHosp || ''; 
     if (exactKey === 'showRefLab' || searchString.includes('lab') || searchString.includes('outsource')) return extractedLab || ''; 
     
-    // ==========================================
-    // BILLING & BARCODES (SHORTENED TO 4 DIGITS)
-    // ==========================================
     const shortBillId = String(realData?.billNumber || '').slice(-4);
+    if (searchString.includes('bill') || searchString.includes('invoice') || searchString.includes('order')) return shortBillId;
+    if (searchString.includes('barcode')) return shortBillId;
     
-    if (searchString.includes('bill') || searchString.includes('invoice') || searchString.includes('order')) {
-        return shortBillId;
-    }
-    if (searchString.includes('barcode')) {
-        return shortBillId;
-    }
-    
-    // ==========================================
-    // DATES & TIMES (Ultra-Robust Matching)
-    // ==========================================
-    
-    // 1. Reported Date
-    if (searchString.includes('report')) {
-        return reportedDate || '';
-    }
-
-    // 2. Received Date (Bill Date + Exactly 5 Minutes)
+    if (searchString.includes('report')) return reportedDate || '';
     if (searchString.includes('receive')) {
         if (realData?.date) {
-            const receivedTime = new Date(new Date(realData.date).getTime() + 5 * 60000); // 5 minutes added
+            const receivedTime = new Date(new Date(realData.date).getTime() + 5 * 60000); 
             return receivedTime.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).replace(',', '');
         }
         return '';
     }
-
-    // 3. Collection At (Location/Center)
-    if (searchString.includes('collectionat') || searchString.includes('center')) {
-        return patient?.collectionAt || 'Lab';
-    }
-
-    // 4. Collection / Sample / Registered Date (Exact Bill Date & Time)
+    if (searchString.includes('collectionat') || searchString.includes('center')) return patient?.collectionAt || 'Lab';
     if (searchString.includes('collect') || searchString.includes('register') || searchString.includes('sample') || searchString.includes('date') || searchString.includes('time')) {
-        if (realData?.date) {
-            return new Date(realData.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).replace(',', '');
-        }
+        if (realData?.date) return new Date(realData.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).replace(',', '');
         return collectedDate || '';
     }
 
-    // ==========================================
-    // MISC CONTACT & BIO
-    // ==========================================
     if (searchString.includes('phone') || searchString.includes('mobile')) return patient?.phone || '';
     if (searchString.includes('email')) return patient?.email || '';
     if (searchString.includes('address')) return patient?.address || '';
@@ -143,7 +100,6 @@ export const cleanBasicHTML = (html: string) => {
 
 export const parseInterpretation = (html: string) => {
     if (!html) return [];
-    
     const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
     const blocks: any[] = [];
     let lastIndex = 0;
@@ -159,21 +115,13 @@ export const parseInterpretation = (html: string) => {
                 const raw = cleanBasicHTML(textHtml.substring(lastIdx, blockMatch.index));
                 if (raw) blocks.push({ type: 'text', content: raw, lineHeight: 1.4 });
             }
-
             const attrs = blockMatch[2] || '';
             const innerHtml = blockMatch[3] || '';
             let lh = 1.4; 
-            
             const lhMatch = attrs.match(/line-height:\s*([\d.]+)/);
-            if (lhMatch && !isNaN(parseFloat(lhMatch[1]))) {
-                lh = parseFloat(lhMatch[1]);
-            }
-
+            if (lhMatch && !isNaN(parseFloat(lhMatch[1]))) lh = parseFloat(lhMatch[1]);
             const cleanText = cleanBasicHTML(innerHtml);
-            if (cleanText) {
-                blocks.push({ type: 'text', content: cleanText, lineHeight: lh });
-            }
-
+            if (cleanText) blocks.push({ type: 'text', content: cleanText, lineHeight: lh });
             lastIdx = blockRegex.lastIndex;
         }
 
@@ -184,15 +132,11 @@ export const parseInterpretation = (html: string) => {
     };
 
     while ((match = tableRegex.exec(html)) !== null) {
-        if (match.index > lastIndex) {
-            parseTextChunks(html.substring(lastIndex, match.index));
-        }
-
+        if (match.index > lastIndex) parseTextChunks(html.substring(lastIndex, match.index));
         const tableContent = match[1];
         const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
         const rows: string[][] = [];
         let rowMatch;
-
         while ((rowMatch = rowRegex.exec(tableContent)) !== null) {
             const cellRegex = /<(?:td|th)[^>]*>([\s\S]*?)<\/(?:td|th)>/gi;
             const cells: string[] = [];
@@ -202,15 +146,11 @@ export const parseInterpretation = (html: string) => {
             }
             if (cells.length > 0) rows.push(cells);
         }
-
         if (rows.length > 0) blocks.push({ type: 'table', rows });
         lastIndex = tableRegex.lastIndex;
     }
 
-    if (lastIndex < html.length) {
-        parseTextChunks(html.substring(lastIndex));
-    }
-
+    if (lastIndex < html.length) parseTextChunks(html.substring(lastIndex));
     return blocks;
 };
 
@@ -219,6 +159,15 @@ export const groupDisplayData = (displayData: any[], realData?: any) => {
     let currentGroup = { testName: '', items: [] as any[], interpretationBlocks: [] as any[], noteBlocks: [] as any[] };
 
     displayData?.forEach((row: any) => {
+        
+        // 🚨 FIX: If this is a parameter (not a header) and the result is blank, SKIP IT ENTIRELY!
+        if (!row.isGroup) {
+            const resValue = row.result ?? row.value ?? row.resultValue ?? '';
+            if (String(resValue).trim() === '') {
+                return; // Do not add this empty parameter to the print list
+            }
+        }
+
         if (row.isGroup && !row.isSubHeading) {
             if (currentGroup.items.length > 0 || currentGroup.testName) {
                 groupedData.push(currentGroup);
@@ -242,9 +191,7 @@ export const groupDisplayData = (displayData: any[], realData?: any) => {
                 }
             }
 
-            if (!foundInterpretation && row.interpretation) {
-                foundInterpretation = row.interpretation;
-            }
+            if (!foundInterpretation && row.interpretation) foundInterpretation = row.interpretation;
 
             currentGroup = { 
                 testName: row.param, 
@@ -260,6 +207,7 @@ export const groupDisplayData = (displayData: any[], realData?: any) => {
     if (currentGroup.items.length > 0 || currentGroup.testName) {
         groupedData.push(currentGroup);
     }
-    return groupedData;
+    
+    // 🚨 FIX: Safety Check - Only return groups that actually have non-empty parameters inside them
+    return groupedData.filter(group => group.items.some(item => !item.isGroup));
 };
-// --- BLOCK app/list/components/report-pdf/reportUtils.ts CLOSE ---
