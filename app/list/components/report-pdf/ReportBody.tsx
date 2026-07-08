@@ -2,6 +2,19 @@ import React from 'react';
 import { View, Text } from '@react-pdf/renderer';
 import { getPdfFontName, cleanBasicHTML, parseInterpretation } from './reportUtils';
 
+// 🚨 NEW: Translates formatting module padding into PDF pixels
+const parsePadding = (val: string, defaultVal: number) => {
+    if (val === 'py-0') return 0;
+    if (val === 'py-px') return 1;
+    if (val === 'py-0.5') return 2;
+    if (val === 'py-1') return 4;
+    if (val === 'py-1.5') return 6;
+    if (val === 'py-2') return 8;
+    if (val === 'py-2.5') return 10;
+    if (val === 'py-3') return 12;
+    return defaultVal;
+};
+
 export default function ReportBody({ groupedData, reportSettings, styles, bFontSize, separateDept, separateTest, realData }: any) {
     
     const bodyTableStyle: string = reportSettings?.bodyTableStyle || 'grid';
@@ -27,6 +40,10 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
     const isSeparateDeptEnabled = separateDept === true || String(separateDept) === 'true';
     const isSeparateTestEnabled = separateTest === true || String(separateTest) === 'true';
+
+    // 🚨 NEW: Extracting the actual padding values from your settings
+    const headerPy = parsePadding(reportSettings?.headerRowHeight, 6);
+    const bodyPy = parsePadding(reportSettings?.bodyRowHeight, 6);
 
     let totalCols = 2;
     if (showUnitCol) totalCols++;
@@ -75,10 +92,11 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
         };
     };
 
-    const getCellBorder = (isLastCol: boolean) => {
+    // 🚨 FIX: Dynamic vertical padding injected perfectly into the cells
+    const getCellBorder = (isLastCol: boolean, isHeader: boolean = false) => {
         const cellStyle: any = { 
             paddingHorizontal: 6, 
-            paddingVertical: 5, 
+            paddingVertical: isHeader ? headerPy : bodyPy, 
             justifyContent: 'center',
             overflow: 'hidden'
         };
@@ -127,27 +145,27 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                             <View style={getTableWrapStyle()}>
                                 <View style={getHeaderRowStyle()} wrap={false} fixed>
-                                    <View style={[{ width: paramColWidth }, getCellBorder(false)]}>
+                                    <View style={[{ width: paramColWidth }, getCellBorder(false, true)]}>
                                         <Text style={[styles.thText, { textAlign: 'left', color: dynamicHeaderTextColor }]}>{"Test\u00A0Parameter"}</Text>
                                     </View>
-                                    <View style={[{ width: resultColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'))]}>
+                                    <View style={[{ width: resultColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true)]}>
                                         <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>Result</Text>
                                     </View>
                                     
                                     {showUnitCol ? (
-                                        <View style={[{ width: unitColWidth }, getCellBorder(!showRefRangeCol && !(showMethodCol && methodDisplay === 'column'))]}>
+                                        <View style={[{ width: unitColWidth }, getCellBorder(!showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true)]}>
                                             <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>Units</Text>
                                         </View>
                                     ) : null}
 
                                     {showRefRangeCol ? (
-                                        <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'))]}>
+                                        <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'), true)]}>
                                             <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>{"Bio.\u00A0Ref.\u00A0Range"}</Text>
                                         </View>
                                     ) : null}
 
                                     {showMethodCol && methodDisplay === 'column' ? (
-                                        <View style={[{ width: methodColWidth }, getCellBorder(true)]}>
+                                        <View style={[{ width: methodColWidth }, getCellBorder(true, true)]}>
                                             <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>Method</Text>
                                         </View>
                                     ) : null}
@@ -156,7 +174,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                 {group.items.map((row: any, idx: number) => {
                                     if (row.isGroup) {
                                         return (
-                                            <View key={idx} style={[getRowStyle(), { paddingVertical: 6, paddingHorizontal: 8, backgroundColor: '#ffffff' }]} wrap={false}>
+                                            <View key={idx} style={[getRowStyle(), { paddingVertical: bodyPy, paddingHorizontal: 6, backgroundColor: '#ffffff' }]} wrap={false}>
                                                 <Text style={styles.subHeadingText}>{row.param}</Text>
                                             </View>
                                         );
@@ -172,7 +190,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                                     <Text style={[styles.tdText, { textAlign: 'left', fontFamily: getPdfFontName(rawFont, false) }]}>{row.param}</Text>
                                                 </View>
                                                 
-                                                <View style={[{ flex: 1, paddingHorizontal: 6, paddingVertical: 5, flexDirection: 'column', justifyContent: 'center' }, getCellBorder(true)]}>
+                                                <View style={[{ flex: 1, flexDirection: 'column', justifyContent: 'center' }, getCellBorder(true)]}>
                                                     {bigBlocks.map((block: any, bIdx: number) => {
                                                         if (block.type === 'text') {
                                                             return (
@@ -235,7 +253,6 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                                     fontFamily: getPdfFontName(rawFont, isAbnormal),
                                                     fontWeight: isAbnormal ? 'bold' : 'normal'
                                                 }]}>
-                                                    {/* 🚨 SAFEGUARD: Gets result even if mapped under different keys */}
                                                     {row.result ?? row.value ?? row.resultValue ?? ''}{isAbnormal ? '*' : ''}
                                                 </Text>
                                             </View>
@@ -250,7 +267,6 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                                             {showRefRangeCol ? (
                                                 <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'))]}>
-                                                    {/* 🚨 FIX: Looks for EVERY possible reference range key name! */}
                                                     <Text style={[styles.tdText, { textAlign: bodyAlign as any }]}>
                                                         {cleanBasicHTML(row.range || row.normalRange || row.displayRange || row.referenceRange || row.refRange || row.ref || '')}
                                                     </Text>

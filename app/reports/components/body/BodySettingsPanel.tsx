@@ -1,4 +1,3 @@
-// --- BLOCK app/reports/components/body/BodySettingsPanel.tsx OPEN ---
 import React from 'react';
 
 interface BodySettingsPanelProps {
@@ -191,11 +190,16 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Header Padding</label>
+                                {/* 🚨 NEW COMPACT HEADER PADDING OPTIONS */}
                                 <select value={bodySettings.headerRowHeight || 'py-1.5'} onChange={(e) => handleBodySettingChange('headerRowHeight', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
-                                    <option value="py-0.5">Compact</option>
-                                    <option value="py-1.5">Normal</option>
-                                    <option value="py-2.5">Relaxed</option>
-                                    <option value="py-3">Spacious</option>
+                                    <option value="py-0">Ultra Compact (0px)</option>
+                                    <option value="py-px">Extra Compact (1px)</option>
+                                    <option value="py-0.5">Very Compact (2px)</option>
+                                    <option value="py-1">Compact (4px)</option>
+                                    <option value="py-1.5">Normal (6px)</option>
+                                    <option value="py-2">Comfortable (8px)</option>
+                                    <option value="py-2.5">Relaxed (10px)</option>
+                                    <option value="py-3">Spacious (12px)</option>
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1.5">
@@ -223,10 +227,15 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Body Padding</label>
+                                {/* 🚨 NEW COMPACT BODY PADDING OPTIONS */}
                                 <select value={bodySettings.bodyRowHeight || 'py-1.5'} onChange={(e) => handleBodySettingChange('bodyRowHeight', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
-                                    <option value="py-0.5">Compact</option>
-                                    <option value="py-1.5">Normal</option>
-                                    <option value="py-2.5">Relaxed</option>
+                                    <option value="py-0">Ultra Compact (0px)</option>
+                                    <option value="py-px">Extra Compact (1px)</option>
+                                    <option value="py-0.5">Very Compact (2px)</option>
+                                    <option value="py-1">Compact (4px)</option>
+                                    <option value="py-1.5">Normal (6px)</option>
+                                    <option value="py-2">Comfortable (8px)</option>
+                                    <option value="py-2.5">Relaxed (10px)</option>
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1.5">
@@ -303,4 +312,3 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
         </div>
     );
 }
-// --- BLOCK app/reports/components/body/BodySettingsPanel.tsx CLOSE ---
