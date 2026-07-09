@@ -1,4 +1,3 @@
-// --- BLOCK app/actions/reports.ts OPEN ---
 "use server";
 
 import { prisma } from '@/lib/prisma';
@@ -39,10 +38,17 @@ export async function updateReportSettings(data: any) {
             marginSettings: data.marginSettings,
             tableStyle: data.tableStyle, fontFamily: data.fontFamily, fontSize: data.fontSize, rowPadding: data.rowPadding, labelBold: data.labelBold, dataBold: data.dataBold,
             leftColFields: data.leftColFields, rightColFields: data.rightColFields, leftColWidth: data.leftColWidth || "35 65", rightColWidth: data.rightColWidth || "35 65", headerQrCode: data.headerQrCode,
+            
+            headerColumnGap: data.headerColumnGap || "2", 
+            
             showMethodCol: data.showMethodCol, methodDisplayStyle: data.methodDisplayStyle, showUnitCol: data.showUnitCol, showRefRangeCol: data.showRefRangeCol, highlightAbnormal: data.highlightAbnormal, stripedRows: data.stripedRows,
             bodyTableStyle: data.bodyTableStyle, bodyFontFamily: data.bodyFontFamily, bodyFontSize: data.bodyFontSize, bodyRowHeight: data.bodyRowHeight, bodyColPadding: data.bodyColPadding,
             bodyHeaderBgColor: data.bodyHeaderBgColor, bodyHeaderTextColor: data.bodyHeaderTextColor, bodyResultAlign: data.bodyResultAlign,
-            showDepartmentName: data.showDepartmentName, departmentNameSize: data.departmentNameSize, testNameAlignment: data.testNameAlignment, testNameUnderline: data.testNameUnderline, testNameSize: data.testNameSize, gridLineThickness: data.gridLineThickness,
+            
+            showDepartmentName: data.showDepartmentName, 
+            showTestName: data.showTestName ?? true, // 🚨 NEW TOGGLE SAVED HERE
+            
+            departmentNameSize: data.departmentNameSize, testNameAlignment: data.testNameAlignment, testNameUnderline: data.testNameUnderline, testNameSize: data.testNameSize, gridLineThickness: data.gridLineThickness,
             
             testColumnWidth: data.testColumnWidth, 
             colWidthParam: data.colWidthParam,
@@ -77,7 +83,7 @@ export async function updateReportSettings(data: any) {
             await prisma.reportSettings.create({
                 data: {
                     ...payload,
-                    organizationId: orgId // 🚨 Tag to current lab
+                    organizationId: orgId 
                 }
             });
         }
@@ -88,4 +94,3 @@ export async function updateReportSettings(data: any) {
         return { success: false, message: error.message };
     }
 }
-// --- BLOCK app/actions/reports.ts CLOSE ---

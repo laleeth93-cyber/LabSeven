@@ -1,4 +1,3 @@
-// --- app/list/components/report-pdf/ReportHeader.tsx Block Open ---
 import React from 'react';
 import { View, Text } from '@react-pdf/renderer';
 import { getFieldValue } from './reportUtils';
@@ -21,8 +20,6 @@ export default function ReportHeader({ reportSettings, realData, collectedDate, 
 
         leftFields = fixLabels(leftFields);
         rightFields = fixLabels(rightFields);
-        // ---------------------------------------------
-
     } catch (e) { console.error("Error parsing header fields", e); }
 
     if (!leftFields || leftFields.length === 0) leftFields = [ 
@@ -45,27 +42,46 @@ export default function ReportHeader({ reportSettings, realData, collectedDate, 
             const k = f.key || '';
             if (k === 'showRefHospital' || k === 'showRefLab' || k === 'showRefDoc' || k === 'showReferringDoc' || k === 'showReferredBy' || k === 'refDoctor') {
                 const val = getFieldValue(f, patient, realData, collectedDate, reportedDate);
-                
-                // If it is completely empty, ALWAYS hide it so labels don't print blank.
-                if (!val || String(val).trim() === '') {
-                    return false; 
-                }
-                
-                // Also hide Hospital/Lab if they somehow equal 'self' (only Doc should say Self)
-                if ((k === 'showRefHospital' || k === 'showRefLab') && String(val).toLowerCase() === 'self') {
-                    return false; 
-                }
+                if (!val || String(val).trim() === '') return false; 
+                if ((k === 'showRefHospital' || k === 'showRefLab') && String(val).toLowerCase() === 'self') return false; 
             }
-            return true; // Keep everything else
+            return true; 
         });
     };
 
     leftFields = filterEmptyReferrals(leftFields);
     rightFields = filterEmptyReferrals(rightFields);
-    // ------------------------
 
-    const leftSplit = (reportSettings?.leftColWidth || "35 65").split(" ");
-    const rightSplit = (reportSettings?.rightColWidth || "35 65").split(" ");
+
+    // 🚨 ABSOLUTE MATH LOCK: Keeps Label boundaries frozen on the PDF!
+    const gapPercent = parseFloat(reportSettings?.headerColumnGap || "2");
+    const blockWidth = 50 - (gapPercent / 2);
+
+    const leftSplitNums = (reportSettings?.leftColWidth || "35 65").split(" ").map(Number);
+    const rightSplitNums = (reportSettings?.rightColWidth || "35 65").split(" ").map(Number);
+
+    const leftSplitL = leftSplitNums[0] || 35;
+    const rightSplitL = rightSplitNums[0] || 35;
+
+    // Locks the absolute width of the labels relative to a 50% block
+    const absLeftLabelW = 50 * (leftSplitL / 100);
+    const absRightLabelW = 50 * (rightSplitL / 100);
+
+    const absLeftDataW = blockWidth - absLeftLabelW;
+    const absRightDataW = blockWidth - absRightLabelW;
+
+    // For Single Table Layout
+    const singleLeftL = `${absLeftLabelW}%`;
+    const singleLeftD = `${absLeftDataW}%`;
+    const singleRightL = `${absRightLabelW}%`;
+    const singleRightD = `${absRightDataW}%`;
+    const gapW = `${gapPercent}%`;
+
+    // For Split Table Layout
+    const splitLeftL = `${(absLeftLabelW / blockWidth) * 100}%`;
+    const splitLeftD = `${(absLeftDataW / blockWidth) * 100}%`;
+    const splitRightL = `${(absRightLabelW / blockWidth) * 100}%`;
+    const splitRightD = `${(absRightDataW / blockWidth) * 100}%`;
 
     let rowSpacing = 4; 
     if (reportSettings?.rowPadding === 'py-0.5') rowSpacing = 2; 
@@ -95,7 +111,7 @@ export default function ReportHeader({ reportSettings, realData, collectedDate, 
     };
 
     const getCellStyle = (isLastRow: boolean, isLastCol: boolean) => {
-        let st: any = { paddingLeft: 4, paddingRight: 4, paddingTop: rowSpacing, paddingBottom: rowSpacing, justifyContent: 'center' };
+        let st: any = { paddingLeft: 4, paddingRight: 4, paddingTop: rowSpacing, paddingBottom: rowSpacing, justifyContent: 'center', overflow: 'hidden' };
         if (tableStyleType === 'grid') {
             st.borderBottomWidth = isLastRow ? 0 : bw;
             st.borderRightWidth = isLastCol ? 0 : bw;
@@ -133,19 +149,19 @@ export default function ReportHeader({ reportSettings, realData, collectedDate, 
         <View fixed style={{ marginBottom: 10 }}>
             {tableStyleType === 'split' ? (
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <View style={[getTableContainerStyle(), { width: '49%' }]}>
+                    <View style={[getTableContainerStyle(), { width: `${blockWidth}%` }]}>
                         {previewRows.map((_, idx) => (
                             <View key={`l-${idx}`} style={{ flexDirection: 'row', width: '100%' }}>
-                                {renderLabelCell(leftFields[idx], `${leftSplit[0]}%`, idx === maxRows - 1, false)}
-                                {renderDataCell(leftFields[idx], `${leftSplit[1]}%`, idx === maxRows - 1, true)}
+                                {renderLabelCell(leftFields[idx], splitLeftL, idx === maxRows - 1, false)}
+                                {renderDataCell(leftFields[idx], splitLeftD, idx === maxRows - 1, true)}
                             </View>
                         ))}
                     </View>
-                    <View style={[getTableContainerStyle(), { width: '49%' }]}>
+                    <View style={[getTableContainerStyle(), { width: `${blockWidth}%` }]}>
                         {previewRows.map((_, idx) => (
                             <View key={`r-${idx}`} style={{ flexDirection: 'row', width: '100%' }}>
-                                {renderLabelCell(rightFields[idx], `${rightSplit[0]}%`, idx === maxRows - 1, false)}
-                                {renderDataCell(rightFields[idx], `${rightSplit[1]}%`, idx === maxRows - 1, true)}
+                                {renderLabelCell(rightFields[idx], splitRightL, idx === maxRows - 1, false)}
+                                {renderDataCell(rightFields[idx], splitRightD, idx === maxRows - 1, true)}
                             </View>
                         ))}
                     </View>
@@ -154,10 +170,19 @@ export default function ReportHeader({ reportSettings, realData, collectedDate, 
                 <View style={getTableContainerStyle()}>
                     {previewRows.map((_, idx) => (
                         <View key={`row-${idx}`} style={{ flexDirection: 'row', width: '100%' }}>
-                            {renderLabelCell(leftFields[idx], `${Number(leftSplit[0]) / 2}%`, idx === maxRows - 1, false)}
-                            {renderDataCell(leftFields[idx], `${Number(leftSplit[1]) / 2}%`, idx === maxRows - 1, false)}
-                            {renderLabelCell(rightFields[idx], `${Number(rightSplit[0]) / 2}%`, idx === maxRows - 1, false)}
-                            {renderDataCell(rightFields[idx], `${Number(rightSplit[1]) / 2}%`, idx === maxRows - 1, true)}
+                            {renderLabelCell(leftFields[idx], singleLeftL, idx === maxRows - 1, false)}
+                            {renderDataCell(leftFields[idx], singleLeftD, idx === maxRows - 1, false)}
+                            
+                            {/* Empty invisible column to force the Gap spacing in single-table formats */}
+                            {gapPercent > 0 && (
+                                <View style={[
+                                    getCellStyle(idx === maxRows - 1, false), 
+                                    { width: gapW, borderRightWidth: 0, borderTopWidth: 0, borderBottomWidth: 0 }
+                                ]} />
+                            )}
+
+                            {renderLabelCell(rightFields[idx], singleRightL, idx === maxRows - 1, false)}
+                            {renderDataCell(rightFields[idx], singleRightD, idx === maxRows - 1, true)}
                         </View>
                     ))}
                 </View>
@@ -165,4 +190,3 @@ export default function ReportHeader({ reportSettings, realData, collectedDate, 
         </View>
     );
 }
-// --- app/list/components/report-pdf/ReportHeader.tsx Block Close ---

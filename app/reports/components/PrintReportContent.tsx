@@ -1,4 +1,3 @@
-// --- BLOCK app/reports/components/PrintReportContent.tsx OPEN ---
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getFieldValue } from '@/app/list/components/report-pdf/reportUtils';
@@ -48,7 +47,6 @@ export default function PrintReportContent({
 
     const bColor = "black";
     
-    // 🚨 FIX: ADDED SAFETY NET FOR EMPTY ARRAYS (MATCHES PDF ENGINE)
     let safeLeftFields = Array.isArray(leftColFields) ? leftColFields : [];
     let safeRightFields = Array.isArray(rightColFields) ? rightColFields : [];
 
@@ -73,21 +71,42 @@ export default function PrintReportContent({
     const dynamicLabelClass = `${formData?.labelBold ? 'font-bold' : 'font-medium'} text-slate-800`;
     const dynamicDataClass = `${formData?.dataBold ? 'font-bold' : 'font-medium'} text-slate-700`;
     
-    // 🚨 FIX: SAFE WIDTH CALCULATION
-    const lSplit = (formData?.leftColWidth || "35 65").trim().split(' '); 
-    const rSplit = (formData?.rightColWidth || "35 65").trim().split(' ');
-    const lLabelW = Number(lSplit[0]) || 35; const lDataW = Number(lSplit[1]) || 65; 
-    const rLabelW = Number(rSplit[0]) || 35; const rDataW = Number(rSplit[1]) || 65;
+    // 🚨 ABSOLUTE MATH LOCK: Guarantees the label boundaries never move!
+    const gapPercent = parseFloat(formData?.headerColumnGap || "2");
+    const blockWidth = 50 - (gapPercent / 2);
 
-    let demoTableStyle: React.CSSProperties = { borderCollapse: 'collapse', borderSpacing: 0, width: '100%' };
-    let demoTdStyle: React.CSSProperties = {};
+    const lSplit = (formData?.leftColWidth || "35 65").trim().split(' ').map(Number); 
+    const rSplit = (formData?.rightColWidth || "35 65").trim().split(' ').map(Number);
+    
+    const leftSplitL = lSplit[0] || 35;
+    const rightSplitL = rSplit[0] || 35;
+
+    const absLeftLabelW = 50 * (leftSplitL / 100);
+    const absRightLabelW = 50 * (rightSplitL / 100);
+
+    const absLeftDataW = blockWidth - absLeftLabelW;
+    const absRightDataW = blockWidth - absRightLabelW;
+
+    const splitLeftL = `${(absLeftLabelW / blockWidth) * 100}%`;
+    const splitLeftD = `${(absLeftDataW / blockWidth) * 100}%`;
+    const splitRightL = `${(absRightLabelW / blockWidth) * 100}%`;
+    const splitRightD = `${(absRightDataW / blockWidth) * 100}%`;
+
+    const singleLeftL = `${absLeftLabelW}%`;
+    const singleLeftD = `${absLeftDataW}%`;
+    const singleRightL = `${absRightLabelW}%`;
+    const singleRightD = `${absRightDataW}%`;
+    const gapW = `${gapPercent}%`;
+
+    let demoTableStyle: React.CSSProperties = { borderCollapse: 'collapse', borderSpacing: 0, width: '100%', tableLayout: 'fixed' };
+    let demoTdStyle: React.CSSProperties = { wordWrap: 'break-word' };
 
     if (currentHeaderStyle === 'grid') {
         demoTableStyle = { ...demoTableStyle, border: `${bw} solid ${bColor}` };
-        demoTdStyle = { border: `${bw} solid ${bColor}`, backgroundColor: '#ffffff' };
+        demoTdStyle = { ...demoTdStyle, border: `${bw} solid ${bColor}`, backgroundColor: '#ffffff' };
     } else if (currentHeaderStyle === 'horizontal') {
         demoTableStyle = { ...demoTableStyle, borderTop: `${bw} solid ${bColor}`, borderBottom: `${bw} solid ${bColor}` };
-        demoTdStyle = { borderBottom: `${bw} solid ${bColor}` };
+        demoTdStyle = { ...demoTdStyle, borderBottom: `${bw} solid ${bColor}` };
     } else if (currentHeaderStyle === 'outer' || currentHeaderStyle === 'split') {
         demoTableStyle = { ...demoTableStyle, border: `${bw} solid ${bColor}` };
     }
@@ -97,7 +116,7 @@ export default function PrintReportContent({
     const appliedFontClass = isTailwindFont ? activeFontFamily : '';
     const appliedCustomFont = !isTailwindFont ? activeFontFamily : undefined;
 
-    let bodyTableStyle: React.CSSProperties = { borderCollapse: 'collapse', borderSpacing: 0, width: '100%' };
+    let bodyTableStyle: React.CSSProperties = { borderCollapse: 'collapse', borderSpacing: 0, width: '100%', tableLayout: 'fixed' };
     let thStyle: React.CSSProperties = { backgroundColor: bodySettings?.bodyHeaderBgColor || '#ffffff', color: bodySettings?.bodyHeaderTextColor || '#000000' };
     let tdStyle: React.CSSProperties = {};
 
@@ -271,30 +290,38 @@ export default function PrintReportContent({
                         <div className="flex w-full items-start">
                             <div className="flex-1">
                                 {currentHeaderStyle === 'split' ? (
-                                    <div className={`flex w-full justify-between gap-1.5 ${formData?.fontSize}`}>
-                                        <table className="w-[49.5%] table-fixed" style={demoTableStyle}>
+                                    <div className={`flex w-full justify-between ${formData?.fontSize}`}>
+                                        <table style={{ ...demoTableStyle, width: `${blockWidth}%` }}>
+                                            <colgroup>
+                                                <col style={{ width: splitLeftL }} />
+                                                <col style={{ width: splitLeftD }} />
+                                            </colgroup>
                                             <tbody>
                                                 {previewRows.map((_, idx) => {
                                                     const field = safeLeftFields[idx];
                                                     const resolvedValue = field ? getFieldValue(field, dummyPatient, dummyBill, dummyDate, dummyDate) || '[ Data ]' : '';
                                                     return (
                                                         <tr key={`l-${idx}`}>
-                                                            <td style={{ width: `${lLabelW}%`, ...demoTdStyle }} className={`px-2 break-words align-middle ${formData?.rowPadding} ${dynamicLabelClass}`}>{field ? (<div className="flex justify-between items-center gap-2"><span>{field.label}</span><span>:</span></div>) : ''}</td>
-                                                            <td style={{ width: `${lDataW}%`, ...demoTdStyle }} className={`px-2 break-words align-middle ${formData?.rowPadding} ${dynamicDataClass}`}>{resolvedValue}</td>
+                                                            <td style={{ ...demoTdStyle }} className={`px-2 break-words align-middle overflow-hidden ${formData?.rowPadding} ${dynamicLabelClass}`}>{field ? (<div className="flex justify-between items-center gap-2"><span>{field.label}</span><span>:</span></div>) : ''}</td>
+                                                            <td style={{ ...demoTdStyle }} className={`px-2 break-words align-middle overflow-hidden ${formData?.rowPadding} ${dynamicDataClass}`}>{resolvedValue}</td>
                                                         </tr>
                                                     )
                                                 })}
                                             </tbody>
                                         </table>
-                                        <table className="w-[49.5%] table-fixed" style={demoTableStyle}>
+                                        <table style={{ ...demoTableStyle, width: `${blockWidth}%` }}>
+                                            <colgroup>
+                                                <col style={{ width: splitRightL }} />
+                                                <col style={{ width: splitRightD }} />
+                                            </colgroup>
                                             <tbody>
                                                 {previewRows.map((_, idx) => {
                                                     const field = safeRightFields[idx];
                                                     const resolvedValue = field ? getFieldValue(field, dummyPatient, dummyBill, dummyDate, dummyDate) || '[ Data ]' : '';
                                                     return (
                                                         <tr key={`r-${idx}`}>
-                                                            <td style={{ width: `${rLabelW}%`, ...demoTdStyle }} className={`px-2 break-words align-middle ${formData?.rowPadding} ${dynamicLabelClass}`}>{field ? (<div className="flex justify-between items-center gap-2"><span>{field.label}</span><span>:</span></div>) : ''}</td>
-                                                            <td style={{ width: `${rDataW}%`, ...demoTdStyle }} className={`px-2 break-words align-middle ${formData?.rowPadding} ${dynamicDataClass}`}>{resolvedValue}</td>
+                                                            <td style={{ ...demoTdStyle }} className={`px-2 break-words align-middle overflow-hidden ${formData?.rowPadding} ${dynamicLabelClass}`}>{field ? (<div className="flex justify-between items-center gap-2"><span>{field.label}</span><span>:</span></div>) : ''}</td>
+                                                            <td style={{ ...demoTdStyle }} className={`px-2 break-words align-middle overflow-hidden ${formData?.rowPadding} ${dynamicDataClass}`}>{resolvedValue}</td>
                                                         </tr>
                                                     )
                                                 })}
@@ -302,7 +329,14 @@ export default function PrintReportContent({
                                         </table>
                                     </div>
                                 ) : (
-                                    <table className={`w-full table-fixed ${formData?.fontSize}`} style={demoTableStyle}>
+                                    <table className={`w-full ${formData?.fontSize}`} style={demoTableStyle}>
+                                        <colgroup>
+                                            <col style={{ width: singleLeftL }} />
+                                            <col style={{ width: singleLeftD }} />
+                                            {gapPercent > 0 && <col style={{ width: gapW }} />}
+                                            <col style={{ width: singleRightL }} />
+                                            <col style={{ width: singleRightD }} />
+                                        </colgroup>
                                         <tbody>
                                             {previewRows.map((_, idx) => {
                                                 const lField = safeLeftFields[idx];
@@ -311,10 +345,15 @@ export default function PrintReportContent({
                                                 const rVal = rField ? getFieldValue(rField, dummyPatient, dummyBill, dummyDate, dummyDate) || '[ Data ]' : '';
                                                 return (
                                                     <tr key={idx}>
-                                                        <td style={{ width: `${lLabelW / 2}%`, ...demoTdStyle }} className={`px-2 break-words align-middle ${formData?.rowPadding} ${dynamicLabelClass}`}>{lField ? (<div className="flex justify-between items-center gap-2"><span>{lField.label}</span><span>:</span></div>) : ''}</td>
-                                                        <td style={{ width: `${lDataW / 2}%`, ...demoTdStyle }} className={`px-2 break-words align-middle ${formData?.rowPadding} ${dynamicDataClass}`}>{lVal}</td>
-                                                        <td style={{ width: `${rLabelW / 2}%`, ...demoTdStyle }} className={`px-2 break-words align-middle ${formData?.rowPadding} ${dynamicLabelClass}`}>{rField ? (<div className="flex justify-between items-center gap-2"><span>{rField.label}</span><span>:</span></div>) : ''}</td>
-                                                        <td style={{ width: `${rDataW / 2}%`, ...demoTdStyle }} className={`px-2 break-words align-middle ${formData?.rowPadding} ${dynamicDataClass}`}>{rVal}</td>
+                                                        <td style={demoTdStyle} className={`px-2 break-words align-middle overflow-hidden ${formData?.rowPadding} ${dynamicLabelClass}`}>{lField ? (<div className="flex justify-between items-center gap-2"><span>{lField.label}</span><span>:</span></div>) : ''}</td>
+                                                        <td style={demoTdStyle} className={`px-2 break-words align-middle overflow-hidden ${formData?.rowPadding} ${dynamicDataClass}`}>{lVal}</td>
+                                                        
+                                                        {gapPercent > 0 && (
+                                                            <td style={{ border: 'none', background: 'transparent' }}></td>
+                                                        )}
+
+                                                        <td style={demoTdStyle} className={`px-2 break-words align-middle overflow-hidden ${formData?.rowPadding} ${dynamicLabelClass}`}>{rField ? (<div className="flex justify-between items-center gap-2"><span>{rField.label}</span><span>:</span></div>) : ''}</td>
+                                                        <td style={demoTdStyle} className={`px-2 break-words align-middle overflow-hidden ${formData?.rowPadding} ${dynamicDataClass}`}>{rVal}</td>
                                                     </tr>
                                                 )
                                             })}
@@ -337,7 +376,9 @@ export default function PrintReportContent({
                     
                     {groupedDummyData.map((group, gIdx) => (
                         <div key={gIdx} className="mb-4">
-                            {group.testName && (
+                            
+                            {/* 🚨 TEST NAME TOGGLE ENABLED HERE */}
+                            {bodySettings?.showTestName !== false && group.testName && (
                                 <h2 className={`font-bold text-slate-800 mb-2 ${bodySettings?.testNameAlignment} ${bodySettings?.testNameSize} ${bodySettings?.testNameUnderline ? 'underline underline-offset-4' : ''}`}>
                                     {group.testName}
                                 </h2>
@@ -415,4 +456,3 @@ export default function PrintReportContent({
         </div>
     );
 }
-// --- BLOCK app/reports/components/PrintReportContent.tsx CLOSE ---

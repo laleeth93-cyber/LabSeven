@@ -8,7 +8,6 @@ interface BodySettingsPanelProps {
 
 export default function BodySettingsPanel({ bodySettings, handleToggleBody, handleBodySettingChange }: BodySettingsPanelProps) {
     
-    // Calculate total widths dynamically based on visible columns
     const pW = parseFloat(bodySettings.colWidthParam) || 0;
     const rW = parseFloat(bodySettings.colWidthResult) || 0;
     const uW = bodySettings.showUnitCol ? (parseFloat(bodySettings.colWidthUnit) || 0) : 0;
@@ -20,7 +19,6 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
     const isValid = totalWidth === 100;
 
     return (
-        // 🚨 REMOVED 'h-full' to allow natural expansion for the single scrollbar
         <div className="w-full flex flex-col gap-5">
             
             <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col">
@@ -55,28 +53,29 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                         { key: 'showUnitCol', label: 'Units Column' },
                         { key: 'showRefRangeCol', label: 'Bio. Ref Interval' },
                         { key: 'showDepartmentName', label: 'Department Name' },
-                    ].map((item) => (
-                        <div key={item.key} onClick={() => handleToggleBody(item.key)} className={`w-auto min-w-[160px] p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-4 ${bodySettings[item.key as keyof typeof bodySettings] ? 'border-[#9575cd] bg-purple-50/30' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
-                            <div><p className={`font-bold text-xs ${bodySettings[item.key as keyof typeof bodySettings] ? 'text-[#5e35b1]' : 'text-slate-700'}`}>{item.label}</p></div>
-                            <div className={`shrink-0 w-8 h-4 rounded-full transition-colors relative ${bodySettings[item.key as keyof typeof bodySettings] ? 'bg-[#9575cd]' : 'bg-slate-300'}`}>
-                                <div className={`absolute top-[2px] w-3 h-3 rounded-full bg-white transition-all ${bodySettings[item.key as keyof typeof bodySettings] ? 'right-[2px]' : 'left-[2px]'}`}></div>
+                        { key: 'showTestName', label: 'Test Name' }, // 🚨 NEW TOGGLE HERE
+                    ].map((item) => {
+                        // Default to true if undefined so existing settings don't break
+                        const isChecked = bodySettings[item.key as keyof typeof bodySettings] ?? true;
+                        return (
+                        <div key={item.key} onClick={() => handleToggleBody(item.key)} className={`w-auto min-w-[160px] p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-4 ${isChecked ? 'border-[#9575cd] bg-purple-50/30' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
+                            <div><p className={`font-bold text-xs ${isChecked ? 'text-[#5e35b1]' : 'text-slate-700'}`}>{item.label}</p></div>
+                            <div className={`shrink-0 w-8 h-4 rounded-full transition-colors relative ${isChecked ? 'bg-[#9575cd]' : 'bg-slate-300'}`}>
+                                <div className={`absolute top-[2px] w-3 h-3 rounded-full bg-white transition-all ${isChecked ? 'right-[2px]' : 'left-[2px]'}`}></div>
                             </div>
                         </div>
-                    ))}
+                    )})}
                 </div>
             </div>
 
-            {/* 🚨 REMOVED overflow-hidden and flex-1 so it acts like a normal, expandable block */}
             <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col">
                 <div className="border-b border-slate-100 pb-3 mb-4">
                     <h3 className="font-bold text-slate-800 text-sm">Table Design & Typography</h3>
                     <p className="text-[11px] text-slate-500 mt-0.5">Customize the borders, fonts, colors, and layout of the results table.</p>
                 </div>
                 
-                {/* 🚨 REMOVED inner scrollbar (overflow-y-auto) to rely entirely on the outer window scroll */}
                 <div className="flex flex-col gap-6">
                     
-                    {/* INDIVIDUAL COLUMN WIDTH SETTINGS WITH 100% VALIDATOR */}
                     <div>
                         <div className="w-full text-[10px] font-bold text-[#9575cd] uppercase border-b border-slate-100 pb-1.5 mb-3 flex justify-between items-center">
                             <span>Individual Column Widths</span>
@@ -93,13 +92,13 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                                     <label className="text-[10px] font-bold text-slate-600">Result %</label>
                                     <input type="number" placeholder="Auto" min="0" max="100" value={bodySettings.colWidthResult || ''} onChange={(e) => handleBodySettingChange('colWidthResult', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] bg-white" />
                                 </div>
-                                {bodySettings.showUnitCol && (
+                                {bodySettings.showUnitCol !== false && (
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[10px] font-bold text-slate-600">Units %</label>
                                         <input type="number" placeholder="Auto" min="0" max="100" value={bodySettings.colWidthUnit || ''} onChange={(e) => handleBodySettingChange('colWidthUnit', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] bg-white" />
                                     </div>
                                 )}
-                                {bodySettings.showRefRangeCol && (
+                                {bodySettings.showRefRangeCol !== false && (
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[10px] font-bold text-slate-600">Ref. Range %</label>
                                         <input type="number" placeholder="Auto" min="0" max="100" value={bodySettings.colWidthRef || ''} onChange={(e) => handleBodySettingChange('colWidthRef', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd] bg-white" />
@@ -113,7 +112,6 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                                 )}
                             </div>
                             
-                            {/* Validation Bar */}
                             <div className="flex items-center gap-3">
                                 <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
                                     <div className={`h-full transition-all ${isValid ? 'bg-emerald-500' : totalWidth > 100 ? 'bg-red-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(totalWidth, 100)}%` }}></div>
@@ -190,7 +188,6 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Header Padding</label>
-                                {/* 🚨 NEW COMPACT HEADER PADDING OPTIONS */}
                                 <select value={bodySettings.headerRowHeight || 'py-1.5'} onChange={(e) => handleBodySettingChange('headerRowHeight', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
                                     <option value="py-0">Ultra Compact (0px)</option>
                                     <option value="py-px">Extra Compact (1px)</option>
@@ -227,7 +224,6 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                             </div>
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Body Padding</label>
-                                {/* 🚨 NEW COMPACT BODY PADDING OPTIONS */}
                                 <select value={bodySettings.bodyRowHeight || 'py-1.5'} onChange={(e) => handleBodySettingChange('bodyRowHeight', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
                                     <option value="py-0">Ultra Compact (0px)</option>
                                     <option value="py-px">Extra Compact (1px)</option>
@@ -295,14 +291,16 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                                 { key: 'highlightAbnormal', label: 'Highlight Abnormal Values' },
                                 { key: 'stripedRows', label: 'Striped Row Backgrounds' },
                                 { key: 'showEndOfReport', label: 'Show End of Report Line' },
-                            ].map((item) => (
-                                <div key={item.key} onClick={() => handleToggleBody(item.key)} className={`flex-1 min-w-[200px] p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${bodySettings[item.key as keyof typeof bodySettings] ? 'border-[#9575cd] bg-purple-50/30' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
-                                    <div><p className={`font-bold text-xs ${bodySettings[item.key as keyof typeof bodySettings] ? 'text-[#5e35b1]' : 'text-slate-700'}`}>{item.label}</p></div>
-                                    <div className={`shrink-0 w-8 h-4 rounded-full transition-colors relative ${bodySettings[item.key as keyof typeof bodySettings] ? 'bg-[#9575cd]' : 'bg-slate-300'}`}>
-                                        <div className={`absolute top-[2px] w-3 h-3 rounded-full bg-white transition-all ${bodySettings[item.key as keyof typeof bodySettings] ? 'right-[2px]' : 'left-[2px]'}`}></div>
+                            ].map((item) => {
+                                const isChecked = bodySettings[item.key as keyof typeof bodySettings] ?? true;
+                                return (
+                                <div key={item.key} onClick={() => handleToggleBody(item.key)} className={`flex-1 min-w-[200px] p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${isChecked ? 'border-[#9575cd] bg-purple-50/30' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
+                                    <div><p className={`font-bold text-xs ${isChecked ? 'text-[#5e35b1]' : 'text-slate-700'}`}>{item.label}</p></div>
+                                    <div className={`shrink-0 w-8 h-4 rounded-full transition-colors relative ${isChecked ? 'bg-[#9575cd]' : 'bg-slate-300'}`}>
+                                        <div className={`absolute top-[2px] w-3 h-3 rounded-full bg-white transition-all ${isChecked ? 'right-[2px]' : 'left-[2px]'}`}></div>
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
 

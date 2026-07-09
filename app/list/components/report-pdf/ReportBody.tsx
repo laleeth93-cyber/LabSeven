@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text } from '@react-pdf/renderer';
 import { getPdfFontName, cleanBasicHTML, parseInterpretation } from './reportUtils';
 
-// 🚨 NEW: Translates formatting module padding into PDF pixels
 const parsePadding = (val: string, defaultVal: number) => {
     if (val === 'py-0') return 0;
     if (val === 'py-px') return 1;
@@ -41,7 +40,6 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
     const isSeparateDeptEnabled = separateDept === true || String(separateDept) === 'true';
     const isSeparateTestEnabled = separateTest === true || String(separateTest) === 'true';
 
-    // 🚨 NEW: Extracting the actual padding values from your settings
     const headerPy = parsePadding(reportSettings?.headerRowHeight, 6);
     const bodyPy = parsePadding(reportSettings?.bodyRowHeight, 6);
 
@@ -92,7 +90,6 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
         };
     };
 
-    // 🚨 FIX: Dynamic vertical padding injected perfectly into the cells
     const getCellBorder = (isLastCol: boolean, isHeader: boolean = false) => {
         const cellStyle: any = { 
             paddingHorizontal: 6, 
@@ -137,7 +134,8 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                 <Text style={styles.deptName}>{currentDept}</Text>
                             ) : null}
 
-                            {group.testName ? (
+                            {/* 🚨 TEST NAME TOGGLE ENABLED HERE FOR THE PDF */}
+                            {reportSettings?.showTestName !== false && group.testName ? (
                                 <Text style={[styles.testNameText, { marginBottom: 6 }]}>
                                     {group.testName}
                                 </Text>
@@ -209,7 +207,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                                                                     <View key={cIdx} style={{ flex: 1, padding: 4, borderRightWidth: cIdx === r.length - 1 ? 0 : 1, borderColor: '#cbd5e1', justifyContent: 'center' }}>
                                                                                         <Text style={{ fontFamily: getPdfFontName(rawFont, isHeader), fontSize: bFontSize - 1, color: isHeader ? '#334155' : '#0f172a', textAlign: 'center' }}>
                                                                                             {cell}
-                                                                                        </Text>
+                                                                                       </Text>
                                                                                     </View>
                                                                                 ))}
                                                                             </View>

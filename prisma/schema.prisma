@@ -278,12 +278,12 @@ model Test {
   maxHours      Int?     @default(0)
   maxMinutes    Int?     @default(0)
 
-  resultType      String?  @default("Parameter") 
-  template        String?  @default("Default")   
-  instructions    String?  @db.Text
+  resultType      String? @default("Parameter") 
+  template        String? @default("Default")   
+  instructions    String? @db.Text
   
   isInterpretationNeeded Boolean @default(false)
-  interpretation  String?  @db.Text 
+  interpretation  String? @db.Text 
   
   reportTitle     String?
   colCaption1     String?
@@ -437,7 +437,6 @@ model ParameterRange {
   minAgeUnit    String   @default("Years")
   maxAgeUnit    String   @default("Years")
   
- 
   normalOperator  String  @default("Between")
   lowRange      Float?
   highRange     Float?
@@ -592,14 +591,13 @@ model LabProfile {
   logoUrl   String?  @db.Text
 
   // 🚨 ADDED FIELDS FOR LETTERHEAD
-  letterheadUrl   String?  @db.Text
+  letterheadUrl   String? @db.Text
   lhWidth         String?
   lhHeight        String?
   lhMt            String?
   lhMb            String?
   lhMl            String?
   lhMr            String?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 }
@@ -633,6 +631,7 @@ model ReportSettings {
   rightColFields  String?  @db.Text
   leftColWidth    String   @default("35 65")
   rightColWidth   String   @default("35 65")
+  headerColumnGap String   @default("2")       // 🚨 Added earlier!
   headerQrCode    Boolean  @default(false)
 
   showMethodCol       Boolean  @default(true)
@@ -659,6 +658,7 @@ model ReportSettings {
   bodyResultAlign     String   @default("text-left")
 
   showDepartmentName  Boolean  @default(true)
+  showTestName        Boolean  @default(true)      // 🚨 ADDED HERE!
   departmentNameSize  String   @default("text-sm")
   testNameAlignment   String   @default("text-center")
   testNameUnderline   Boolean  @default(true)
@@ -721,11 +721,11 @@ model User {
   regNumber    String?  
   signText1    String?
   signText2    String?  
-  signatureUrl String?   @db.Text 
+  signatureUrl String? @db.Text 
   isDefaultSignature Boolean @default(false)
 
   allowConcession Boolean @default(false)
-  concessionLimit Float?   @default(0)
+  concessionLimit Float?  @default(0)
 
   isBillingOnly   Boolean @default(false)
 
@@ -783,7 +783,7 @@ model RolePermission {
 }
 
 model UserPermission {
-  id              Int        @id @default(autoincrement())
+  id               Int        @id @default(autoincrement())
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   permissionId Int
@@ -812,7 +812,7 @@ model Organism {
 }
 
 model Antibiotic {
-  id              Int        @id @default(autoincrement())
+  id               Int        @id @default(autoincrement())
   
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -890,7 +890,7 @@ model OtpCode {
 // ==========================================
 
 model SupportThread {
-  id             Int       @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   
   organizationId  Int
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

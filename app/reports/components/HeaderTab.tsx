@@ -1,4 +1,3 @@
-// --- app/reports/components/HeaderTab.tsx Block Open ---
 import React from 'react';
 import { LayoutTemplate, Search, Trash2, Settings2 } from 'lucide-react';
 
@@ -118,7 +117,23 @@ export default function HeaderTab({
                             <option value="50 50">50% | 50%</option>
                         </select>
                     </div>
-                    <div className="col-span-2 flex items-center gap-4 pt-4 pl-2">
+
+                    {/* 🚨 NEW FIELD: Center Gap (With your 6px and 10px additions) */}
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-slate-500 uppercase">Center Gap</label>
+                        <select name="headerColumnGap" value={formData.headerColumnGap || "2"} onChange={handleChange} className="w-full text-[11px] p-1.5 border border-slate-300 rounded outline-none focus:border-[#9575cd]">
+                            <option value="0">None (0)</option>
+                            <option value="2">Compact (2)</option>
+                            <option value="4">Standard (4)</option>
+                            <option value="6">Medium (6)</option>     {/* ADDED */}
+                            <option value="8">Wide (8)</option>
+                            <option value="10">Extra Wide (10)</option> {/* ADDED */}
+                            <option value="12">Spacious (12)</option>
+                            <option value="16">Maximum (16)</option>
+                        </select>
+                    </div>
+
+                    <div className="col-span-4 flex items-center gap-4 pt-1 pl-2">
                         <label className="flex items-center gap-2 text-[10px] font-bold text-slate-600 cursor-pointer">
                             <input type="checkbox" checked={formData.labelBold} onChange={() => handleToggleSetting('labelBold')} className="accent-[#9575cd] w-3.5 h-3.5 rounded" /> 
                             Bold Labels
@@ -213,4 +228,3 @@ export default function HeaderTab({
         </div>
     );
 }
-// --- app/reports/components/HeaderTab.tsx Block Close ---
