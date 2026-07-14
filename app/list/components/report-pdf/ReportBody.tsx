@@ -40,6 +40,8 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
     const isSeparateDeptEnabled = separateDept === true || String(separateDept) === 'true';
     const isSeparateTestEnabled = separateTest === true || String(separateTest) === 'true';
 
+    const showDeptName = reportSettings?.showDepartmentName !== false;
+
     const headerPy = parsePadding(reportSettings?.headerRowHeight, 6);
     const bodyPy = parsePadding(reportSettings?.bodyRowHeight, 6);
 
@@ -130,11 +132,22 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                         <View style={{ marginBottom: 15 }}>
                             
-                            {isSeparateDeptEnabled && isNewDept ? (
-                                <Text style={styles.deptName}>{currentDept}</Text>
+                            {showDeptName && isNewDept ? (
+                                <Text style={[
+                                    styles.deptName || {}, 
+                                    { 
+                                        fontFamily: getPdfFontName(rawFont, true), 
+                                        fontSize: bFontSize + 2, 
+                                        textAlign: 'center', 
+                                        marginBottom: 10, 
+                                        color: '#475569', 
+                                        textTransform: 'uppercase' 
+                                    }
+                                ]}>
+                                    {currentDept}
+                                </Text>
                             ) : null}
 
-                            {/* 🚨 TEST NAME TOGGLE ENABLED HERE FOR THE PDF */}
                             {reportSettings?.showTestName !== false && group.testName ? (
                                 <Text style={[styles.testNameText, { marginBottom: 6 }]}>
                                     {group.testName}

@@ -53,9 +53,8 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                         { key: 'showUnitCol', label: 'Units Column' },
                         { key: 'showRefRangeCol', label: 'Bio. Ref Interval' },
                         { key: 'showDepartmentName', label: 'Department Name' },
-                        { key: 'showTestName', label: 'Test Name' }, // 🚨 NEW TOGGLE HERE
+                        { key: 'showTestName', label: 'Test Name' },
                     ].map((item) => {
-                        // Default to true if undefined so existing settings don't break
                         const isChecked = bodySettings[item.key as keyof typeof bodySettings] ?? true;
                         return (
                         <div key={item.key} onClick={() => handleToggleBody(item.key)} className={`w-auto min-w-[160px] p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-4 ${isChecked ? 'border-[#9575cd] bg-purple-50/30' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>

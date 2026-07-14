@@ -71,7 +71,6 @@ export default function PrintReportContent({
     const dynamicLabelClass = `${formData?.labelBold ? 'font-bold' : 'font-medium'} text-slate-800`;
     const dynamicDataClass = `${formData?.dataBold ? 'font-bold' : 'font-medium'} text-slate-700`;
     
-    // 🚨 ABSOLUTE MATH LOCK: Guarantees the label boundaries never move!
     const gapPercent = parseFloat(formData?.headerColumnGap || "2");
     const blockWidth = 50 - (gapPercent / 2);
 
@@ -377,7 +376,6 @@ export default function PrintReportContent({
                     {groupedDummyData.map((group, gIdx) => (
                         <div key={gIdx} className="mb-4">
                             
-                            {/* 🚨 TEST NAME TOGGLE ENABLED HERE */}
                             {bodySettings?.showTestName !== false && group.testName && (
                                 <h2 className={`font-bold text-slate-800 mb-2 ${bodySettings?.testNameAlignment} ${bodySettings?.testNameSize} ${bodySettings?.testNameUnderline ? 'underline underline-offset-4' : ''}`}>
                                     {group.testName}

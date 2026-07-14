@@ -118,16 +118,15 @@ export default function HeaderTab({
                         </select>
                     </div>
 
-                    {/* 🚨 NEW FIELD: Center Gap (With your 6px and 10px additions) */}
                     <div className="flex flex-col gap-1">
                         <label className="text-[9px] font-bold text-slate-500 uppercase">Center Gap</label>
                         <select name="headerColumnGap" value={formData.headerColumnGap || "2"} onChange={handleChange} className="w-full text-[11px] p-1.5 border border-slate-300 rounded outline-none focus:border-[#9575cd]">
                             <option value="0">None (0)</option>
                             <option value="2">Compact (2)</option>
                             <option value="4">Standard (4)</option>
-                            <option value="6">Medium (6)</option>     {/* ADDED */}
+                            <option value="6">Medium (6)</option>
                             <option value="8">Wide (8)</option>
-                            <option value="10">Extra Wide (10)</option> {/* ADDED */}
+                            <option value="10">Extra Wide (10)</option>
                             <option value="12">Spacious (12)</option>
                             <option value="16">Maximum (16)</option>
                         </select>
