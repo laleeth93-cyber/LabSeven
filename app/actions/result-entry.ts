@@ -48,7 +48,7 @@ export async function getPendingWorklist(search?: string) {
           select: { id: true, status: true, test: { select: { id: true, name: true } } }
         }
       },
-      orderBy: { date: 'desc' }, // Safely back to using 'date'
+      orderBy: { date: 'desc' }, 
       take: 50 
     });
     return { success: true, data: bills };
@@ -314,7 +314,7 @@ export async function getDeltaCheckData(billId: number, patientId: number) {
   }
 }
 
-// 🚨 UPDATED FUNCTION: Fetch fully hydrated bill specifically for printing WITH RANGES
+// 🚨 UPDATED FUNCTION: Fetch fully hydrated bill specifically for printing WITH RANGES & DEPARTMENTS
 export async function getPrintableBillData(billId: number) {
   try {
     const { orgId } = await requireAuth(); 
@@ -331,10 +331,11 @@ export async function getPrintableBillData(billId: number) {
           include: {
             test: {
               include: {
+                department: true, // ✨ FIX: Fetches department for standard tests
                 parameters: {
                   include: { 
                     parameter: {
-                      include: { ranges: true } // ✨ FIX: Fetches Bio Reference Ranges
+                      include: { ranges: true } 
                     }
                   },
                   orderBy: { order: 'asc' }
@@ -343,10 +344,11 @@ export async function getPrintableBillData(billId: number) {
                   include: {
                     test: {
                       include: {
+                        department: true, // ✨ FIX: Fetches department for tests inside packages
                         parameters: {
                           include: { 
                             parameter: {
-                              include: { ranges: true } // ✨ FIX: Fetches ranges for packages
+                              include: { ranges: true } 
                             }
                           },
                           orderBy: { order: 'asc' }
@@ -360,7 +362,7 @@ export async function getPrintableBillData(billId: number) {
             results: {
               include: {
                 parameter: {
-                  include: { ranges: true } // ✨ FIX: Fetches ranges for dynamically added results
+                  include: { ranges: true } 
                 }
               }
             }

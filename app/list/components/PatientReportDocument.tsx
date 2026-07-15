@@ -79,7 +79,6 @@ export default function PatientReportDocument(props: any) {
         colonText: { fontSize: pdfFontSize, color: '#475569', fontFamily: getPdfFontName(rawFont, isLabelBold) },
         valText: { fontSize: pdfFontSize, color: '#0f172a', fontFamily: getPdfFontName(rawFont, isDataBold) },
         
-        // 🚨 FIX: Removed hardcoded double-padding from the text, as it is now strictly handled by the View wrapping it
         thText: { fontSize: bFontSize, fontFamily: getPdfFontName(rawFont, true), color: reportSettings?.bodyHeaderTextColor || '#000000' },
         tdText: { fontSize: bFontSize, fontFamily: getPdfFontName(rawFont, false), color: '#000000' },
         deptName: { fontSize: 13, fontFamily: getPdfFontName(rawFont, true), textAlign: 'center', textTransform: 'uppercase', marginBottom: 6, marginTop: 15, color: '#475569' },
@@ -140,9 +139,10 @@ export default function PatientReportDocument(props: any) {
         <Document>
             <Page size={paperSize as any} orientation={orientation as any} style={styles.page}>
                 
-                {printHeaderFooter && activeImageBase64 && (
-                    <Image src={activeImageBase64} style={styles.letterheadBackground} fixed />
-                )}
+                {/* ✨ FIX: Bulletproof boolean check to prevent renderer crash */}
+                {printHeaderFooter && Boolean(activeImageBase64) ? (
+                    <Image src={activeImageBase64 as string} style={styles.letterheadBackground} fixed />
+                ) : null}
 
                 <ReportHeader 
                     reportSettings={reportSettings}

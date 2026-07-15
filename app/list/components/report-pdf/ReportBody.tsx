@@ -109,11 +109,11 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
     const hasData = groupedData.some((g: any) => g.items && g.items.length > 0);
     
+    // 🚨 EXACT DEPARTMENT MAPPING (Removed "Department of" hardcoding)
     const getGroupDept = (group: any) => {
-        const matchedItem = realData?.items?.find((i:any) => i.test?.name === group.testName || i.test?.displayName === group.testName || i.testName === group.testName);
-        const raw = matchedItem?.test?.department?.name || 'Pathology';
-        return raw.toLowerCase().startsWith('department of') ? raw : `Department of ${raw}`;
-    };
+    const matchedItem = realData?.items?.find((i:any) => i.test?.name === group.testName || i.test?.displayName === group.testName || i.testName === group.testName);
+    return matchedItem?.test?.department?.name || ''; // Just returns the raw department name!
+};
 
     return (
         <React.Fragment>
@@ -132,7 +132,8 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                         <View style={{ marginBottom: 15 }}>
                             
-                            {showDeptName && isNewDept ? (
+                            {/* 🚨 ONLY SHOWS IF IT ACTUALLY FOUND A DEPARTMENT */}
+                            {showDeptName && isNewDept && currentDept ? (
                                 <Text style={[
                                     styles.deptName || {}, 
                                     { 

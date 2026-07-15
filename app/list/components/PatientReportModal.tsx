@@ -22,7 +22,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
     
     const [realData, setRealData] = useState<any>(null);
     const [reportSettings, setReportSettings] = useState<any>(null);
-    const [barcodeUrl, setBarcodeUrl] = useState<string>('');
+    const [barcodeUrl, setBarcodeUrl] = useState<string | null>(null);
 
     const [printHeaderFooter, setPrintHeaderFooter] = useState(true);
     const [letterheadStyle, setLetterheadStyle] = useState('none');
@@ -153,7 +153,9 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                 const shortBarcodeText = String(billData.billNumber || '').slice(-4);
                 JsBarcode(canvas, shortBarcodeText, { displayValue: false, height: 40, width: 1.5, margin: 0, background: "transparent", lineColor: "#000000" });
                 setBarcodeUrl(canvas.toDataURL());
-            } catch(e){}
+            } catch(e){
+                setBarcodeUrl(null);
+            }
         }
 
         setReportSettings(settingsData);
@@ -202,9 +204,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             return null; 
         };
 
-        // 🚨 FIX 1: Extremely robust reference range finder
         const getDisplayRange = (parameter: any, resultObj?: any) => {
-            // First check if the result itself has an overridden range
             if (resultObj) {
                 if (resultObj.referenceRange) return resultObj.referenceRange;
                 if (resultObj.bioRefRange) return resultObj.bioRefRange;
@@ -212,7 +212,6 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
             if (!parameter) return '';
             
-            // Check for Age/Gender specific ranges
             const range = getMatchedRange(parameter);
             if (range) {
                 if (range.normalRange && String(range.normalRange).trim() !== '') return String(range.normalRange);
@@ -223,12 +222,10 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                 }
             }
 
-            // Check for standard Min/Max fields
             if (parameter.minVal !== null && parameter.minVal !== undefined && parameter.maxVal !== null && parameter.maxVal !== undefined) {
                 return `${parameter.minVal} - ${parameter.maxVal}`;
             }
             
-            // Fallback: Check every possible name the database might use for the Normal Range
             return parameter.normalRange ?? parameter.bioRefRange ?? parameter.referenceRange ?? parameter.displayRange ?? parameter.refRange ?? parameter.range ?? '';
         };
 
@@ -262,9 +259,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                         return;
                     }
 
-                    if (!actualParam) {
-                        return; 
-                    }
+                    if (!actualParam) return; 
                     
                     const pId = actualParam.id;
                     printedParamIds.add(pId);
@@ -275,10 +270,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
                     val = val !== null && val !== undefined ? String(val).trim() : '';
 
-                    // 🚨 FIX 2: Block empty parameters from ever being sent to the PDF
-                    if (val === '') {
-                        return; // Completely skips pushing this empty test row!
-                    }
+                    if (val === '') return; 
 
                     const refRange = getDisplayRange(actualParam, matchedResult);
                     const activeRange = getMatchedRange(actualParam);
@@ -322,13 +314,9 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     if (pName === '-') return;
 
                     let val = res.resultValue ?? res.value ?? res.result ?? res.enteredValue ?? '';
-                    
                     val = val !== null && val !== undefined ? String(val).trim() : '';
 
-                    // 🚨 FIX 2 (Safety Check): Block empty un-mapped parameters
-                    if (val === '') {
-                        return; 
-                    }
+                    if (val === '') return; 
 
                     const refRange = getDisplayRange(actualParam, res);
                     const activeRange = getMatchedRange(actualParam);
@@ -355,7 +343,6 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             }
         });
 
-        // 🚨 CLEANUP: Removes hanging test headings if all their parameters were empty
         let cleanedDisplayData: any[] = [];
         for (let i = 0; i < displayData.length; i++) {
             const current = displayData[i];
@@ -387,11 +374,12 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
         setIsPreviewLoading(true);
 
         try {
-            let activeImageBase64 = '';
-            if (letterheadStyle === 'custom1') activeImageBase64 = reportSettings?.customHeader1 || '';
-            if (letterheadStyle === 'custom2') activeImageBase64 = reportSettings?.customHeader2 || '';
-            if (letterheadStyle === 'custom3') activeImageBase64 = reportSettings?.customHeader3 || '';
-            if (letterheadStyle === 'custom4') activeImageBase64 = reportSettings?.customHeader4 || '';
+            // 🚨 STRICT STRING VERIFICATION TO PREVENT CRASHES
+            let activeImageBase64: string | null = null;
+            if (letterheadStyle === 'custom1' && reportSettings?.customHeader1?.trim()) activeImageBase64 = reportSettings.customHeader1;
+            if (letterheadStyle === 'custom2' && reportSettings?.customHeader2?.trim()) activeImageBase64 = reportSettings.customHeader2;
+            if (letterheadStyle === 'custom3' && reportSettings?.customHeader3?.trim()) activeImageBase64 = reportSettings.customHeader3;
+            if (letterheadStyle === 'custom4' && reportSettings?.customHeader4?.trim()) activeImageBase64 = reportSettings.customHeader4;
 
             const qrUrl = `${window.location.origin}/verify/${filteredRealData?.id || billId}`;
             const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
