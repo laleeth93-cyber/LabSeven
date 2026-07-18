@@ -1,6 +1,5 @@
-// --- app/reports/components/body/BodyLivePreview.tsx Block Open ---
 import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import QRCode from 'qrcode.react';
 
 interface BodyLivePreviewProps {
     formData: any;
@@ -12,10 +11,10 @@ interface BodyLivePreviewProps {
 
 const dummyCBPData = [
     { isGroup: true, param: 'COMPLETE BLOOD COUNT' },
-    { param: 'Haemoglobin (Hb)', result: '10.5', unit: 'g/dL', ref: '13.0 - 17.0', method: 'Cyanmethaemoglobin', abnormal: true },
+    { param: 'Haemoglobin (Hb)', result: '10.5', unit: 'g/dL', ref: '13.0 - 17.0', method: 'Cyanmethaemoglobin', abnormal: true, flag: 'L' },
     { param: 'RBC Count', result: '4.8', unit: 'millions/cumm', ref: '4.5 - 5.5', method: 'Electrical Impedance', abnormal: false },
-    { param: 'PCV (Hematocrit)', result: '38', unit: '%', ref: '40 - 50', method: 'Calculated', abnormal: true },
-    { param: 'Mean Corpuscular Vol (MCV)', result: '82', unit: 'fL', ref: '83 - 101', method: 'Calculated', abnormal: true },
+    { param: 'PCV (Hematocrit)', result: '38', unit: '%', ref: '40 - 50', method: 'Calculated', abnormal: true, flag: 'L' },
+    { param: 'Mean Corpuscular Vol (MCV)', result: '82', unit: 'fL', ref: '83 - 101', method: 'Calculated', abnormal: true, flag: 'L' },
     { param: 'MCH', result: '28', unit: 'pg', ref: '27 - 32', method: 'Calculated', abnormal: false },
     { param: 'MCHC', result: '33', unit: 'g/dL', ref: '31.5 - 34.5', method: 'Calculated', abnormal: false },
     { param: 'RDW - CV', result: '13.5', unit: '%', ref: '11.6 - 14.0', method: 'Calculated', abnormal: false },
@@ -33,13 +32,32 @@ const dummyCBPData = [
     { param: 'Total Bilirubin', result: '1.2', unit: 'mg/dL', ref: '0.2 - 1.2', method: 'Diazo', abnormal: false },
     { param: 'Direct Bilirubin', result: '0.3', unit: 'mg/dL', ref: '0.0 - 0.3', method: 'Diazo', abnormal: false },
     { param: 'Indirect Bilirubin', result: '0.9', unit: 'mg/dL', ref: '0.2 - 0.9', method: 'Calculated', abnormal: false },
-    { param: 'SGOT (AST)', result: '45', unit: 'U/L', ref: '5 - 40', method: 'IFCC', abnormal: true },
-    { param: 'SGPT (ALT)', result: '50', unit: 'U/L', ref: '7 - 56', method: 'IFCC', abnormal: true },
+    { param: 'SGOT (AST)', result: '45', unit: 'U/L', ref: '5 - 40', method: 'IFCC', abnormal: true, flag: 'H' },
+    { param: 'SGPT (ALT)', result: '50', unit: 'U/L', ref: '7 - 56', method: 'IFCC', abnormal: true, flag: 'H' },
     { param: 'Alkaline Phosphatase', result: '120', unit: 'U/L', ref: '44 - 147', method: 'PNPP', abnormal: false },
 ];
 
 export default function BodyLivePreview({ formData, leftColFields, rightColFields, bodySettings, footerSettings }: BodyLivePreviewProps) {
     
+    const getFlagProps = (flag: any) => {
+        const f = String(flag || '').toUpperCase().trim();
+        const isLow = f === 'L' || f === 'LOW';
+        const isHigh = f === 'H' || f === 'HIGH' || f === 'A' || f === 'ABNORMAL' || f === '*';
+        const isNormal = !isLow && !isHigh;
+
+        let text = '';
+        const style = bodySettings.flagStyle || 'lh';
+        if (style === 'arrows') text = isLow ? '↓' : isHigh ? '↑' : '';
+        else if (style === 'lh') text = isLow ? 'L' : isHigh ? 'H' : '';
+        else if (style === 'star') text = (isLow || isHigh) ? '*' : '';
+        else if (style === 'text') text = isLow ? 'Low' : isHigh ? 'High' : 'Normal';
+        else text = isLow ? 'L' : isHigh ? 'H' : ''; 
+
+        if (isNormal && style !== 'text') text = ''; 
+        const color = isLow ? (bodySettings.flagColorLow || '#3b82f6') : isHigh ? (bodySettings.flagColorHigh || '#ef4444') : (bodySettings.flagColorNormal || '#000000');
+        return { text, color };
+    }
+
     const activeStyle = (formData.letterheadStyle && formData.letterheadStyle.startsWith('custom')) ? formData.letterheadStyle : 'custom1';
     const currentMargins = formData.marginSettings?.[activeStyle] || { top: 120, bottom: 80, left: 40, right: 40 };
     const t = currentMargins.top; const b = currentMargins.bottom; const l = currentMargins.left; const r = currentMargins.right;
@@ -74,20 +92,22 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
     const appliedFontClass = isTailwindFont ? bodySettings.bodyFontFamily : '';
     const appliedCustomFont = !isTailwindFont ? bodySettings.bodyFontFamily : undefined;
     
-    let bodyTableStyle: React.CSSProperties = { borderCollapse: 'collapse', borderSpacing: 0 };
+    let bodyTableStyle: React.CSSProperties = { borderCollapse: 'collapse', borderSpacing: 0, width: '100%', tableLayout: 'fixed' };
+    
+    // ✨ Header Colors Applied Here
     let thStyle: React.CSSProperties = { backgroundColor: bodySettings.bodyHeaderBgColor || '#ffffff', color: bodySettings.bodyHeaderTextColor || '#000000' };
     let tdStyle: React.CSSProperties = {};
 
     if (bodySettings.bodyTableStyle === 'grid') {
-        bodyTableStyle = { borderCollapse: 'separate', borderSpacing: bw, backgroundColor: bColor, border: 'none' };
+        bodyTableStyle = { borderCollapse: 'separate', borderSpacing: bw, backgroundColor: bColor, border: 'none', width: '100%', tableLayout: 'fixed' };
         thStyle = { ...thStyle, border: 'none' };
         tdStyle = { border: 'none' };
     } else if (bodySettings.bodyTableStyle === 'horizontal') {
-        bodyTableStyle = { borderCollapse: 'collapse', borderTop: `${bw} solid ${bColor}`, borderBottom: `${bw} solid ${bColor}` };
+        bodyTableStyle = { borderCollapse: 'collapse', borderTop: `${bw} solid ${bColor}`, borderBottom: `${bw} solid ${bColor}`, width: '100%', tableLayout: 'fixed' };
         thStyle = { ...thStyle, borderBottom: `${bw} solid ${bColor}` };
         tdStyle = { borderBottom: `${bw} solid ${bColor}` };
     } else if (bodySettings.bodyTableStyle === 'outer') {
-        bodyTableStyle = { borderCollapse: 'collapse', border: `${bw} solid ${bColor}` };
+        bodyTableStyle = { borderCollapse: 'collapse', border: `${bw} solid ${bColor}`, width: '100%', tableLayout: 'fixed' };
     }
 
     const hFont = bodySettings.headerFontSize || 'text-xs';
@@ -97,31 +117,32 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
     const tdClass = `${bodySettings.bodyRowHeight || 'py-1.5'} ${bodySettings.bodyColPadding || 'px-2'} break-words align-top`;
 
     let totalCols = 2; 
-    if (bodySettings.showUnitCol) totalCols++;
-    if (bodySettings.showRefRangeCol) totalCols++;
+    if (bodySettings.showFlagCol !== false) totalCols++;
+    if (bodySettings.showUnitCol !== false) totalCols++;
+    if (bodySettings.showRefRangeCol !== false) totalCols++;
     if (bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column') totalCols++;
 
     const TableColGroup = () => {
-        
-        // 100% SAFEGUARD VALIDATION
         const pW = parseFloat(bodySettings.colWidthParam) || 0;
         const rW = parseFloat(bodySettings.colWidthResult) || 0;
-        const uW = bodySettings.showUnitCol ? (parseFloat(bodySettings.colWidthUnit) || 0) : 0;
-        const refW = bodySettings.showRefRangeCol ? (parseFloat(bodySettings.colWidthRef) || 0) : 0;
+        const fW = bodySettings.showFlagCol !== false ? (parseFloat(bodySettings.colWidthFlag) || 0) : 0;
+        const uW = bodySettings.showUnitCol !== false ? (parseFloat(bodySettings.colWidthUnit) || 0) : 0;
+        const refW = bodySettings.showRefRangeCol !== false ? (parseFloat(bodySettings.colWidthRef) || 0) : 0;
         const mW = (bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column') ? (parseFloat(bodySettings.colWidthMethod) || 0) : 0;
         
-        const isCustomValid = (pW + rW + uW + refW + mW) === 100;
+        const isCustomValid = (pW + rW + fW + uW + refW + mW) === 100;
 
-        const defParam = totalCols === 5 ? '40%' : totalCols === 4 ? '40%' : totalCols === 3 ? '50%' : '70%';
-        const defRem = totalCols === 5 ? '15%' : totalCols === 4 ? '20%' : totalCols === 3 ? '25%' : '30%';
+        const defParam = bodySettings.showFlagCol !== false ? '33%' : '40%';
+        const defRem = bodySettings.showFlagCol !== false ? '18%' : '20%';
 
         return (
             <colgroup>
                 <col style={{ width: isCustomValid ? `${pW}%` : defParam }} />
-                <col style={{ width: isCustomValid ? `${rW}%` : defRem }} />
-                {bodySettings.showUnitCol && <col style={{ width: isCustomValid ? `${uW}%` : defRem }} />}
-                {bodySettings.showRefRangeCol && <col style={{ width: isCustomValid ? `${refW}%` : defRem }} />}
-                {bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column' && <col style={{ width: isCustomValid ? `${mW}%` : defRem }} />}
+                <col style={{ width: isCustomValid ? `${rW}%` : '15%' }} />
+                {bodySettings.showFlagCol !== false && <col style={{ width: isCustomValid ? `${fW}%` : '7%' }} />}
+                {bodySettings.showUnitCol !== false && <col style={{ width: isCustomValid ? `${uW}%` : defRem }} />}
+                {bodySettings.showRefRangeCol !== false && <col style={{ width: isCustomValid ? `${refW}%` : '27%' }} />}
+                {bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column' && <col style={{ width: isCustomValid ? `${mW}%` : '15%' }} />}
             </colgroup>
         );
     };
@@ -302,7 +323,7 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
                         )}
 
                         <div className={`flex-1 flex flex-col pb-8 ${appliedFontClass} ${bodySettings.bodyFontSize}`} style={{ fontFamily: appliedCustomFont }}>
-                            {bodySettings.showDepartmentName && (
+                            {bodySettings.showDepartmentName !== false && (
                                 <h3 className={`font-bold text-slate-600 uppercase mb-1 tracking-wide text-center ${bodySettings.departmentNameSize}`}>Department of Pathology</h3>
                             )}
                             <h2 className={`font-bold text-slate-800 mb-3 ${bodySettings.testNameAlignment} ${bodySettings.testNameSize} ${bodySettings.testNameUnderline ? 'underline underline-offset-4' : ''}`}>
@@ -313,10 +334,11 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
                                 <TableColGroup />
                                 <thead>
                                     <tr>
-                                        <th className={`${thClass} text-left`} style={thStyle}>Test Parameter</th>
+                                        <th className={`${thClass} text-left pl-4`} style={thStyle}>Test Parameter</th>
                                         <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={thStyle}>Result</th>
-                                        {bodySettings.showUnitCol && <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={thStyle}>Units</th>}
-                                        {bodySettings.showRefRangeCol && <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={thStyle}>Bio. Ref. Range</th>}
+                                        {bodySettings.showFlagCol !== false && <th className={`${thClass} text-center`} style={thStyle}>Flag</th>}
+                                        {bodySettings.showUnitCol !== false && <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={thStyle}>Units</th>}
+                                        {bodySettings.showRefRangeCol !== false && <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={thStyle}>Bio. Ref. Range</th>}
                                         {bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column' && (
                                             <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={thStyle}>Method</th>
                                         )}
@@ -327,19 +349,30 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
                                         if (row.isGroup) {
                                             return (
                                                 <tr key={i} style={{ backgroundColor: '#ffffff' }}>
-                                                    <td colSpan={totalCols} className={`font-bold ${bodySettings.bodyColPadding} pt-2 pb-0.5 uppercase tracking-wide ${bodySettings.subheadingSize} break-words align-middle`} style={{ color: bodySettings.subheadingColor, ...tdStyle }}>{row.param}</td>
+                                                    <td colSpan={totalCols} className={`font-bold ${bodySettings.bodyColPadding} pt-2 pb-0.5 pl-4 uppercase tracking-wide ${bodySettings.subheadingSize} break-words align-middle`} style={{ color: bodySettings.subheadingColor, ...tdStyle }}>{row.param}</td>
                                                 </tr>
                                             );
                                         }
+                                        
+                                        const flagProps = getFlagProps(row.flag);
+                                        const isAbnormal = bodySettings.highlightAbnormal && row.abnormal;
+
                                         return (
                                             <tr key={i} style={{ backgroundColor: bodySettings.stripedRows && i % 2 !== 0 ? '#f8fafc' : '#ffffff' }}>
                                                 <td className={`${tdClass} text-black text-left pl-4`} style={tdStyle}>
                                                     <div className="font-medium">{row.param}</div>
                                                     {bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'beneath' && (<div className="text-[0.85em] text-black mt-0.5">Method: {row.method}</div>)}
                                                 </td>
-                                                <td className={`${tdClass} ${bodySettings.bodyResultAlign} ${bodySettings.highlightAbnormal && row.abnormal ? 'font-bold text-black' : 'text-black'}`} style={tdStyle}>{row.result} {bodySettings.highlightAbnormal && row.abnormal && '*'}</td>
-                                                {bodySettings.showUnitCol && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black`} style={tdStyle}>{row.unit}</td>}
-                                                {bodySettings.showRefRangeCol && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black`} style={tdStyle}>{row.ref}</td>}
+                                                <td className={`${tdClass} ${bodySettings.bodyResultAlign} ${isAbnormal ? 'font-bold text-black' : 'text-black'}`} style={tdStyle}>{row.result} {isAbnormal && bodySettings.flagStyle !== 'arrows' && bodySettings.flagStyle !== 'text' && '*'}</td>
+                                                
+                                                {bodySettings.showFlagCol !== false && (
+                                                    <td className={`${tdClass} text-center font-bold`} style={{ ...tdStyle, color: flagProps.color }}>
+                                                        {flagProps.text}
+                                                    </td>
+                                                )}
+
+                                                {bodySettings.showUnitCol !== false && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black`} style={tdStyle}>{row.unit}</td>}
+                                                {bodySettings.showRefRangeCol !== false && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black`} style={tdStyle}>{row.ref}</td>}
                                                 {bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column' && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black text-[0.9em]`} style={tdStyle}>{row.method}</td>}
                                             </tr>
                                         );
@@ -353,7 +386,7 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
                                         <h4 className="font-bold mb-1 underline underline-offset-2">Interpretation / Remarks:</h4>
                                         <p className="leading-snug"><strong>Mild Anemia:</strong> Haemoglobin and PCV are slightly below the biological reference interval. Clinical correlation is recommended.<br/><strong>Liver Function:</strong> Transaminases (SGOT/SGPT) are slightly elevated indicating mild hepatic stress.</p>
                                     </div>
-                                    {footerSettings.showEndOfReport && (
+                                    {footerSettings.showEndOfReport !== false && (
                                         <div className="mt-12 text-center font-bold text-slate-400 uppercase tracking-widest text-[0.85em]">*** End of Report ***</div>
                                     )}
                                 </>
@@ -372,4 +405,3 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
         </div>
     );
 }
-// --- app/reports/components/body/BodyLivePreview.tsx Block Close ---

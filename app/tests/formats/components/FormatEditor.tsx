@@ -1,9 +1,7 @@
-// --- BLOCK app/tests/formats/components/FormatEditor.tsx OPEN ---
 "use client";
-
 import React, { useState, useEffect, useMemo, useTransition, useRef } from 'react';
 import { 
-  Save, Loader2, Settings2, Trash2, Plus, FileText, Calculator, Target, CheckCircle, Bug, Search
+    Save, Loader2, Settings2, Trash2, Plus, FileText, Calculator, Target, CheckCircle, Bug, Search
 } from 'lucide-react';
 import { updateTestConfiguration } from '@/app/actions/test-config';
 import RichTextEditorModal from '@/app/components/RichTextEditorModal';
@@ -92,7 +90,10 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                 printNextPage: test.printNextPage || false,
                 billingOnly: test.billingOnly || false,
                 reportTitle: test.reportTitle || '',
-                specimen: test.specimen?.id?.toString() || '',
+                
+                // FIX: Correctly mapping the specimen ID for the database and frontend dropdown
+                specimenId: test.specimen?.id?.toString() || test.specimenId?.toString() || '',
+                
                 colCaption1: test.colCaption1 || 'PARAMETER',
                 colCaption2: test.colCaption2 || 'Result',
                 colCaption3: test.colCaption3 || 'UOM',
@@ -104,13 +105,12 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                 targetCount: test.targetCount || '',
                 isInterpretationNeeded: test.isInterpretationNeeded || false,
                 interpretation: test.interpretation || '',
-                cultureColumns: parsedCultureCols // ADD STATE
+                cultureColumns: parsedCultureCols 
             });
 
             const mappedParams = (test.parameters || []).map((tp: any) => {
                 let code = '-';
                 let name = 'Subtitle';
-
                 if (tp.parameter) {
                     code = tp.parameter.code;
                     name = tp.parameter.name;
@@ -118,7 +118,6 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                     code = 'CULT-INFO';
                     name = 'Susceptibility Info';
                 }
-
                 return {
                     uiId: Math.random().toString(36).substr(2, 9), 
                     parameterId: tp.parameterId,
@@ -144,6 +143,7 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
 
     const handleSave = () => {
         if (!test?.id) return;
+
         startTransition(async () => {
             const payload = {
                 ...formData,
@@ -159,7 +159,9 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                     isCultureField: row.isCultureField 
                 }))
             };
+
             const res = await updateTestConfiguration(test.id, payload);
+
             if (res.success) {
                 setShowSuccessPopup(true);
                 setTimeout(() => {
@@ -185,8 +187,9 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
         let targetIndex = newOrderVal - 1;
         if (targetIndex >= tableRows.length) targetIndex = tableRows.length - 1;
         if (targetIndex < 0) targetIndex = 0;
+
         if (targetIndex === oldIndex) return;
-  
+
         setTableRows(prev => {
             const newRows = [...prev];
             const [movedItem] = newRows.splice(oldIndex, 1);
@@ -241,6 +244,7 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
             setSelectedItemToAdd(null);
             setSearchQuery('');
             setShowDropdown(false);
+
         } else {
             if (!newRowSubtitle.trim()) return alert("Enter subtitle.");
             setTableRows(prev => [...prev, {
@@ -299,7 +303,16 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                         <div className="w-full flex flex-col justify-center">
                             <div className="grid grid-cols-3 gap-3 mb-2 shrink-0">
                                 <div><label className="text-[9px] font-bold text-slate-500 block mb-0.5">Report Title</label><input type="text" value={formData.reportTitle} onChange={e => setFormData({...formData, reportTitle: e.target.value})} className={inputClass} placeholder="REPORT TITLE"/></div>
-                                <div><label className="text-[9px] font-bold text-slate-500 block mb-0.5">Specimen</label><select value={formData.specimen} onChange={e => setFormData({...formData, specimen: e.target.value})} className={inputClass}><option value="">-- Override --</option>{specimens.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+                                
+                                {/* FIX: Dropdown mapped to specimenId instead of specimen */}
+                                <div>
+                                    <label className="text-[9px] font-bold text-slate-500 block mb-0.5">Specimen</label>
+                                    <select value={formData.specimenId || ''} onChange={e => setFormData({...formData, specimenId: e.target.value})} className={inputClass}>
+                                        <option value="">-- Override --</option>
+                                        {specimens.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    </select>
+                                </div>
+                                
                                 <div><label className="text-[9px] font-bold text-slate-500 block mb-0.5">Lab Equipment</label><input type="text" value={formData.labEquiName} onChange={e => setFormData({...formData, labEquiName: e.target.value})} className={inputClass} /></div>
                             </div>
                             
@@ -332,7 +345,6 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                                     /> 
                                     <span className="text-[11px] font-bold text-slate-600">Interpretation Needed</span>
                                 </label>
-
                                 {formData.isInterpretationNeeded && (
                                     <button onClick={() => setShowInterpretationModal(true)} className="flex items-center gap-2 px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 text-[10px] font-bold text-slate-600 shadow-sm"><FileText size={12} className="text-[#9575cd]"/> Set Interpretation</button>
                                 )}
@@ -340,7 +352,6 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                                 {formData.isInterpretationNeeded && formData.interpretation && <span className="text-[9px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-200">Added</span>}
                             </div>
 
-                            {/* NEW CULTURE COLUMNS CONFIGURATION */}
                             {test?.isCulture && (
                                 <div className="mt-3 p-3 bg-white border border-rose-100 rounded-lg shadow-sm">
                                     <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block mb-2">Display Columns for Antibiotic Table</label>
@@ -400,7 +411,7 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                                         <span className={`text-[10px] font-mono truncate ${row.isCultureField ? 'text-rose-500 font-bold' : 'text-slate-600'}`}>{row.code}</span>
                                     </div>
                                     <div className={`${nameColWidth} text-[11px] font-medium text-slate-700 truncate flex items-center gap-2`}>
-                                        {row.name} 
+                                        {row.name}
                                         {row.isCultureField && <span className="bg-rose-100 text-rose-600 text-[8px] px-1 py-0.5 rounded shadow-sm">CULTURE INFO</span>}
                                         {row.isCountDependent && <span title="Part of Count Target" className="flex items-center"><Target size={12} className="text-purple-500" /></span>}
                                     </div>
@@ -454,6 +465,7 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                                             className="w-full text-[10px] border border-slate-200 rounded pl-7 pr-2 h-7 bg-white outline-none focus:ring-1 focus:ring-[#9575cd]"
                                         />
                                     </div>
+
                                     {showDropdown && newRowType === 'Parameter' && (
                                         <div className="absolute bottom-full left-0 mb-1 w-full bg-white border shadow-xl rounded-md z-50 max-h-56 overflow-y-auto custom-scrollbar">
                                             {filteredItems.length === 0 ? (
@@ -487,7 +499,6 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                             <div className="w-[10%] flex justify-center"><button onClick={handleAddNewRow} className="bg-[#9575cd] text-white p-1 rounded hover:opacity-90"><Plus size={14}/></button></div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -530,4 +541,3 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
         </>
     );
 }
-// --- BLOCK app/tests/formats/components/FormatEditor.tsx CLOSE ---

@@ -6,7 +6,7 @@ import { getDisplayRange, getMatchedRange } from './ResultEntryUtils';
 
 export default function TestItemCard({
     item, bill, results = {}, flags = {}, hasHistory = [], savingItemId,
-    testParams = [], isParamsLoading = false, // 🚨 CRASH PROTECTION: Default arrays
+    parameters = [], isParamsLoading = false, // 🐛 FIX: Changed from testParams to parameters to match parent
     onOpenNote, onSaveItem, onOpenResultEditor, onInputChange, onViewHistory, onOpenCultureModal
 }: any) {
     
@@ -21,8 +21,8 @@ export default function TestItemCard({
     let hasAnyCountValueEntered = false;
     const targetCount = item.test.targetCount || 0;
 
-    if (item.test.isCountNeeded && testParams && testParams.length > 0) {
-        const countParams = testParams.filter((tp: any) => tp?.isCountDependent && !tp?.isHeading && tp?.parameter);
+    if (item.test.isCountNeeded && parameters && parameters.length > 0) {
+        const countParams = parameters.filter((tp: any) => tp?.isCountDependent && !tp?.isHeading && tp?.parameter);
         if (countParams.length > 0) {
             lastCountParamId = countParams[countParams.length - 1].parameter.id;
             countParams.forEach((tp: any) => {
@@ -62,7 +62,7 @@ export default function TestItemCard({
                 <Loader2 size={24} className="text-[#9575cd] animate-spin mb-2" />
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Loading Format...</span>
             </div>
-        ) : (!testParams || testParams.length === 0) ? (
+        ) : (!parameters || parameters.length === 0) ? (
             <div className="p-8 flex flex-col items-center justify-center text-center w-full bg-amber-50">
                 <FileWarning size={24} className="text-amber-600 mb-2" />
                 <h4 className="text-sm font-bold text-amber-800">Format Missing</h4>
@@ -82,7 +82,7 @@ export default function TestItemCard({
                         </tr>
                     </thead>
                     <tbody>
-                        {testParams.map((tp: any, index: number) => {
+                        {parameters.map((tp: any, index: number) => {
                             if (!tp) return null;
 
                             if (tp.isHeading) return (
@@ -140,14 +140,14 @@ export default function TestItemCard({
                                         ) : isMultiValue && options.length > 0 ? (
                                             <div className="relative w-full">
                                                 {!currentVal && <span className="absolute left-3 md:left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none z-10">Auto suggest</span>}
-                                                <select value={currentVal || ''} onChange={(e) => onInputChange && onInputChange(item.id, tp.parameter, e.target.value, testParams)} disabled={isApproved} className={`w-full h-10 md:h-8 border rounded pl-3 pr-8 outline-none appearance-none bg-transparent relative z-0 text-sm md:text-xs ${isApproved ? 'bg-slate-50' : ''} ${!currentVal ? 'text-slate-400' : (isCurrentValAbnormal ? 'text-red-600 font-bold' : 'text-slate-800 font-normal')}`}>
+                                                <select value={currentVal || ''} onChange={(e) => onInputChange && onInputChange(item.id, tp.parameter, e.target.value, parameters)} disabled={isApproved} className={`w-full h-10 md:h-8 border rounded pl-3 pr-8 outline-none appearance-none bg-transparent relative z-0 text-sm md:text-xs ${isApproved ? 'bg-slate-50' : ''} ${!currentVal ? 'text-slate-400' : (isCurrentValAbnormal ? 'text-red-600 font-bold' : 'text-slate-800 font-normal')}`}>
                                                     <option value="">&nbsp;</option>
                                                     {options.map((opt: string, idx: number) => <option key={idx} value={opt} className={`text-slate-800 ${abnormalValues.includes(opt.trim().toLowerCase()) ? 'font-bold' : ''}`}>{opt}</option>)}
                                                 </select>
                                                 <ChevronDown size={16} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"/>
                                             </div>
                                         ) : (
-                                            <input type="text" value={results[`${item.id}-${tp.parameter.id}`] || ''} onChange={(e) => onInputChange && onInputChange(item.id, tp.parameter, e.target.value, testParams)} disabled={isApproved} className={`w-full h-10 md:h-8 border rounded px-3 md:px-2 outline-none font-bold text-slate-800 text-sm md:text-xs ${isApproved ? 'bg-slate-50 border-slate-100 text-slate-500' : 'border-slate-300 focus:border-[#9575cd] focus:ring-1'}`}/>
+                                            <input type="text" value={results[`${item.id}-${tp.parameter.id}`] || ''} onChange={(e) => onInputChange && onInputChange(item.id, tp.parameter, e.target.value, parameters)} disabled={isApproved} className={`w-full h-10 md:h-8 border rounded px-3 md:px-2 outline-none font-bold text-slate-800 text-sm md:text-xs ${isApproved ? 'bg-slate-50 border-slate-100 text-slate-500' : 'border-slate-300 focus:border-[#9575cd] focus:ring-1'}`}/>
                                         )}
                                         <button onClick={() => historyExists && onViewHistory && onViewHistory(tp.parameter.id, tp.parameter.name)} disabled={!historyExists} className={`shrink-0 p-2 md:p-1 rounded-full ${historyExists ? 'text-blue-500 hover:bg-blue-50' : 'text-slate-200'}`}><History size={18} /></button>
                                     </div>

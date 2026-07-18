@@ -21,10 +21,10 @@ interface PrintReportContentProps {
 const shortenedDummyData: any[] = [
     { isGroup: true, param: 'Complete Blood Picture (CBP)' },
     { isGroup: true, isSubHeading: true, param: 'COMPLETE BLOOD COUNT' },
-    { param: 'Haemoglobin (Hb)', result: '10.5', unit: 'g/dL', ref: '13.0 - 17.0', method: 'Cyanmethaemoglobin', abnormal: true },
+    { param: 'Haemoglobin (Hb)', result: '10.5', unit: 'g/dL', ref: '13.0 - 17.0', method: 'Cyanmethaemoglobin', abnormal: true, flag: 'L' },
     { param: 'RBC Count', result: '4.8', unit: 'millions/cumm', ref: '4.5 - 5.5', method: 'Electrical Impedance', abnormal: false },
-    { param: 'PCV (Hematocrit)', result: '38', unit: '%', ref: '40 - 50', method: 'Calculated', abnormal: true },
-    { param: 'Mean Corpuscular Vol (MCV)', result: '82', unit: 'fL', ref: '83 - 101', method: 'Calculated', abnormal: true }
+    { param: 'PCV (Hematocrit)', result: '38', unit: '%', ref: '40 - 50', method: 'Calculated', abnormal: true, flag: 'L' },
+    { param: 'Mean Corpuscular Vol (MCV)', result: '82', unit: 'fL', ref: '83 - 101', method: 'Calculated', abnormal: true, flag: 'H' }
 ];
 
 export default function PrintReportContent({ 
@@ -37,6 +37,25 @@ export default function PrintReportContent({
     const bottomPx = b * ptToPx;
     const leftPx = l * ptToPx;
     const rightPx = r * ptToPx;
+
+    const getFlagProps = (flag: any) => {
+        const f = String(flag || '').toUpperCase().trim();
+        const isLow = f === 'L' || f === 'LOW';
+        const isHigh = f === 'H' || f === 'HIGH' || f === 'A' || f === 'ABNORMAL' || f === '*';
+        const isNormal = !isLow && !isHigh;
+
+        let text = '';
+        const style = bodySettings?.flagStyle || 'lh';
+        if (style === 'arrows') text = isLow ? '↓' : isHigh ? '↑' : '';
+        else if (style === 'lh') text = isLow ? 'L' : isHigh ? 'H' : '';
+        else if (style === 'star') text = (isLow || isHigh) ? '*' : '';
+        else if (style === 'text') text = isLow ? 'Low' : isHigh ? 'High' : 'Normal';
+        else text = isLow ? 'L' : isHigh ? 'H' : ''; 
+
+        if (isNormal && style !== 'text') text = ''; 
+        const color = isLow ? (bodySettings?.flagColorLow || '#3b82f6') : isHigh ? (bodySettings?.flagColorHigh || '#ef4444') : (bodySettings?.flagColorNormal || '#000000');
+        return { text, color };
+    }
 
     let bw = '1px';
     if (bodySettings?.gridLineThickness === '1.75') bw = '1.75px';
@@ -116,6 +135,8 @@ export default function PrintReportContent({
     const appliedCustomFont = !isTailwindFont ? activeFontFamily : undefined;
 
     let bodyTableStyle: React.CSSProperties = { borderCollapse: 'collapse', borderSpacing: 0, width: '100%', tableLayout: 'fixed' };
+    
+    // ✨ Header Colors Applied Here
     let thStyle: React.CSSProperties = { backgroundColor: bodySettings?.bodyHeaderBgColor || '#ffffff', color: bodySettings?.bodyHeaderTextColor || '#000000' };
     let tdStyle: React.CSSProperties = {};
 
@@ -138,21 +159,32 @@ export default function PrintReportContent({
     const tdClass = `${bodySettings?.bodyRowHeight || 'py-1.5'} ${bodySettings?.bodyColPadding || 'px-2'} break-words align-top`;
 
     let totalCols = 2; 
-    if (bodySettings?.showUnitCol) totalCols++; 
-    if (bodySettings?.showRefRangeCol) totalCols++; 
+    if (bodySettings?.showFlagCol !== false) totalCols++; 
+    if (bodySettings?.showUnitCol !== false) totalCols++; 
+    if (bodySettings?.showRefRangeCol !== false) totalCols++; 
     if (bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'column') totalCols++;
 
     const TableColGroup = () => {
-        const isCustomW = bodySettings?.testColumnWidth && bodySettings.testColumnWidth !== 'auto';
-        const w1 = isCustomW ? bodySettings.testColumnWidth : (totalCols === 5 ? '36%' : totalCols === 4 ? '40%' : totalCols === 3 ? '50%' : '70%');
-        const wRem = isCustomW ? undefined : (totalCols === 5 ? '16%' : totalCols === 4 ? '20%' : totalCols === 3 ? '25%' : '30%');
+        const pW = parseFloat(bodySettings?.colWidthParam) || 0;
+        const rW = parseFloat(bodySettings?.colWidthResult) || 0;
+        const fW = bodySettings?.showFlagCol !== false ? (parseFloat(bodySettings?.colWidthFlag) || 0) : 0;
+        const uW = bodySettings?.showUnitCol !== false ? (parseFloat(bodySettings?.colWidthUnit) || 0) : 0;
+        const refW = bodySettings?.showRefRangeCol !== false ? (parseFloat(bodySettings?.colWidthRef) || 0) : 0;
+        const mW = (bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'column') ? (parseFloat(bodySettings?.colWidthMethod) || 0) : 0;
+        
+        const isCustomValid = (pW + rW + fW + uW + refW + mW) === 100;
+
+        const defParam = bodySettings?.showFlagCol !== false ? '33%' : '40%';
+        const defRem = bodySettings?.showFlagCol !== false ? '18%' : '20%';
+
         return (
             <colgroup>
-                <col style={{ width: w1 }} />
-                <col style={{ width: wRem }} />
-                {bodySettings?.showUnitCol && <col style={{ width: wRem }} />}
-                {bodySettings?.showRefRangeCol && <col style={{ width: wRem }} />}
-                {bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'column' && <col style={{ width: wRem }} />}
+                <col style={{ width: isCustomValid ? `${pW}%` : defParam }} />
+                <col style={{ width: isCustomValid ? `${rW}%` : '15%' }} />
+                {bodySettings?.showFlagCol !== false && <col style={{ width: isCustomValid ? `${fW}%` : '7%' }} />}
+                {bodySettings?.showUnitCol !== false && <col style={{ width: isCustomValid ? `${uW}%` : defRem }} />}
+                {bodySettings?.showRefRangeCol !== false && <col style={{ width: isCustomValid ? `${refW}%` : '27%' }} />}
+                {bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'column' && <col style={{ width: isCustomValid ? `${mW}%` : '15%' }} />}
             </colgroup>
         );
     };
@@ -247,6 +279,9 @@ export default function PrintReportContent({
     
     const dummyBill = { billNumber: 'INV-123456' };
     const dummyDate = new Date().toLocaleDateString('en-GB');
+
+    // ✨ Repeater engine logic
+    const tableHeaderRepeat = bodySettings?.tableHeaderRepeat || 'test';
 
     return (
         <div id="demo-report-content" className="relative bg-white shadow-xl shrink-0 mt-4 mb-4 overflow-hidden"
@@ -373,8 +408,14 @@ export default function PrintReportContent({
                         <h3 className={`font-bold text-slate-600 uppercase mb-2 tracking-wide text-center ${bodySettings?.departmentNameSize}`}>Department of Pathology</h3>
                     )}
                     
-                    {groupedDummyData.map((group, gIdx) => (
-                        <div key={gIdx} className="mb-4">
+                    {groupedDummyData.map((group, gIdx) => {
+                        
+                        // ✨ Evaluates exactly when the user wants to print the Header Row!
+                        const showTableHeader = tableHeaderRepeat === 'test' || gIdx === 0;
+
+                        return (
+                        // ✨ DYNAMIC SPACING APPLIED HERE
+                        <div key={gIdx} className={bodySettings?.testBlockSpacing || "mb-4"}>
                             
                             {bodySettings?.showTestName !== false && group.testName && (
                                 <h2 className={`font-bold text-slate-800 mb-2 ${bodySettings?.testNameAlignment} ${bodySettings?.testNameSize} ${bodySettings?.testNameUnderline ? 'underline underline-offset-4' : ''}`}>
@@ -384,15 +425,21 @@ export default function PrintReportContent({
                             
                             <table className="w-full table-fixed" style={bodyTableStyle}>
                                 <TableColGroup />
-                                <thead>
-                                    <tr>
-                                        <th className={`${thClass} text-left pl-4`} style={thStyle}>Test Parameter</th>
-                                        <th className={`${thClass} ${bodySettings?.bodyResultAlign}`} style={thStyle}>Result</th>
-                                        {bodySettings?.showUnitCol && <th className={`${thClass} ${bodySettings?.bodyResultAlign}`} style={thStyle}>Units</th>}
-                                        {bodySettings?.showRefRangeCol && <th className={`${thClass} ${bodySettings?.bodyResultAlign}`} style={thStyle}>Bio. Ref. Range</th>}
-                                        {bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'column' && <th className={`${thClass} ${bodySettings?.bodyResultAlign}`} style={thStyle}>Method</th>}
-                                    </tr>
-                                </thead>
+                                
+                                {/* ✨ NEW: Dynamically hides Header based on repeater setting */}
+                                {showTableHeader && (
+                                    <thead>
+                                        <tr>
+                                            <th className={`${thClass} text-left pl-4`} style={thStyle}>Test Parameter</th>
+                                            <th className={`${thClass} ${bodySettings?.bodyResultAlign}`} style={thStyle}>Result</th>
+                                            {bodySettings?.showFlagCol !== false && <th className={`${thClass} text-center`} style={thStyle}>Flag</th>}
+                                            {bodySettings?.showUnitCol !== false && <th className={`${thClass} ${bodySettings?.bodyResultAlign}`} style={thStyle}>Units</th>}
+                                            {bodySettings?.showRefRangeCol !== false && <th className={`${thClass} ${bodySettings?.bodyResultAlign}`} style={thStyle}>Bio. Ref. Range</th>}
+                                            {bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'column' && <th className={`${thClass} ${bodySettings?.bodyResultAlign}`} style={thStyle}>Method</th>}
+                                        </tr>
+                                    </thead>
+                                )}
+
                                 <tbody>
                                     {group.items.map((row, i) => {
                                         if (row.isGroup) {
@@ -407,9 +454,9 @@ export default function PrintReportContent({
                                         
                                         const rawHighlightSetting = bodySettings?.highlightAbnormalValues ?? bodySettings?.highlightAbnormal ?? formData?.highlightAbnormalValues ?? formData?.highlightAbnormal;
                                         const isHighlightEnabled = rawHighlightSetting === true || String(rawHighlightSetting).toLowerCase() === 'true' || rawHighlightSetting === 1 || String(rawHighlightSetting) === '1';
-                                        const rowFlag = row.abnormal ?? row.isAbnormal ?? row.flag;
-                                        const isRowAbnormal = rowFlag === true || String(rowFlag).toLowerCase() === 'true' || String(rowFlag).toUpperCase() === 'H' || String(rowFlag).toUpperCase() === 'L';
-                                        const isAbnormal = isHighlightEnabled && isRowAbnormal;
+                                        
+                                        const flagProps = getFlagProps(row.flag);
+                                        const isAbnormal = isHighlightEnabled && (flagProps.text !== '' && flagProps.text !== 'Normal');
 
                                         return (
                                             <tr key={i} style={{ backgroundColor: bodySettings?.stripedRows && i % 2 !== 0 ? '#f8fafc' : '#ffffff' }}>
@@ -420,10 +467,17 @@ export default function PrintReportContent({
                                                     )}
                                                 </td>
                                                 <td className={`${tdClass} ${bodySettings?.bodyResultAlign} ${isAbnormal ? 'font-bold text-black' : 'text-black'}`} style={tdStyle}>
-                                                    {row.result}{isAbnormal ? '*' : ''}
+                                                    {row.result}
                                                 </td>
-                                                {bodySettings?.showUnitCol && <td className={`${tdClass} ${bodySettings?.bodyResultAlign} text-black`} style={tdStyle}>{row.unit}</td>}
-                                                {bodySettings?.showRefRangeCol && <td className={`${tdClass} ${bodySettings?.bodyResultAlign} text-black`} style={tdStyle}>{row.ref}</td>}
+                                                
+                                                {bodySettings?.showFlagCol !== false && (
+                                                    <td className={`${tdClass} text-center font-bold`} style={{ ...tdStyle, color: flagProps.color }}>
+                                                        {flagProps.text}
+                                                    </td>
+                                                )}
+
+                                                {bodySettings?.showUnitCol !== false && <td className={`${tdClass} ${bodySettings?.bodyResultAlign} text-black`} style={tdStyle}>{row.unit}</td>}
+                                                {bodySettings?.showRefRangeCol !== false && <td className={`${tdClass} ${bodySettings?.bodyResultAlign} text-black`} style={tdStyle}>{row.ref}</td>}
                                                 {bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'column' && <td className={`${tdClass} ${bodySettings?.bodyResultAlign} text-black text-[0.9em]`} style={tdStyle}>{row.method}</td>}
                                             </tr>
                                         );
@@ -431,7 +485,7 @@ export default function PrintReportContent({
                                 </tbody>
                             </table>
                         </div>
-                    ))}
+                    )})}
 
                     {bodySettings?.showEndOfReport !== false && (
                         <div className="text-center mt-6 text-[11px] text-slate-500 uppercase tracking-widest font-bold w-full">

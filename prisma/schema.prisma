@@ -1,3 +1,4 @@
+// --- FILE: prisma/schema.prisma ---
 generator client {
   provider = "prisma-client-js"
 }
@@ -5,7 +6,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL") // 🚨 REQUIRED FOR VERCEL + SUPABASE
+  directUrl = env("DIRECT_URL") 
 }
 
 // ==========================================
@@ -22,13 +23,11 @@ model Organization {
   subscriptionEndsAt DateTime?
   isActive           Boolean  @default(true)
   
-  // 🚨 NEW SENSITIVITY TOGGLE FLAG
   hasSensitivity     Boolean  @default(false) 
   
   createdAt          DateTime @default(now())
   updatedAt          DateTime @default(now()) @updatedAt
 
-  // SaaS Relationships (Links to all lab data)
   users                     User[]
   patients                  Patient[]
   bills                     Bill[]
@@ -58,7 +57,6 @@ model Organization {
   antibioticInterpretations AntibioticInterpretation[]
   susceptibilityInfos       SusceptibilityInfo[]
   
-  // 🚨 NEW: Links to the Support System
   supportThreads            SupportThread[]
 }
 
@@ -100,8 +98,8 @@ model Patient {
   bills         Bill[]
 
   @@unique([organizationId, patientId])
-  @@index([organizationId]) // 🚨 SPEED INDEX
-  @@index([phone])          // 🚨 SPEED INDEX
+  @@index([organizationId]) 
+  @@index([phone])          
 }
 
 model Bill {
@@ -141,8 +139,8 @@ model Bill {
   payments      Payment[]
 
   @@unique([organizationId, billNumber])
-  @@index([organizationId, date]) // 🚨 SPEED INDEX (Crucial for Dashboard/Lists)
-  @@index([patientId])            // 🚨 SPEED INDEX
+  @@index([organizationId, date]) 
+  @@index([patientId])            
 }
 
 model BillItem {
@@ -165,9 +163,9 @@ model BillItem {
 
   results         TestResult[]
 
-  @@index([organizationId]) // 🚨 SPEED INDEX
-  @@index([billId])         // 🚨 SPEED INDEX
-  @@index([testId])         // 🚨 SPEED INDEX
+  @@index([organizationId]) 
+  @@index([billId])         
+  @@index([testId])         
 }
 
 model TestResult {
@@ -188,9 +186,9 @@ model TestResult {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @default(now()) @updatedAt
 
-  @@index([organizationId]) // 🚨 SPEED INDEX
-  @@index([billItemId])     // 🚨 SPEED INDEX
-  @@index([parameterId])    // 🚨 SPEED INDEX
+  @@index([organizationId]) 
+  @@index([billItemId])     
+  @@index([parameterId])    
 }
 
 model Payment {
@@ -207,8 +205,8 @@ model Payment {
   transactionId String?
   date          DateTime @default(now())
 
-  @@index([organizationId]) // 🚨 SPEED INDEX
-  @@index([billId])         // 🚨 SPEED INDEX
+  @@index([organizationId]) 
+  @@index([billId])         
 }
 
 model Doctor {
@@ -590,7 +588,6 @@ model LabProfile {
   website   String?
   logoUrl   String?  @db.Text
 
-  // 🚨 ADDED FIELDS FOR LETTERHEAD
   letterheadUrl   String? @db.Text
   lhWidth         String?
   lhHeight        String?
@@ -631,7 +628,7 @@ model ReportSettings {
   rightColFields  String?  @db.Text
   leftColWidth    String   @default("35 65")
   rightColWidth   String   @default("35 65")
-  headerColumnGap String   @default("2")       // 🚨 Added earlier!
+  headerColumnGap String   @default("2")       
   headerQrCode    Boolean  @default(false)
 
   showMethodCol       Boolean  @default(true)
@@ -648,6 +645,7 @@ model ReportSettings {
   colWidthUnit        String?
   colWidthRef         String?
   colWidthMethod      String?
+  
   bodyTableStyle      String   @default("horizontal")
   bodyFontFamily      String   @default("font-sans")
   bodyFontSize        String   @default("text-sm")
@@ -657,8 +655,15 @@ model ReportSettings {
   bodyHeaderTextColor String   @default("text-slate-800")
   bodyResultAlign     String   @default("text-left")
 
+  // ✨ NEW FIELDS ADDED HERE ✨
+  bodyLineHeight      String   @default("1.5")
+  headerFontSize      String   @default("text-xs")
+  headerFontWeight    String   @default("font-bold")
+  headerRowHeight     String   @default("py-1.5")
+  testBlockSpacing    String   @default("mb-4")
+
   showDepartmentName  Boolean  @default(true)
-  showTestName        Boolean  @default(true)      // 🚨 ADDED HERE!
+  showTestName        Boolean  @default(true)     
   departmentNameSize  String   @default("text-sm")
   testNameAlignment   String   @default("text-center")
   testNameUnderline   Boolean  @default(true)
@@ -667,6 +672,15 @@ model ReportSettings {
   
   subheadingColor     String   @default("#5e35b1")
   subheadingSize      String   @default("text-sm")
+
+  showFlagCol         Boolean  @default(true)
+  colWidthFlag        String?
+  flagStyle           String   @default("lh")
+  flagColorLow        String   @default("#3b82f6")
+  flagColorNormal     String   @default("#000000")
+  flagColorHigh       String   @default("#ef4444")
+  tableHeaderRepeat   String   @default("test")
+  separatePagesBy     String   @default("none")
 
   footerStyle         String   @default("style1")
   sigSize             Int      @default(40)
@@ -896,7 +910,7 @@ model SupportThread {
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
   title           String
-  type            String    @default("Issue") // 🚨 ADDED: Issue, Requirement, Suggestion
+  type            String    @default("Issue") 
   status          String    @default("Open") 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

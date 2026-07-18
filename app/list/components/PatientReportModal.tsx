@@ -277,22 +277,22 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     const abnormalValues = activeRange?.abnormalValue ? activeRange.abnormalValue.split(',').map((v: string) => v.trim().toLowerCase()) : [];
 
                     let isAbnormal = false;
+                    const flag = String(matchedResult?.flag || '').trim().toUpperCase();
                     
-                    if (matchedResult) {
-                        const flag = String(matchedResult.flag || '').trim().toUpperCase();
-                        if (flag === 'H' || flag === 'L' || flag === 'HIGH' || flag === 'LOW' || flag === '*' || flag === 'A' || flag === 'ABNORMAL' || matchedResult.isAbnormal) {
-                            isAbnormal = true;
-                        } 
-                    }
+                    if (flag === 'H' || flag === 'L' || flag === 'HIGH' || flag === 'LOW' || flag === '*' || flag === 'A' || flag === 'ABNORMAL' || matchedResult?.isAbnormal) {
+                        isAbnormal = true;
+                    } 
 
                     if (val && abnormalValues.includes(String(val).trim().toLowerCase())) {
                         isAbnormal = true;
                     }
 
+                    // ✨ NEW: Passed flag directly to the data renderer
                     displayData.push({
                         isGroup: false, param: pName, result: val !== '' ? String(val) : '', 
                         unit: actualParam.unit ?? '', ref: refRange, method: actualParam.method ?? '',
                         abnormal: isAbnormal,
+                        flag: flag === 'NORMAL' ? '' : flag, 
                         inputType: actualParam.inputType || 'Numerical'
                     });
                 });
@@ -323,8 +323,8 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     const abnormalValues = activeRange?.abnormalValue ? activeRange.abnormalValue.split(',').map((v: string) => v.trim().toLowerCase()) : [];
 
                     let isAbnormal = false;
-                    
                     const flag = String(res.flag || '').trim().toUpperCase();
+                    
                     if (flag === 'H' || flag === 'L' || flag === 'HIGH' || flag === 'LOW' || flag === '*' || flag === 'A' || flag === 'ABNORMAL' || res.isAbnormal) {
                         isAbnormal = true;
                     }
@@ -333,10 +333,12 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                         isAbnormal = true;
                     }
 
+                    // ✨ NEW: Passed flag directly to the data renderer
                     displayData.push({
                         isGroup: false, param: pName, result: val !== '' ? String(val) : '',
                         unit: actualParam.unit ?? '', ref: refRange, method: actualParam.method ?? '',
                         abnormal: isAbnormal,
+                        flag: flag === 'NORMAL' ? '' : flag,
                         inputType: actualParam.inputType || 'Numerical'
                     });
                 });
@@ -374,7 +376,6 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
         setIsPreviewLoading(true);
 
         try {
-            // 🚨 STRICT STRING VERIFICATION TO PREVENT CRASHES
             let activeImageBase64: string | null = null;
             if (letterheadStyle === 'custom1' && reportSettings?.customHeader1?.trim()) activeImageBase64 = reportSettings.customHeader1;
             if (letterheadStyle === 'custom2' && reportSettings?.customHeader2?.trim()) activeImageBase64 = reportSettings.customHeader2;

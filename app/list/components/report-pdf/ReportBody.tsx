@@ -14,10 +14,46 @@ const parsePadding = (val: string, defaultVal: number) => {
     return defaultVal;
 };
 
+// ✨ NEW: Parses Horizontal padding specifically
+const parsePxPadding = (val: string, defaultVal: number) => {
+    if (val === 'px-0') return 0;
+    if (val === 'px-px') return 1;
+    if (val === 'px-0.5') return 2;
+    if (val === 'px-1') return 4;
+    if (val === 'px-1.5') return 6;
+    if (val === 'px-2') return 8;
+    if (val === 'px-2.5') return 10;
+    if (val === 'px-3') return 12;
+    return defaultVal;
+};
+
 export default function ReportBody({ groupedData, reportSettings, styles, bFontSize, separateDept, separateTest, realData }: any) {
     
+    const getFlagProps = (flag: any) => {
+        const f = String(flag || '').toUpperCase().trim();
+        const isLow = f === 'L' || f === 'LOW';
+        const isHigh = f === 'H' || f === 'HIGH' || f === 'A' || f === 'ABNORMAL' || f === '*';
+        const isNormal = !isLow && !isHigh;
+
+        let text = '';
+        const style = reportSettings?.flagStyle || 'lh';
+        if (style === 'arrows') text = isLow ? '↓' : isHigh ? '↑' : '';
+        else if (style === 'lh') text = isLow ? 'L' : isHigh ? 'H' : '';
+        else if (style === 'star') text = (isLow || isHigh) ? '*' : '';
+        else if (style === 'text') text = isLow ? 'Low' : isHigh ? 'High' : 'Normal';
+        else text = isLow ? 'L' : isHigh ? 'H' : ''; 
+
+        if (isNormal && style !== 'text') text = ''; 
+        const color = isLow ? (reportSettings?.flagColorLow || '#3b82f6') : isHigh ? (reportSettings?.flagColorHigh || '#ef4444') : (reportSettings?.flagColorNormal || '#000000');
+        return { text, color };
+    }
+
     const bodyTableStyle: string = reportSettings?.bodyTableStyle || 'grid';
+    const tableHeaderRepeat = reportSettings?.tableHeaderRepeat || 'test';
     
+    const isSeparateDeptEnabled = separateDept === true || String(separateDept) === 'true' || reportSettings?.separatePagesBy === 'department';
+    const isSeparateTestEnabled = separateTest === true || String(separateTest) === 'true' || reportSettings?.separatePagesBy === 'test';
+
     let bbw = 0.75; 
     if (reportSettings?.gridLineThickness === '1.5') bbw = 0.85;
     else if (reportSettings?.gridLineThickness === '1.75') bbw = 1.0;
@@ -28,47 +64,46 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
     const showUnitCol = reportSettings?.showUnitCol !== false;
     const showRefRangeCol = reportSettings?.showRefRangeCol !== false;
     const showMethodCol = reportSettings?.showMethodCol === true;
+    const showFlagCol = reportSettings?.showFlagCol !== false;
+    const showDeptName = reportSettings?.showDepartmentName !== false;
+
     const methodDisplay = reportSettings?.methodDisplayStyle || 'column';
     const rawFont = reportSettings?.bodyFontFamily || reportSettings?.fontFamily || '';
     
     const rawHighlightSetting = reportSettings?.highlightAbnormalValues ?? reportSettings?.highlightAbnormal ?? reportSettings?.highlightAbnormalResult;
-    const isHighlightEnabled = rawHighlightSetting === true || 
-                               String(rawHighlightSetting).toLowerCase() === 'true' || 
-                               rawHighlightSetting === 1 || 
-                               String(rawHighlightSetting) === '1';
+    const isHighlightEnabled = rawHighlightSetting === true || String(rawHighlightSetting).toLowerCase() === 'true' || rawHighlightSetting === 1 || String(rawHighlightSetting) === '1';
 
-    const isSeparateDeptEnabled = separateDept === true || String(separateDept) === 'true';
-    const isSeparateTestEnabled = separateTest === true || String(separateTest) === 'true';
-
-    const showDeptName = reportSettings?.showDepartmentName !== false;
-
+    // ✨ Calculates the dynamic Vertical (Py) and Horizontal (Px) Text Padding
     const headerPy = parsePadding(reportSettings?.headerRowHeight, 6);
     const bodyPy = parsePadding(reportSettings?.bodyRowHeight, 6);
+    const bodyPx = parsePxPadding(reportSettings?.bodyColPadding, 6);
+    
+    // ✨ Extracts Dynamic Line Height
+    const bLineHeight = parseFloat(reportSettings?.bodyLineHeight || '1.5');
 
     let totalCols = 2;
+    if (showFlagCol) totalCols++;
     if (showUnitCol) totalCols++;
     if (showRefRangeCol) totalCols++;
     if (showMethodCol && methodDisplay === 'column') totalCols++;
 
     const pW = parseFloat(reportSettings?.colWidthParam) || 0;
     const rW = parseFloat(reportSettings?.colWidthResult) || 0;
+    const fW = showFlagCol ? (parseFloat(reportSettings?.colWidthFlag) || 0) : 0; 
     const uW = showUnitCol ? (parseFloat(reportSettings?.colWidthUnit) || 0) : 0;
     const refW = showRefRangeCol ? (parseFloat(reportSettings?.colWidthRef) || 0) : 0;
     const mW = (showMethodCol && methodDisplay === 'column') ? (parseFloat(reportSettings?.colWidthMethod) || 0) : 0;
     
-    const isCustomValid = (pW + rW + uW + refW + mW) === 100;
+    const isCustomValid = (pW + rW + fW + uW + refW + mW) === 100;
 
-    const defParam = totalCols === 5 ? '40%' : totalCols === 4 ? '40%' : totalCols === 3 ? '50%' : '70%';
-    const defRem = totalCols === 5 ? '15%' : totalCols === 4 ? '20%' : totalCols === 3 ? '25%' : '30%';
-
-    const paramColWidth = isCustomValid ? `${pW}%` : defParam;
-    const resultColWidth = isCustomValid ? `${rW}%` : defRem;
-    const unitColWidth = isCustomValid ? `${uW}%` : defRem;
-    const refColWidth = isCustomValid ? `${refW}%` : defRem;
-    const methodColWidth = isCustomValid ? `${mW}%` : defRem;
+    const paramColWidth = isCustomValid ? `${pW}%` : (showFlagCol ? '33%' : '40%');
+    const resultColWidth = isCustomValid ? `${rW}%` : '15%';
+    const flagColWidth = isCustomValid ? `${fW}%` : '7%';
+    const unitColWidth = isCustomValid ? `${uW}%` : '18%';
+    const refColWidth = isCustomValid ? `${refW}%` : '27%';
+    const methodColWidth = isCustomValid ? `${mW}%` : '15%';
 
     const bodyAlign = (reportSettings?.bodyResultAlign || 'text-left').replace('text-', '');
-
     const dynamicHeaderBgColor = reportSettings?.bodyHeaderBgColor || '#f8fafc';
     const dynamicHeaderTextColor = reportSettings?.bodyHeaderTextColor || '#0f172a';
 
@@ -94,7 +129,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
     const getCellBorder = (isLastCol: boolean, isHeader: boolean = false) => {
         const cellStyle: any = { 
-            paddingHorizontal: 6, 
+            paddingHorizontal: bodyPx, // ✨ Applies Dynamic Text-to-Border Width Padding
             paddingVertical: isHeader ? headerPy : bodyPy, 
             justifyContent: 'center',
             overflow: 'hidden'
@@ -109,11 +144,10 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
     const hasData = groupedData.some((g: any) => g.items && g.items.length > 0);
     
-    // 🚨 EXACT DEPARTMENT MAPPING (Removed "Department of" hardcoding)
     const getGroupDept = (group: any) => {
-    const matchedItem = realData?.items?.find((i:any) => i.test?.name === group.testName || i.test?.displayName === group.testName || i.testName === group.testName);
-    return matchedItem?.test?.department?.name || ''; // Just returns the raw department name!
-};
+        const matchedItem = realData?.items?.find((i:any) => i.test?.name === group.testName || i.test?.displayName === group.testName || i.testName === group.testName);
+        return matchedItem?.test?.department?.name || ''; 
+    };
 
     return (
         <React.Fragment>
@@ -125,6 +159,10 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                 const isNewDept = gIdx === 0 || currentDept !== prevDept;
                 const needsBreak = gIdx > 0 && (isSeparateTestEnabled || (isSeparateDeptEnabled && currentDept !== prevDept));
 
+                const showTableHeader = tableHeaderRepeat === 'test' || 
+                                        (tableHeaderRepeat === 'department' && isNewDept) || 
+                                        (tableHeaderRepeat === 'report' && gIdx === 0);
+
                 return (
                     <React.Fragment key={`group-${gIdx}`}>
                         
@@ -132,7 +170,6 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                         <View style={{ marginBottom: 15 }}>
                             
-                            {/* 🚨 ONLY SHOWS IF IT ACTUALLY FOUND A DEPARTMENT */}
                             {showDeptName && isNewDept && currentDept ? (
                                 <Text style={[
                                     styles.deptName || {}, 
@@ -156,38 +193,47 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                             ) : null}
 
                             <View style={getTableWrapStyle()}>
-                                <View style={getHeaderRowStyle()} wrap={false} fixed>
-                                    <View style={[{ width: paramColWidth }, getCellBorder(false, true)]}>
-                                        <Text style={[styles.thText, { textAlign: 'left', color: dynamicHeaderTextColor }]}>{"Test\u00A0Parameter"}</Text>
-                                    </View>
-                                    <View style={[{ width: resultColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true)]}>
-                                        <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>Result</Text>
-                                    </View>
-                                    
-                                    {showUnitCol ? (
-                                        <View style={[{ width: unitColWidth }, getCellBorder(!showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true)]}>
-                                            <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>Units</Text>
+                                
+                                {showTableHeader && (
+                                    <View style={getHeaderRowStyle()} wrap={false} fixed>
+                                        <View style={[{ width: paramColWidth }, getCellBorder(false, true)]}>
+                                            <Text style={[styles.thText, { textAlign: 'left', color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>{"Test\u00A0Parameter"}</Text>
                                         </View>
-                                    ) : null}
+                                        <View style={[{ width: resultColWidth }, getCellBorder(!showFlagCol && !showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true)]}>
+                                            <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>Result</Text>
+                                        </View>
+                                        
+                                        {showFlagCol ? (
+                                            <View style={[{ width: flagColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true)]}>
+                                                <Text style={[styles.thText, { textAlign: 'center', color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>Flag</Text>
+                                            </View>
+                                        ) : null}
 
-                                    {showRefRangeCol ? (
-                                        <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'), true)]}>
-                                            <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>{"Bio.\u00A0Ref.\u00A0Range"}</Text>
-                                        </View>
-                                    ) : null}
+                                        {showUnitCol ? (
+                                            <View style={[{ width: unitColWidth }, getCellBorder(!showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true)]}>
+                                                <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>Units</Text>
+                                            </View>
+                                        ) : null}
 
-                                    {showMethodCol && methodDisplay === 'column' ? (
-                                        <View style={[{ width: methodColWidth }, getCellBorder(true, true)]}>
-                                            <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor }]}>Method</Text>
-                                        </View>
-                                    ) : null}
-                                </View>
+                                        {showRefRangeCol ? (
+                                            <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'), true)]}>
+                                                <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>{"Bio.\u00A0Ref.\u00A0Range"}</Text>
+                                            </View>
+                                        ) : null}
+
+                                        {showMethodCol && methodDisplay === 'column' ? (
+                                            <View style={[{ width: methodColWidth }, getCellBorder(true, true)]}>
+                                                <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>Method</Text>
+                                            </View>
+                                        ) : null}
+                                    </View>
+                                )}
 
                                 {group.items.map((row: any, idx: number) => {
                                     if (row.isGroup) {
                                         return (
-                                            <View key={idx} style={[getRowStyle(), { paddingVertical: bodyPy, paddingHorizontal: 6, backgroundColor: '#ffffff' }]} wrap={false}>
-                                                <Text style={styles.subHeadingText}>{row.param}</Text>
+                                            <View key={idx} style={[getRowStyle(), { paddingVertical: bodyPy, paddingHorizontal: bodyPx, backgroundColor: '#ffffff' }]} wrap={false}>
+                                                <Text style={[styles.subHeadingText, { lineHeight: bLineHeight }]}>{row.param}</Text>
                                             </View>
                                         );
                                     }
@@ -199,14 +245,14 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                         return (
                                             <View key={idx} style={[getRowStyle(), { backgroundColor: isStriped ? '#f8fafc' : '#ffffff' }]} wrap={false}>
                                                 <View style={[{ width: paramColWidth }, getCellBorder(false)]}>
-                                                    <Text style={[styles.tdText, { textAlign: 'left', fontFamily: getPdfFontName(rawFont, false) }]}>{row.param}</Text>
+                                                    <Text style={[styles.tdText, { textAlign: 'left', fontFamily: getPdfFontName(rawFont, false), lineHeight: bLineHeight }]}>{row.param}</Text>
                                                 </View>
                                                 
                                                 <View style={[{ flex: 1, flexDirection: 'column', justifyContent: 'center' }, getCellBorder(true)]}>
                                                     {bigBlocks.map((block: any, bIdx: number) => {
                                                         if (block.type === 'text') {
                                                             return (
-                                                                <Text key={bIdx} style={{ fontFamily: getPdfFontName(rawFont, false), fontSize: bFontSize, color: '#000000', lineHeight: block.lineHeight || 1.4, marginBottom: 2 }}>
+                                                                <Text key={bIdx} style={{ fontFamily: getPdfFontName(rawFont, false), fontSize: bFontSize, color: '#000000', lineHeight: bLineHeight, marginBottom: 2 }}>
                                                                     {block.content}
                                                                 </Text>
                                                             );
@@ -219,7 +265,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                                                             <View key={rIdx} style={{ flexDirection: 'row', borderBottomWidth: rIdx === block.rows.length - 1 ? 0 : 1, borderColor: '#cbd5e1', backgroundColor: isHeader ? '#e2e8f0' : '#ffffff' }} wrap={false}>
                                                                                 {r.map((cell: string, cIdx: number) => (
                                                                                     <View key={cIdx} style={{ flex: 1, padding: 4, borderRightWidth: cIdx === r.length - 1 ? 0 : 1, borderColor: '#cbd5e1', justifyContent: 'center' }}>
-                                                                                        <Text style={{ fontFamily: getPdfFontName(rawFont, isHeader), fontSize: bFontSize - 1, color: isHeader ? '#334155' : '#0f172a', textAlign: 'center' }}>
+                                                                                        <Text style={{ fontFamily: getPdfFontName(rawFont, isHeader), fontSize: bFontSize - 1, color: isHeader ? '#334155' : '#0f172a', textAlign: 'center', lineHeight: bLineHeight }}>
                                                                                             {cell}
                                                                                        </Text>
                                                                                     </View>
@@ -237,41 +283,46 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                         );
                                     }
 
-                                    const rowFlag = row.abnormal ?? row.isAbnormal ?? row.flag;
-                                    const isRowAbnormal = rowFlag === true || 
-                                                          String(rowFlag).toLowerCase() === 'true' || 
-                                                          String(rowFlag).toUpperCase() === 'H' || 
-                                                          String(rowFlag).toUpperCase() === 'L' ||
-                                                          String(rowFlag).toUpperCase() === 'HIGH' ||
-                                                          String(rowFlag).toUpperCase() === 'LOW' ||
-                                                          String(rowFlag).toUpperCase() === 'A' ||
-                                                          String(rowFlag).toUpperCase() === 'ABNORMAL';
-                                                          
-                                    const isAbnormal = isHighlightEnabled && isRowAbnormal;
+                                    const flagProps = getFlagProps(row.flag);
+                                    const isAbnormal = isHighlightEnabled && (flagProps.text !== '' && flagProps.text !== 'Normal');
 
                                     return (
                                         <View key={idx} style={[getRowStyle(), { backgroundColor: isStriped ? '#f8fafc' : '#ffffff' }]} wrap={false}>
                                             <View style={[{ width: paramColWidth }, getCellBorder(false)]}>
-                                                <Text style={[styles.tdText, { textAlign: 'left', fontFamily: getPdfFontName(rawFont, false) }]}>{row.param}</Text>
+                                                <Text style={[styles.tdText, { textAlign: 'left', fontFamily: getPdfFontName(rawFont, false), lineHeight: bLineHeight }]}>{row.param}</Text>
                                                 
                                                 {showMethodCol && methodDisplay === 'beneath' && row.method ? (
-                                                    <Text style={{ fontSize: bFontSize - 2, fontFamily: getPdfFontName(rawFont, false), color: '#475569', paddingTop: 2 }}>Method: {row.method}</Text>
+                                                    <Text style={{ fontSize: bFontSize - 2, fontFamily: getPdfFontName(rawFont, false), color: '#475569', paddingTop: 2, lineHeight: bLineHeight }}>Method: {row.method}</Text>
                                                 ) : null}
                                             </View>
                                             
-                                            <View style={[{ width: resultColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'))]}>
+                                            <View style={[{ width: resultColWidth }, getCellBorder(!showFlagCol && !showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'))]}>
                                                 <Text style={[styles.tdText, { 
                                                     textAlign: bodyAlign as any, 
                                                     fontFamily: getPdfFontName(rawFont, isAbnormal),
-                                                    fontWeight: isAbnormal ? 'bold' : 'normal'
+                                                    fontWeight: isAbnormal ? 'bold' : 'normal',
+                                                    lineHeight: bLineHeight
                                                 }]}>
-                                                    {row.result ?? row.value ?? row.resultValue ?? ''}{isAbnormal ? '*' : ''}
+                                                    {row.result ?? row.value ?? row.resultValue ?? ''}
                                                 </Text>
                                             </View>
 
+                                            {showFlagCol ? (
+                                                <View style={[{ width: flagColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'))]}>
+                                                    <Text style={[styles.tdText, { 
+                                                        textAlign: 'center',
+                                                        fontFamily: getPdfFontName(rawFont, true), 
+                                                        color: flagProps.color,
+                                                        lineHeight: bLineHeight
+                                                    }]}>
+                                                        {flagProps.text}
+                                                    </Text>
+                                                </View>
+                                            ) : null}
+
                                             {showUnitCol ? (
                                                 <View style={[{ width: unitColWidth }, getCellBorder(!showRefRangeCol && !(showMethodCol && methodDisplay === 'column'))]}>
-                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any }]}>
+                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any, lineHeight: bLineHeight }]}>
                                                         {row.unit ? String(row.unit).replace(/([/.\-])/g, '$1\u200B') : ''}
                                                     </Text>
                                                 </View>
@@ -279,7 +330,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                                             {showRefRangeCol ? (
                                                 <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'))]}>
-                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any }]}>
+                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any, lineHeight: bLineHeight }]}>
                                                         {cleanBasicHTML(row.range || row.normalRange || row.displayRange || row.referenceRange || row.refRange || row.ref || '')}
                                                     </Text>
                                                 </View>
@@ -287,7 +338,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                                             {showMethodCol && methodDisplay === 'column' ? (
                                                 <View style={[{ width: methodColWidth }, getCellBorder(true)]}>
-                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any, fontSize: bFontSize - 1 }]}>{row.method}</Text>
+                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any, fontSize: bFontSize - 1, lineHeight: bLineHeight }]}>{row.method}</Text>
                                                 </View>
                                             ) : null}
                                         </View>

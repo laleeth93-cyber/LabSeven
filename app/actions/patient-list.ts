@@ -37,6 +37,7 @@ export async function getPatientList(searchQuery: string = '', startDate?: strin
 
         const bills = await prisma.bill.findMany({
             where: whereClause,
+            // 🚨 OPTIMIZED: Removed `results: true` and `payments: true` to prevent Vercel timeouts.
             include: {
                 patient: true,
                 items: {

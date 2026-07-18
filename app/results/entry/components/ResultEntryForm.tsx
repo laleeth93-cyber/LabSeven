@@ -1,22 +1,34 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { 
-    saveTestResults, 
-    saveTestNote, 
-    checkHistoryAvailability, 
-    getParameterHistory, 
-    getSignatureUsers, 
-    getTestParametersBatch 
-} from '@/app/actions/result-entry';
+import {
+     saveTestResults,
+     saveTestNote,
+     checkHistoryAvailability,
+     getParameterHistory,
+     getSignatureUsers,
+     getTestParametersBatch
+ } from '@/app/actions/result-entry';
+ 
+// 🚨 If the error persists, one of these 4 files is the culprit!
 import RichTextEditorModal from '@/app/components/RichTextEditorModal';
-import { getFlag, recalculateFormulas } from './ResultEntryUtils';
 import HistoryModal from './HistoryModal';
 import TestItemCard from './TestItemCard';
 import CultureSensitivityModal from './CultureSensitivityModal';
-import { Loader2, Printer, Activity, CheckCircle, Save, Unlock } from 'lucide-react';
+
+import { getFlag, recalculateFormulas } from './ResultEntryUtils';
+import { Loader2, Printer, Activity, CheckCircle, Save, Unlock, AlertCircle } from 'lucide-react';
 
 export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [], entryDateTime, onPrint, onDeltaPrint }: any) {
+  
+  // 🐛 DEBUGGING TRICK: Look in your browser console to see which of these is undefined!
+  useEffect(() => {
+      console.log("1. RichTextEditorModal is:", RichTextEditorModal);
+      console.log("2. HistoryModal is:", HistoryModal);
+      console.log("3. TestItemCard is:", TestItemCard);
+      console.log("4. CultureSensitivityModal is:", CultureSensitivityModal);
+  }, []);
+
   const [results, setResults] = useState<any>({});
   const [flags, setFlags] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -26,32 +38,38 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
   const [signatureUsers, setSignatureUsers] = useState<any[]>([]);
   const [sig1Id, setSig1Id] = useState<string>("");
   const [sig2Id, setSig2Id] = useState<string>("");
+
   const [isNoteOpen, setIsNoteOpen] = useState(false);
   const [activeNoteItem, setActiveNoteItem] = useState<any>(null);
   const [currentNoteContent, setCurrentNoteContent] = useState("");
+
   const [isResultEditorOpen, setIsResultEditorOpen] = useState(false);
   const [activeResultParam, setActiveResultParam] = useState<{itemId: number, paramId: number, name: string} | null>(null);
   const [currentResultContent, setCurrentResultContent] = useState("");
+
   const [hasHistory, setHasHistory] = useState<number[]>([]);
   const [historyData, setHistoryData] = useState<any>(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedHistoryParam, setSelectedHistoryParam] = useState<string>("");
+
   const [isCultureModalOpen, setIsCultureModalOpen] = useState(false);
   const [activeCultureItem, setActiveCultureItem] = useState<{itemId: number, paramId: number, initialData: any} | null>(null);
+
   const [loadedParameters, setLoadedParameters] = useState<Record<number, any[]>>({});
   const [isParamsLoading, setIsParamsLoading] = useState(true);
 
   const safeItems = Array.isArray(bill?.items) ? bill.items : [];
   const visibleItems = safeItems.filter((item: any) => filterTestIds.includes(item?.id));
-  const validItems = visibleItems.filter((item: any) => item?.test?.isConfigured);
+  
+  const validItems = visibleItems.filter((item: any) => item?.test?.isConfigured !== false);
   const allApproved = validItems.length > 0 && validItems.every((item: any) => item?.status === 'Approved' || item?.status === 'Printed');
 
-  useEffect(() => { 
-      getSignatureUsers().then(res => { 
-          if (res.success && res.data) setSignatureUsers(res.data); 
-      }); 
-  }, []);
+  useEffect(() => {
+       getSignatureUsers().then(res => {
+           if (res.success && res.data) setSignatureUsers(res.data);
+       });
+   }, []);
 
   useEffect(() => {
     if (bill && visibleItems.length > 0) {
@@ -76,7 +94,8 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
           const allParamIds: number[] = [];
           
           visibleItems.forEach((item: any) => {
-            if (!item?.test?.isConfigured) return;
+            if (item?.test?.isConfigured === false) return;
+            
             const testParams = paramMap[item.test.id as number] || [];
             
             testParams.forEach((tp: any) => {
@@ -152,6 +171,7 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
   const handleSaveItem = async (item: any, status: 'Entered' | 'Approved') => {
     if (!item?.test?.id) return;
     setSavingItemId(item.id);
+
     const dataToSave: any[] = [];
     const testParams = loadedParameters[item.test.id as number] || [];
     
@@ -167,9 +187,10 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
     });
     
     const res = await saveTestResults(bill.id, dataToSave, status, sig1Id ? parseInt(sig1Id) : null, sig2Id ? parseInt(sig2Id) : null);
+    
     if (res.success) {
         setSuccessMessage(status === 'Approved' ? "Test Approved Successfully!" : "Test Saved Successfully!");
-        setShowSuccessPopup(true); 
+        setShowSuccessPopup(true);
         setTimeout(() => { 
             setShowSuccessPopup(false); 
             if (onSaveSuccess) onSaveSuccess(); 
@@ -187,6 +208,7 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
     validItems.forEach((item: any) => {
         if (!item?.test?.id) return;
         const testParams = loadedParameters[item.test.id as number] || [];
+
         testParams.forEach((tp: any) => {
             if (tp?.parameter) {
                 const key = `${item.id}-${tp.parameter.id}`;
@@ -200,9 +222,10 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
     });
     
     const res = await saveTestResults(bill.id, dataToSave, status, sig1Id ? parseInt(sig1Id) : null, sig2Id ? parseInt(sig2Id) : null);
+    
     if (res.success) {
         setSuccessMessage(status === 'Approved' ? "All Tests Approved!" : "All Tests Saved!");
-        setShowSuccessPopup(true); 
+        setShowSuccessPopup(true);
         setTimeout(() => { 
             setShowSuccessPopup(false); 
             if (onSaveSuccess) onSaveSuccess(); 
@@ -218,7 +241,7 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
       setCurrentNoteContent(item.notes || ""); 
       setIsNoteOpen(true); 
   };
-  
+
   const handleSaveNote = async (content: string) => {
     if (!activeNoteItem) return;
     const res = await saveTestNote(activeNoteItem.id, content);
@@ -281,10 +304,11 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
   return (
     <div className="flex flex-col h-full relative w-full overflow-hidden">
         
-        <RichTextEditorModal isOpen={isNoteOpen} onClose={() => setIsNoteOpen(false)} onSave={handleSaveNote} initialContent={currentNoteContent} title={`Notes`}/>
-        <RichTextEditorModal isOpen={isResultEditorOpen} onClose={() => setIsResultEditorOpen(false)} onSave={handleSaveResultContent} initialContent={currentResultContent} title={`Result Editor`}/>
-        <HistoryModal show={showHistoryModal} onClose={() => setShowHistoryModal(false)} paramName={selectedHistoryParam} isLoading={isHistoryLoading} data={historyData} />
-        <CultureSensitivityModal isOpen={isCultureModalOpen} onClose={() => setIsCultureModalOpen(false)} onSave={handleSaveCultureData} initialData={activeCultureItem?.initialData} />
+        {/* If one of these components is undefined, React will crash right here! */}
+        {RichTextEditorModal && <RichTextEditorModal isOpen={isNoteOpen} onClose={() => setIsNoteOpen(false)} onSave={handleSaveNote} initialContent={currentNoteContent} title={`Notes`}/>}
+        {RichTextEditorModal && <RichTextEditorModal isOpen={isResultEditorOpen} onClose={() => setIsResultEditorOpen(false)} onSave={handleSaveResultContent} initialContent={currentResultContent} title={`Result Editor`}/>}
+        {HistoryModal && <HistoryModal show={showHistoryModal} onClose={() => setShowHistoryModal(false)} paramName={selectedHistoryParam} isLoading={isHistoryLoading} data={historyData} />}
+        {CultureSensitivityModal && <CultureSensitivityModal isOpen={isCultureModalOpen} onClose={() => setIsCultureModalOpen(false)} onSave={handleSaveCultureData} initialData={activeCultureItem?.initialData} />}
         
         <div className="w-full bg-white shrink-0 border-b border-slate-200 shadow-sm relative z-10">
             <div className="w-full px-4 sm:px-6 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -336,11 +360,11 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
                                 </button>
                             ) : (
                                 <>
-                                    <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-3 xl:px-5 bg-white text-slate-700 hover:text-[#9575cd] border border-slate-200 hover:border-[#9575cd] text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2 transition-colors">
+                                    <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-3 xl:px-5 bg-white text-slate-700 hover:text-[#9575cd] border border-slate-200 shadow-sm rounded-lg gap-1.5 transition-colors">
                                         {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                                         Save All
                                     </button>
-                                    <button onClick={() => handleBulkSubmit('Approved')} disabled={isSaving} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-3 xl:px-5 bg-[#9575cd] hover:bg-[#7e57c2] text-white text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2 transition-colors shadow-sm">
+                                    <button onClick={() => handleBulkSubmit('Approved')} disabled={isSaving} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-3 xl:px-5 bg-[#9575cd] hover:bg-[#8565bd] text-white border border-[#9575cd] shadow-sm rounded-lg gap-1.5 transition-colors">
                                         {isSaving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
                                         Approve All
                                     </button>
@@ -352,41 +376,39 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
             </div>
         </div>
 
-        {/* Main Test Body */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50/50 custom-scrollbar">
-            {isParamsLoading ? (
-                <div className="flex items-center justify-center h-40">
-                    <Loader2 size={32} className="animate-spin text-[#9575cd]" />
-                </div>
-            ) : validItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-40 text-slate-400">
-                    <p className="text-sm font-medium">No valid tests to display.</p>
+        {/* The Actual Test Input Cards */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {validItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
+                    <AlertCircle size={48} className="opacity-20" />
+                    <p className="text-sm font-medium">No configured tests found.</p>
+                    <p className="text-xs">If this is an old test, it might not have parameters configured.</p>
                 </div>
             ) : (
-                <div className="flex flex-col gap-6 max-w-5xl mx-auto pb-20">
-                    {validItems.map((item: any) => (
-                        <TestItemCard
-                            key={item.id}
-                            item={item}
-                            testParameters={loadedParameters[item.test.id as number] || []}
-                            results={results}
-                            flags={flags}
-                            handleInputChange={handleInputChange}
-                            handleSaveItem={handleSaveItem}
-                            handleOpenNote={handleOpenNote}
-                            handleOpenResultEditor={handleOpenResultEditor}
-                            handleViewHistory={handleViewHistory}
-                            handleOpenCultureModal={handleOpenCultureModal}
-                            hasHistory={hasHistory}
-                            savingItemId={savingItemId}
-                            bill={bill}
-                        />
-                    ))}
-                </div>
+                validItems.map((item: any) => (
+                    TestItemCard && <TestItemCard
+                        key={item.id}
+                        item={item}
+                        bill={bill}
+                        parameters={loadedParameters[item.test.id as number] || []}
+                        isParamsLoading={isParamsLoading}
+                        results={results}
+                        flags={flags}
+                        hasHistory={hasHistory}
+                        savingItemId={savingItemId}
+                        
+                        onInputChange={(itemId: number, param: any, val: string) => handleInputChange(itemId, param, val, loadedParameters[item.test.id as number], false)}
+                        onSaveItem={(savedItem: any, status: 'Entered'|'Approved') => handleSaveItem(savedItem, status)}
+                        onOpenNote={(noteItem: any) => handleOpenNote(noteItem)}
+                        onOpenResultEditor={(itemId: number, param: any) => handleOpenResultEditor(itemId, param)}
+                        onViewHistory={handleViewHistory}
+                        onOpenCultureModal={(itemId: number) => handleOpenCultureModal(itemId)}
+                    />
+                ))
             )}
         </div>
 
-        {/* --- SUCCESS POPUP OVERLAY --- */}
+        {/* SUCCESS POPUP OVERLAY */}
         {showSuccessPopup && (
             <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
                 <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-sm w-full mx-4 border border-slate-100">
@@ -397,7 +419,6 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
                 </div>
             </div>
         )}
-
     </div>
   );
 }

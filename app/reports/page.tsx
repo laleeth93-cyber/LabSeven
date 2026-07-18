@@ -1,10 +1,10 @@
-// --- BLOCK app/reports/page.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Save, Loader2, Table, LayoutTemplate, Stethoscope, Printer, CheckCircle, Activity } from 'lucide-react';
 import { getReportSettings, updateReportSettings } from '@/app/actions/reports';
-import MusicBarLoader from '@/app/components/MusicBarLoader'; // 🚨 NEW IMPORT
+import MusicBarLoader from '@/app/components/MusicBarLoader'; 
 
 import HeaderTab from './components/HeaderTab';
 import BodyTab from './components/BodyTab';
@@ -58,7 +58,6 @@ const defaultMargins = {
     'custom4': { top: 120, bottom: 80, left: 40, right: 40 },
 };
 
-// Default settings for Delta / Smart Reports
 const defaultDeltaSettings = {
     primaryColor: '#9575cd',
     alertColor: '#e11d48',
@@ -72,6 +71,7 @@ const defaultDeltaSettings = {
 };
 
 export default function ReportsSettingsPage() {
+    const router = useRouter(); 
     const [isPending, startTransition] = useTransition();
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Header');
@@ -85,7 +85,6 @@ export default function ReportsSettingsPage() {
     const [separateDept, setSeparateDept] = useState(false);
     const [separateTest, setSeparateTest] = useState(false);
 
-    // --- SUCCESS POPUP STATE ---
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
     const [formData, setFormData] = useState<any>({
@@ -105,14 +104,19 @@ export default function ReportsSettingsPage() {
     const [searchQuery, setSearchQuery] = useState('');
 
     const [bodySettings, setBodySettings] = useState({
-        showMethodCol: true, methodDisplayStyle: 'column', showUnitCol: true, showRefRangeCol: true, highlightAbnormal: true, stripedRows: false,
+        showMethodCol: true, methodDisplayStyle: 'column', showFlagCol: true, showUnitCol: true, showRefRangeCol: true, highlightAbnormal: true, stripedRows: false,
         testColumnWidth: 'auto', 
-        colWidthParam: '', colWidthResult: '', colWidthUnit: '', colWidthRef: '', colWidthMethod: '',
+        colWidthParam: '', colWidthResult: '', colWidthFlag: '', colWidthUnit: '', colWidthRef: '', colWidthMethod: '',
         showEndOfReport: true, 
         bodyTableStyle: 'horizontal', bodyFontFamily: 'font-sans', bodyFontSize: 'text-sm', bodyRowHeight: 'py-2', bodyColPadding: 'px-2',
+        bodyLineHeight: '1.5', // 🚨 ADDED
         bodyHeaderBgColor: '#f8fafc', bodyHeaderTextColor: '#1e293b', bodyResultAlign: 'text-left',
-        showDepartmentName: true, departmentNameSize: 'text-sm', testNameAlignment: 'text-center', testNameUnderline: true, testNameSize: 'text-base', gridLineThickness: '1',
-        subheadingColor: '#5e35b1', subheadingSize: 'text-sm'
+        headerFontSize: 'text-xs', headerFontWeight: 'font-bold', headerRowHeight: 'py-1.5', // 🚨 ADDED
+        showDepartmentName: true, showTestName: true, departmentNameSize: 'text-sm', testNameAlignment: 'text-center', testNameUnderline: true, testNameSize: 'text-base', gridLineThickness: '1',
+        subheadingColor: '#5e35b1', subheadingSize: 'text-sm',
+        flagStyle: 'lh', flagColorLow: '#3b82f6', flagColorNormal: '#000000', flagColorHigh: '#ef4444',
+        tableHeaderRepeat: 'test', separatePagesBy: 'none',
+        testBlockSpacing: 'mb-4' // 🚨 ADDED
     });
     
     const [footerSettings, setFooterSettings] = useState({ 
@@ -125,7 +129,8 @@ export default function ReportsSettingsPage() {
 
     useEffect(() => {
         const loadSettings = async () => {
-            const res = await getReportSettings();
+            const res = await getReportSettings(Date.now().toString());
+            
             if (res.success && res.data) {
                 const dbData: any = res.data;
 
@@ -151,18 +156,29 @@ export default function ReportsSettingsPage() {
                 }));
 
                 setBodySettings({
-                    showMethodCol: dbData.showMethodCol !== undefined ? dbData.showMethodCol : true, methodDisplayStyle: dbData.methodDisplayStyle || 'column', showUnitCol: dbData.showUnitCol !== undefined ? dbData.showUnitCol : true, showRefRangeCol: dbData.showRefRangeCol !== undefined ? dbData.showRefRangeCol : true, highlightAbnormal: dbData.highlightAbnormal !== undefined ? dbData.highlightAbnormal : true, stripedRows: dbData.stripedRows !== undefined ? dbData.stripedRows : false,
+                    showMethodCol: dbData.showMethodCol !== undefined ? dbData.showMethodCol : true, 
+                    methodDisplayStyle: dbData.methodDisplayStyle || 'column', 
+                    showFlagCol: dbData.showFlagCol !== undefined ? dbData.showFlagCol : true,
+                    showUnitCol: dbData.showUnitCol !== undefined ? dbData.showUnitCol : true, 
+                    showRefRangeCol: dbData.showRefRangeCol !== undefined ? dbData.showRefRangeCol : true, 
+                    highlightAbnormal: dbData.highlightAbnormal !== undefined ? dbData.highlightAbnormal : true, 
+                    stripedRows: dbData.stripedRows !== undefined ? dbData.stripedRows : false,
                     testColumnWidth: dbData.testColumnWidth || 'auto', 
-                    colWidthParam: dbData.colWidthParam || '',
-                    colWidthResult: dbData.colWidthResult || '',
-                    colWidthUnit: dbData.colWidthUnit || '',
-                    colWidthRef: dbData.colWidthRef || '',
-                    colWidthMethod: dbData.colWidthMethod || '',
+                    colWidthParam: dbData.colWidthParam || '', colWidthResult: dbData.colWidthResult || '', colWidthFlag: dbData.colWidthFlag || '', colWidthUnit: dbData.colWidthUnit || '', colWidthRef: dbData.colWidthRef || '', colWidthMethod: dbData.colWidthMethod || '',
                     showEndOfReport: dbData.showEndOfReport !== undefined ? dbData.showEndOfReport : true, 
                     bodyTableStyle: dbData.bodyTableStyle || 'horizontal', bodyFontFamily: dbData.bodyFontFamily || 'font-sans', bodyFontSize: dbData.bodyFontSize || 'text-sm', bodyRowHeight: dbData.bodyRowHeight || 'py-2', bodyColPadding: dbData.bodyColPadding || 'px-2',
+                    bodyLineHeight: dbData.bodyLineHeight || '1.5',
                     bodyHeaderBgColor: parseToHexColor(dbData.bodyHeaderBgColor, '#f8fafc'), bodyHeaderTextColor: parseToHexColor(dbData.bodyHeaderTextColor, '#1e293b'), bodyResultAlign: dbData.bodyResultAlign || 'text-left',
-                    showDepartmentName: dbData.showDepartmentName !== undefined ? dbData.showDepartmentName : true, departmentNameSize: dbData.departmentNameSize || 'text-sm', testNameAlignment: dbData.testNameAlignment || 'text-center', testNameUnderline: dbData.testNameUnderline !== undefined ? dbData.testNameUnderline : true, testNameSize: dbData.testNameSize || 'text-base', gridLineThickness: dbData.gridLineThickness || '1',
-                    subheadingColor: parseToHexColor(dbData.subheadingColor, '#5e35b1'), subheadingSize: dbData.subheadingSize || 'text-sm'
+                    headerFontSize: dbData.headerFontSize || 'text-xs', headerFontWeight: dbData.headerFontWeight || 'font-bold', headerRowHeight: dbData.headerRowHeight || 'py-1.5',
+                    showDepartmentName: dbData.showDepartmentName !== undefined ? dbData.showDepartmentName : true, showTestName: dbData.showTestName !== undefined ? dbData.showTestName : true, departmentNameSize: dbData.departmentNameSize || 'text-sm', testNameAlignment: dbData.testNameAlignment || 'text-center', testNameUnderline: dbData.testNameUnderline !== undefined ? dbData.testNameUnderline : true, testNameSize: dbData.testNameSize || 'text-base', gridLineThickness: dbData.gridLineThickness || '1',
+                    subheadingColor: parseToHexColor(dbData.subheadingColor, '#5e35b1'), subheadingSize: dbData.subheadingSize || 'text-sm',
+                    flagStyle: dbData.flagStyle || 'lh',
+                    flagColorLow: parseToHexColor(dbData.flagColorLow, '#3b82f6'),
+                    flagColorNormal: parseToHexColor(dbData.flagColorNormal, '#000000'),
+                    flagColorHigh: parseToHexColor(dbData.flagColorHigh, '#ef4444'),
+                    tableHeaderRepeat: dbData.tableHeaderRepeat || 'test',
+                    separatePagesBy: dbData.separatePagesBy || 'none',
+                    testBlockSpacing: dbData.testBlockSpacing || 'mb-4' 
                 });
 
                 setFooterSettings({
@@ -171,19 +187,15 @@ export default function ReportsSettingsPage() {
                     sigSize: dbData.sigSize ?? 40, sigSpacing: dbData.sigSpacing ?? 4, docNameSize: dbData.docNameSize ?? 10, docDesigSize: dbData.docDesigSize ?? 8, docNameSpacing: dbData.docNameSpacing ?? 2, sigAlignment: dbData.sigAlignment || 'center'
                 });
 
-                // Load Delta Settings
                 if (dbData.deltaSettings) {
                     try {
                         const parsed = JSON.parse(dbData.deltaSettings);
                         setDeltaSettings({ ...defaultDeltaSettings, ...parsed });
-                    } catch(e) {
-                        console.error("Failed to parse delta settings");
-                    }
+                    } catch(e) {}
                 }
 
                 let initialLeft: any[] = []; let initialRight: any[] = [];
                 
-                // --- FIX LABELS ON LOAD ---
                 const fixLabels = (arr: any[]) => arr.map((item: any) => {
                     if (item?.key === 'showReceivedDate') return { ...item, label: 'Received Date' };
                     if (item?.key === 'showReportedDate') return { ...item, label: 'Reported Date' };
@@ -216,11 +228,12 @@ export default function ReportsSettingsPage() {
                 leftColFields: JSON.stringify(leftColFields), 
                 rightColFields: JSON.stringify(rightColFields),
                 marginSettings: JSON.stringify(formData.marginSettings),
-                deltaSettings: JSON.stringify(deltaSettings) // Save our new settings
+                deltaSettings: JSON.stringify(deltaSettings) 
             };
             const res = await updateReportSettings(payload);
             if (res.success) {
                 setShowSuccessPopup(true);
+                router.refresh(); 
                 setTimeout(() => setShowSuccessPopup(false), 1500);
             } else {
                 alert("Error saving settings: " + res.message);
@@ -338,10 +351,9 @@ export default function ReportsSettingsPage() {
         { id: 'Body', label: 'Body (Results Table)', icon: <Table size={14}/> }, 
         { id: 'Footer', label: 'Footer (Signatures)', icon: <Stethoscope size={14}/> },
         { id: 'PrintFit', label: 'Report Fit (Print & Margins)', icon: <Printer size={14}/> },
-        { id: 'DeltaReport', label: 'Delta Report (Analytics)', icon: <Activity size={14}/> } // NEW TAB
+        { id: 'DeltaReport', label: 'Delta Report (Analytics)', icon: <Activity size={14}/> } 
     ];
 
-    // 🚨 REPLACED SPINNER WITH MUSIC BAR
     if (isLoading) return (
         <div className="h-full flex items-center justify-center bg-[#f1f5f9]">
             <MusicBarLoader text="Loading Settings..." />
@@ -351,7 +363,6 @@ export default function ReportsSettingsPage() {
     return (
         <div className="h-full w-full bg-[#f1f5f9] flex flex-col font-sans relative">
             
-            {/* --- SUCCESS POPUP OVERLAY --- */}
             {showSuccessPopup && (
               <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
                 <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-sm w-full mx-4 border border-slate-100">
@@ -385,7 +396,6 @@ export default function ReportsSettingsPage() {
 
             <div className="flex-1 flex gap-6 p-6 min-h-0">
                 
-                {/* Do not render standard PDF live preview for the Delta setting screen to make room */}
                 {activeTab !== 'DeltaReport' && (
                     <LivePreviewPanel 
                         formData={formData}
@@ -437,4 +447,3 @@ export default function ReportsSettingsPage() {
         </div>
     );
 }
-// --- BLOCK app/reports/page.tsx CLOSE ---

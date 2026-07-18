@@ -153,6 +153,7 @@ export default function PatientReportDocument(props: any) {
                 />
 
                 {hasData ? (
+                    // 💡 NOTE: The actual mapping of your groups and spacing is handled inside <ReportBody />
                     <ReportBody 
                         groupedData={groupedData}
                         reportSettings={reportSettings}
