@@ -171,7 +171,8 @@ export async function createParameter(data: any) {
       }
     });
 
-    revalidatePath('/parameters');
+    // 🚨 FIX: Purge the cache globally so Result Entry updates instantly
+    revalidatePath("/", "layout");
     return { success: true, data: newParam };
   } catch (error: any) {
     console.error("Create Parameter Error:", error);
@@ -264,7 +265,8 @@ export async function updateParameter(id: number, data: any) {
       }
     });
 
-    revalidatePath('/parameters');
+    // 🚨 FIX: Purge the cache globally so Result Entry updates instantly
+    revalidatePath("/", "layout");
     return { success: true, data: updated };
   } catch (error: any) {
     console.error("Update Parameter Error:", error);
@@ -294,7 +296,9 @@ export async function updateParameterStatus(id: number, isActive: boolean) {
       where: { id },
       data: { isActive }
     });
-    revalidatePath('/parameters');
+    
+    // 🚨 FIX: Purge the cache globally
+    revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
     console.error("Update Status Error:", error);
@@ -312,7 +316,9 @@ export async function deleteParameter(id: number) {
     if (!existingParam) return { success: false, message: "Parameter not found." };
 
     await prisma.parameter.delete({ where: { id } });
-    revalidatePath('/parameters');
+    
+    // 🚨 FIX: Purge the cache globally
+    revalidatePath("/", "layout");
     return { success: true };
   } catch (error) {
     return { success: false, message: "Failed to delete parameter. It may be linked to existing tests." };

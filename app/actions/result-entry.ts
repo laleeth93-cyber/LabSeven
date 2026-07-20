@@ -163,7 +163,9 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
       for (const itemId of billItemIds) { transactions.push(prisma.billItem.update({ where: { id: itemId }, data: { status: status } })); }
       transactions.push(prisma.bill.update({ where: { id: billId }, data: { approvedBy1Id: sig1Id, approvedBy2Id: sig2Id } }));
       await prisma.$transaction(transactions);
-      revalidatePath('/results/entry');
+      
+      // 🚨 FIX: Purge the cache globally so Patient Reports update instantly
+      revalidatePath("/", "layout");
       return { success: true, message: `Results saved as ${status}` };
     } catch (error: any) { return { success: false, message: error.message }; }
 }
@@ -171,7 +173,9 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
 export async function saveTestNote(billItemId: number, note: string) {
     try {
       await prisma.billItem.update({ where: { id: billItemId }, data: { notes: note } });
-      revalidatePath('/results/entry');
+      
+      // 🚨 FIX: Purge the cache globally
+      revalidatePath("/", "layout");
       return { success: true };
     } catch (error: any) { return { success: false, message: error.message }; }
 }
@@ -212,7 +216,8 @@ export async function clearAllEntryData() {
       prisma.bill.deleteMany({ where: { organizationId: orgId } })
     ]);
 
-    revalidatePath('/results/entry');
+    // 🚨 FIX: Purge the cache globally
+    revalidatePath("/", "layout");
     return { success: true, message: "All bills and results deleted permanently for your lab." };
   } catch (error: any) {
     console.error("Error clearing data:", error);

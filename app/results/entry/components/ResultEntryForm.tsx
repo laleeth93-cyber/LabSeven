@@ -10,7 +10,6 @@ import {
      getTestParametersBatch
  } from '@/app/actions/result-entry';
  
-// 🚨 If the error persists, one of these 4 files is the culprit!
 import RichTextEditorModal from '@/app/components/RichTextEditorModal';
 import HistoryModal from './HistoryModal';
 import TestItemCard from './TestItemCard';
@@ -20,14 +19,6 @@ import { getFlag, recalculateFormulas } from './ResultEntryUtils';
 import { Loader2, Printer, Activity, CheckCircle, Save, Unlock, AlertCircle } from 'lucide-react';
 
 export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [], entryDateTime, onPrint, onDeltaPrint }: any) {
-  
-  // 🐛 DEBUGGING TRICK: Look in your browser console to see which of these is undefined!
-  useEffect(() => {
-      console.log("1. RichTextEditorModal is:", RichTextEditorModal);
-      console.log("2. HistoryModal is:", HistoryModal);
-      console.log("3. TestItemCard is:", TestItemCard);
-      console.log("4. CultureSensitivityModal is:", CultureSensitivityModal);
-  }, []);
 
   const [results, setResults] = useState<any>({});
   const [flags, setFlags] = useState<any>({});
@@ -304,7 +295,6 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
   return (
     <div className="flex flex-col h-full relative w-full overflow-hidden">
         
-        {/* If one of these components is undefined, React will crash right here! */}
         {RichTextEditorModal && <RichTextEditorModal isOpen={isNoteOpen} onClose={() => setIsNoteOpen(false)} onSave={handleSaveNote} initialContent={currentNoteContent} title={`Notes`}/>}
         {RichTextEditorModal && <RichTextEditorModal isOpen={isResultEditorOpen} onClose={() => setIsResultEditorOpen(false)} onSave={handleSaveResultContent} initialContent={currentResultContent} title={`Result Editor`}/>}
         {HistoryModal && <HistoryModal show={showHistoryModal} onClose={() => setShowHistoryModal(false)} paramName={selectedHistoryParam} isLoading={isHistoryLoading} data={historyData} />}
@@ -376,7 +366,6 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
             </div>
         </div>
 
-        {/* The Actual Test Input Cards */}
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
             {validItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
@@ -396,7 +385,6 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
                         flags={flags}
                         hasHistory={hasHistory}
                         savingItemId={savingItemId}
-                        
                         onInputChange={(itemId: number, param: any, val: string) => handleInputChange(itemId, param, val, loadedParameters[item.test.id as number], false)}
                         onSaveItem={(savedItem: any, status: 'Entered'|'Approved') => handleSaveItem(savedItem, status)}
                         onOpenNote={(noteItem: any) => handleOpenNote(noteItem)}

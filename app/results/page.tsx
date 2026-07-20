@@ -1,4 +1,3 @@
-// --- BLOCK app/results/page.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -6,8 +5,6 @@ import { Search, Download, Calendar, ArrowRight, ChevronDown, Check, Filter, Loc
 import ResultsTable from './components/ResultsTable';
 import FilterSidebar from './components/FilterSidebar';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
-
-// 🚨 1. IMPORT FAST HOOK
 import { usePermissions } from '@/app/context/PermissionContext';
 
 // --- MOCK DATA ---
@@ -19,7 +16,6 @@ const MOCK_DATA = [
 ];
 
 export default function ResultsDashboard() {
-  // 🚨 2. USE HOOK FOR INSTANT RBAC
   const { orgId, permissions, userRole, permsLoaded } = usePermissions();
 
   const [activeTab, setActiveTab] = useState('All');
@@ -217,4 +213,3 @@ export default function ResultsDashboard() {
     </div>
   );
 }
-// --- BLOCK app/results/page.tsx CLOSE ---
