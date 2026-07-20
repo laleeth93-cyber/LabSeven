@@ -17,7 +17,15 @@ import SmartReportModal from '@/app/list/components/SmartReportModal';
 const globalBillCache: Record<number, any> = {};
 const globalBillPromises: Record<number, Promise<any> | undefined> = {};
 
-export default function ClientResultEntry({ initialBills, initialFirstBillData }: { initialBills: any[], initialFirstBillData: any }) {
+export default function ClientResultEntry({ 
+    initialBills, 
+    initialFirstBillData,
+    initialBillId 
+}: { 
+    initialBills: any[], 
+    initialFirstBillData: any,
+    initialBillId?: number | null
+}) {
   
   if (initialFirstBillData && !globalBillCache[initialFirstBillData.id]) {
       globalBillCache[initialFirstBillData.id] = initialFirstBillData;
@@ -44,7 +52,8 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  const [selectedBillId, setSelectedBillId] = useState<number | null>(null);
+  // Initializes with the ID passed from the billing page
+  const [selectedBillId, setSelectedBillId] = useState<number | null>(initialBillId || null);
   const [selectedBillData, setSelectedBillData] = useState<any>(null);
   const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
 
@@ -196,10 +205,11 @@ export default function ClientResultEntry({ initialBills, initialFirstBillData }
   return (
     <div className="h-full w-full flex flex-col font-sans bg-slate-50 md:bg-[#f1f5f9] overflow-hidden relative">
       
-      {isReportModalOpen && selectedBillData && (
+      {/* THE FIX: Safeguard checks ensure undefined Modals won't crash the React tree */}
+      {PatientReportModal && isReportModalOpen && selectedBillData && (
           <PatientReportModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} billId={selectedBillData.id} />
       )}
-      {isSmartReportModalOpen && selectedBillData && (
+      {SmartReportModal && isSmartReportModalOpen && selectedBillData && (
           <SmartReportModal isOpen={isSmartReportModalOpen} onClose={() => setIsSmartReportModalOpen(false)} bill={selectedBillData} />
       )}
 

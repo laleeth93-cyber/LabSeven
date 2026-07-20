@@ -1,72 +1,81 @@
-// --- BLOCK app/actions/test-config.ts OPEN ---
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
+// Assuming you have a Prisma client instance exported from a lib folder.
+// If your prisma client is somewhere else, adjust this import!
+import { PrismaClient } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 
-export async function updateTestConfiguration(id: number, data: any) {
+const prisma = new PrismaClient(); 
+
+export async function updateTestConfiguration(testId: number, data: any) {
     try {
-        // 1. Update the main Test record with all the format settings
-        await prisma.test.update({
-            where: { id },
+        // 1. Ensure testId is a Number
+        const id = Number(testId);
+
+        // 2. Fetch the existing test to get the organizationId
+        const existingTest = await prisma.test.findUnique({
+            where: { id: id },
+            select: { organizationId: true }
+        });
+
+        if (!existingTest) {
+            return { success: false, message: "Test not found." };
+        }
+
+        // 3. Force cast fields to Numbers for Prisma
+        const specimenId = data.specimenId ? Number(data.specimenId) : null;
+        const targetCount = data.targetCount ? Number(data.targetCount) : null;
+
+        // 4. Update the test and its nested parameters
+        const updatedTest = await prisma.test.update({
+            where: { id: id },
             data: {
+                // Scalar fields
                 resultType: data.resultType,
                 template: data.template,
-                printNextPage: data.printNextPage,
-                billingOnly: data.billingOnly,
+                printNextPage: Boolean(data.printNextPage),
+                billingOnly: Boolean(data.billingOnly),
                 reportTitle: data.reportTitle,
-                // Ensure specimenId is saved as an integer if it exists
-                specimenId: data.specimenId ? parseInt(data.specimenId) : null,
+                specimenId: specimenId, 
                 colCaption1: data.colCaption1,
                 colCaption2: data.colCaption2,
                 colCaption3: data.colCaption3,
                 colCaption4: data.colCaption4,
                 colCaption5: data.colCaption5,
                 labEquiName: data.labEquiName,
-                isFormulaNeeded: data.isFormulaNeeded,
-                isCountNeeded: data.isCountNeeded,
-                targetCount: data.targetCount,
-                isInterpretationNeeded: data.isInterpretationNeeded,
+                isFormulaNeeded: Boolean(data.isFormulaNeeded),
+                isCountNeeded: Boolean(data.isCountNeeded),
+                targetCount: targetCount, 
+                isInterpretationNeeded: Boolean(data.isInterpretationNeeded),
                 interpretation: data.interpretation,
-                cultureColumns: data.cultureColumns,
+                cultureColumns: data.cultureColumns, // This is already a JSON string from the frontend
+                isConfigured: true, 
+                
+                // Relational update for Parameters
+                parameters: {
+                    deleteMany: {}, // Clear the existing parameters for this test
+                    create: data.parameters.map((p: any) => ({
+                        organizationId: existingTest.organizationId, 
+                        parameterId: p.parameterId ? Number(p.parameterId) : null,
+                        order: Number(p.order),
+                        isHeading: Boolean(p.isHeading),
+                        headingText: p.headingText || null,
+                        isActive: Boolean(p.isActive),
+                        formula: p.formula || null,
+                        isCountDependent: Boolean(p.isCountDependent),
+                        isCultureField: Boolean(p.isCultureField)
+                    }))
+                }
             }
         });
 
-        // 2. Handle the nested Parameters 
-        // The safest/cleanest way to update a list in Prisma is to delete the old ones and create the new ones in a single transaction
-        if (data.parameters && Array.isArray(data.parameters)) {
-            await prisma.$transaction([
-                prisma.testParameter.deleteMany({
-                    where: { testId: id }
-                }),
-                prisma.testParameter.createMany({
-                    data: data.parameters.map((p: any) => ({
-                        testId: id,
-                        parameterId: p.parameterId,
-                        order: p.order,
-                        isHeading: p.isHeading,
-                        headingText: p.headingText,
-                        isActive: p.isActive,
-                        formula: p.formula,
-                        isCountDependent: p.isCountDependent,
-                        isCultureField: p.isCultureField
-                    }))
-                })
-            ]);
-        }
-
-        // 3. THE MAGIC FIX: Tell Next.js to purge the cache and refresh the data on the frontend!
-        revalidatePath('/tests');
+        // 5. Refresh the page data on the frontend
         revalidatePath('/tests/formats');
         
-        // If you are fetching this data on the result entry screen too, clear that cache as well
-        revalidatePath('/results/entry');
-
-        return { success: true, message: "Configuration saved successfully!" };
-
+        return { success: true, data: updatedTest };
+        
     } catch (error: any) {
-        console.error("Failed to update test configuration:", error);
-        return { success: false, message: error.message || "Failed to update configuration" };
+        console.error("Prisma update error:", error);
+        return { success: false, message: error.message || "Failed to update format" };
     }
 }
-// --- BLOCK app/actions/test-config.ts CLOSE ---

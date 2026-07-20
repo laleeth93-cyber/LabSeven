@@ -1,0 +1,139 @@
+import React from "react";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { FileText, Activity, Printer, CheckCircle2, User, CreditCard } from "lucide-react";
+
+export default async function BillingWindowPage({ params }: { params: { id: string } }) {
+  const billId = parseInt(params.id);
+
+  if (isNaN(billId)) {
+    redirect("/registration");
+  }
+
+  // Fetch the Bill with related Patient and Test Items
+  const bill = await prisma.bill.findUnique({
+    where: { id: billId },
+    include: {
+      patient: true,
+      items: {
+        include: { test: true }
+      }
+    }
+  });
+
+  if (!bill) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-slate-500 font-bold">Invoice not found.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f8fafc] p-6 font-sans">
+      <div className="max-w-4xl mx-auto space-y-6">
+        
+        {/* Header Section */}
+        <div className="flex items-center justify-between bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <div>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+              <CheckCircle2 className="text-emerald-500" size={28} />
+              Registration Complete
+            </h1>
+            <p className="text-sm font-medium text-slate-500 mt-1">
+              Invoice <span className="font-mono text-[#9575cd] font-bold">{bill.billNumber}</span> generated successfully.
+            </p>
+          </div>
+          
+          {/* THE FIX: Navigation Button to Result Entry */}
+          <Link 
+            href={`/results/entry?billId=${bill.id}`}
+            className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-6 py-3 rounded-lg text-sm font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"
+          >
+            <Activity size={18} />
+            Entry Result
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Patient Details Card */}
+          <div className="md:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 className="text-sm font-black text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <User size={16} /> Patient Information
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Full Name</p>
+                <p className="font-bold text-slate-800">{bill.patient.firstName} {bill.patient.lastName}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Patient ID (UHID)</p>
+                <p className="font-mono font-bold text-slate-800">{bill.patient.patientId}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Age & Gender</p>
+                <p className="font-bold text-slate-800">{bill.patient.ageY}Y / {bill.patient.gender}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Contact Phone</p>
+                <p className="font-bold text-slate-800">{bill.patient.phone}</p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 border-b border-slate-100 pb-2">
+                Registered Tests
+              </h3>
+              <div className="space-y-2">
+                {bill.items.map((item) => (
+                  <div key={item.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <span className="font-bold text-slate-700 text-sm">{item.test.name}</span>
+                    <span className="font-mono font-bold text-slate-600 text-sm">₹{item.price.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Summary Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
+            <h2 className="text-sm font-black text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <CreditCard size={16} /> Payment Summary
+            </h2>
+            
+            <div className="space-y-3 flex-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500 font-medium">Subtotal</span>
+                <span className="font-bold text-slate-700">₹{bill.subTotal.toFixed(2)}</span>
+              </div>
+              {bill.discountAmount && bill.discountAmount > 0 ? (
+                <div className="flex justify-between text-sm">
+                  <span className="text-emerald-500 font-medium">Discount</span>
+                  <span className="font-bold text-emerald-600">- ₹{bill.discountAmount.toFixed(2)}</span>
+                </div>
+              ) : null}
+              <div className="flex justify-between text-lg border-t border-slate-100 pt-3 mt-3">
+                <span className="text-slate-800 font-black">Net Amount</span>
+                <span className="font-black text-[#9575cd]">₹{bill.netAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500 font-medium">Paid Amount</span>
+                <span className="font-bold text-emerald-600">₹{bill.paidAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm bg-red-50 p-2 rounded border border-red-100 mt-2">
+                <span className="text-red-600 font-bold">Due Balance</span>
+                <span className="font-black text-red-600">₹{bill.dueAmount.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <button className="w-full mt-6 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-slate-200">
+              <Printer size={16} /> Print Invoice
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
