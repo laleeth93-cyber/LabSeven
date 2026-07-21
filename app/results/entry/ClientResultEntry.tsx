@@ -52,7 +52,6 @@ export default function ClientResultEntry({
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // Initializes with the ID passed from the billing page
   const [selectedBillId, setSelectedBillId] = useState<number | null>(initialBillId || null);
   const [selectedBillData, setSelectedBillData] = useState<any>(null);
   const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
@@ -100,6 +99,14 @@ export default function ClientResultEntry({
       }
   };
 
+  // NEW: Automatically update test IDs if tab changes while a patient is open
+  useEffect(() => {
+    if (selectedBillData) {
+        setupTestIds(selectedBillData);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
   useEffect(() => {
     if (selectedBillId) fetchBillDetails(selectedBillId);
     else { setSelectedBillData(null); setSelectedTestIds([]); }
@@ -130,10 +137,23 @@ export default function ClientResultEntry({
   };
 
   const handleSaveSuccess = async () => {
-    refreshWorklist();
-    if (selectedBillId) {
+    const currentIndex = filteredBills.findIndex((b: any) => b.id === selectedBillId);
+    let nextBillId = null;
+    
+    if (currentIndex !== -1 && currentIndex < filteredBills.length - 1) {
+        nextBillId = filteredBills[currentIndex + 1].id;
+    }
+
+    await refreshWorklist();
+
+    if (nextBillId) {
+        setSelectedBillId(nextBillId);
+    } else if (selectedBillId) {
         const billRes = await getResultEntryData(selectedBillId);
-        if (billRes.success) { globalBillCache[selectedBillId] = billRes.data; setSelectedBillData(billRes.data); }
+        if (billRes.success) { 
+            globalBillCache[selectedBillId] = billRes.data; 
+            setSelectedBillData(billRes.data); 
+        }
     }
   };
 
@@ -205,7 +225,6 @@ export default function ClientResultEntry({
   return (
     <div className="h-full w-full flex flex-col font-sans bg-slate-50 md:bg-[#f1f5f9] overflow-hidden relative">
       
-      {/* THE FIX: Safeguard checks ensure undefined Modals won't crash the React tree */}
       {PatientReportModal && isReportModalOpen && selectedBillData && (
           <PatientReportModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} billId={selectedBillData.id} />
       )}
@@ -213,7 +232,6 @@ export default function ClientResultEntry({
           <SmartReportModal isOpen={isSmartReportModalOpen} onClose={() => setIsSmartReportModalOpen(false)} bill={selectedBillData} />
       )}
 
-      {/* Desktop Header */}
       <header className="hidden md:block bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm relative">
         <div className="px-6 py-4 flex items-center justify-between gap-4">
             <h1 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">Result Entry</h1>
@@ -225,7 +243,8 @@ export default function ClientResultEntry({
         <div className="px-6 pb-0 flex items-center justify-between gap-4 border-t border-slate-50 pt-3">
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {tabs.map(tab => (
-                    <button key={tab.label} onClick={() => { setActiveTab(tab.label); setSelectedBillId(null); }} className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold uppercase tracking-wider transition-all border-b-2 ${ activeTab === tab.label ? 'border-[#9575cd] text-[#9575cd] bg-purple-50/50 rounded-t-md' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-t-md' }`}>
+                    // FIX IS HERE: Removed setSelectedBillId(null) from the onClick event below
+                    <button key={tab.label} onClick={() => setActiveTab(tab.label)} className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold uppercase tracking-wider transition-all border-b-2 ${ activeTab === tab.label ? 'border-[#9575cd] text-[#9575cd] bg-purple-50/50 rounded-t-md' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-t-md' }`}>
                         {tab.label} <span className={`px-2 py-0.5 rounded text-xs text-white ${tab.color}`}>{tab.count}</span>
                     </button>
                 ))}
@@ -238,7 +257,6 @@ export default function ClientResultEntry({
         </div>
       </header>
 
-      {/* Mobile Ultra-Slim Header */}
       <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shadow-sm shrink-0 z-20">
           <div className="flex items-center gap-4 w-full">
               <button onClick={() => setIsMobileFiltersOpen(true)} className="p-2.5 text-slate-500 bg-slate-50 border border-slate-200 rounded-lg shadow-sm hover:bg-slate-100 transition-colors">
@@ -253,7 +271,6 @@ export default function ClientResultEntry({
           </div>
       </header>
 
-      {/* Mobile Filter Bottom Sheet */}
       {isMobileFiltersOpen && (
           <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-[2px] flex items-end md:hidden">
               <div className="bg-white w-full rounded-t-2xl p-5 flex flex-col gap-5 animate-in slide-in-from-bottom-full duration-200 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
@@ -287,7 +304,6 @@ export default function ClientResultEntry({
           </div>
       )}
 
-      {/* Mobile Worklist Full Screen Overlay */}
       {isMobileWorklistOpen && (
           <div className="fixed inset-0 z-[60] bg-white flex flex-col md:hidden animate-in slide-in-from-bottom-8 fade-in duration-200">
               <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50 shrink-0 shadow-sm">
@@ -309,7 +325,6 @@ export default function ClientResultEntry({
           </div>
       )}
 
-      {/* Floating Action Button (FAB) */}
       {!isMobileWorklistOpen && (
           <button 
               onClick={() => setIsMobileWorklistOpen(true)} 

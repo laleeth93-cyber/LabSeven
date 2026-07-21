@@ -2,7 +2,7 @@ import React from "react";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FileText, Activity, Printer, CheckCircle2, User, CreditCard } from "lucide-react";
+import { FileText, Activity, Printer, CheckCircle2, User, CreditCard, Edit } from "lucide-react";
 
 export default async function BillingWindowPage({ params }: { params: { id: string } }) {
   const billId = parseInt(params.id);
@@ -46,14 +46,23 @@ export default async function BillingWindowPage({ params }: { params: { id: stri
             </p>
           </div>
           
-          {/* THE FIX: Navigation Button to Result Entry */}
-          <Link 
-            href={`/results/entry?billId=${bill.id}`}
-            className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-6 py-3 rounded-lg text-sm font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"
-          >
-            <Activity size={18} />
-            Entry Result
-          </Link>
+          <div className="flex items-center gap-3">
+              <Link 
+                href={`/registration?edit=${bill.id}`}
+                className="bg-white hover:bg-slate-50 text-slate-700 px-5 py-3 rounded-lg text-sm font-bold shadow-sm border border-slate-200 flex items-center gap-2 transition-all active:scale-95"
+              >
+                <Edit size={18} className="text-blue-500" />
+                Edit Bill
+              </Link>
+
+              <Link 
+                href={`/results/entry?billId=${bill.id}`}
+                className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-6 py-3 rounded-lg text-sm font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"
+              >
+                <Activity size={18} />
+                Entry Result
+              </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Printer, Download, CheckCircle, ScanBarcode, ArrowRight, FileText, Send, Loader2 } from 'lucide-react';
+import { X, Printer, Download, CheckCircle, ScanBarcode, ArrowRight, FileText, Send, Loader2, Edit } from 'lucide-react';
 import { generateTRFHtml, TRFData } from '@/app/components/TRFDocument';
 import BarcodeModal from '@/app/components/BarcodeModal'; 
 import JsBarcode from 'jsbarcode';
 import html2canvas from 'html2canvas';
-
-// 🚨 FIXED: Removed the crashing 'qrcode.react' library and returned to the safe 'qrcode' image generator
 import QRCode from 'qrcode'; 
 import { getLabProfile } from '@/app/actions/lab-profile';
 
@@ -24,10 +22,11 @@ export interface InvoiceData {
 interface InvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onEdit?: () => void; 
   data: InvoiceData | null;
 }
 
-export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProps) {
+export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceModalProps) {
   const router = useRouter(); 
   const [isClient, setIsClient] = useState(false);
   const [barcodeUrl, setBarcodeUrl] = useState<string>('');
@@ -66,7 +65,6 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
         });
         setBarcodeUrl(canvas.toDataURL());
 
-        // 🚨 FIXED: Safely generates the QR code as a base64 image URL so it cannot crash the React renderer
         const verificationUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://labseven.in'}/verify/${data.billId}?type=invoice`;
         QRCode.toDataURL(verificationUrl, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } })
             .then(url => setQrUrl(url))
@@ -298,7 +296,6 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
                                 
                                 <div className="opacity-90 flex flex-col items-center">
                                     <div className="p-1 bg-white border border-slate-200 rounded flex items-center justify-center w-[44px] h-[44px]">
-                                        {/* 🚨 FIXED: Safely rendering the QR image instead of the broken react component */}
                                         {qrUrl ? <img src={qrUrl} alt="QR Code" className="w-full h-full" /> : <div className="w-full h-full bg-slate-50"></div>}
                                     </div>
                                     <p className="text-[8px] text-slate-400 font-bold uppercase mt-1 tracking-wider">Scan to Verify</p>
@@ -348,6 +345,22 @@ export default function InvoiceModal({ isOpen, onClose, data }: InvoiceModalProp
 
         <div className="p-3 md:p-4 border-t border-slate-200 bg-white flex flex-col md:flex-row justify-between items-center gap-2 md:gap-3 print:hidden shrink-0">
            <div className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto">
+              
+              <button 
+                  onClick={() => {
+                      if (onEdit) {
+                          onEdit(); 
+                      } else {
+                          onClose();
+                          // Update this URL string to match your exact route for the billing/registration page
+                          router.push(`/registration?editBill=${data.billId}`); 
+                      }
+                  }} 
+                  className={plainBtnClass}
+              > 
+                  <Edit size={16} /> <span className="hidden sm:inline">Edit</span>
+              </button>
+              
               <button onClick={() => setIsBarcodeOpen(true)} className={plainBtnClass}> 
                   <ScanBarcode size={16} /> <span className="hidden sm:inline">Barcode</span>
               </button>

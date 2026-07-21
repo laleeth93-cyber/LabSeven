@@ -32,7 +32,7 @@ export async function searchTests(query: string) {
   }
 }
 
-// 2. CREATE BILL
+// 2. CREATE OR UPDATE BILL
 export async function createBill(data: any) {
   try {
     const { orgId } = await requireAuth();
@@ -85,46 +85,114 @@ export async function createBill(data: any) {
         if (doc) doctorId = doc.id;
     }
 
-    const newBill = await prisma.bill.create({
-      data: {
-        organizationId: orgId, 
+    // 🔥 FIX: Fetch the existing bill AND its existing items
+    const existingBill = await prisma.bill.findFirst({
+      where: {
         billNumber: billNumber,
-        patientId: patientDbId, 
-        doctorId: doctorId || null, 
-        date: new Date(data.date),
-        subTotal: data.subTotal,
-        discountPercent: data.discountPercent,
-        discountAmount: data.discountAmount,
-        discountReason: data.discountReason || null,
-        netAmount: data.netAmount,
-        paidAmount: data.paidAmount,
-        dueAmount: data.dueAmount,
-        isFullyPaid: data.dueAmount <= 0,
-        
-        items: {
-          create: finalItemsToSave 
-        },
-        
-        ...(data.paidAmount > 0 && {
-            payments: {
-              create: {
-                organizationId: orgId,
-                amount: data.paidAmount,
-                mode: data.paymentMode || 'Cash',
-                date: new Date()
-              }
-            }
-        })
+        organizationId: orgId
+      },
+      include: {
+        items: true // We need the existing items to compare against
       }
     });
+
+    if (existingBill) {
+      // --- SMART UPDATE LOGIC ---
+      // 1. Find which test IDs are already on the bill
+      const existingTestIds = existingBill.items.map((item) => item.testId);
+      const incomingTestIds = finalItemsToSave.map((item) => item.testId);
+
+      // 2. Identify NEW items that need to be created
+      const newItemsToCreate = finalItemsToSave.filter(
+        (newItem) => !existingTestIds.includes(newItem.testId)
+      );
+
+      // 3. Identify OLD items that were removed by the user and should be deleted
+      const itemsToDelete = existingBill.items.filter(
+        (oldItem) => !incomingTestIds.includes(oldItem.testId)
+      );
+
+      // ➡️ UPDATE EXISTING BILL
+      await prisma.bill.update({
+        where: { id: existingBill.id },
+        data: {
+          patientId: patientDbId, 
+          doctorId: doctorId || null, 
+          date: new Date(data.date),
+          subTotal: data.subTotal,
+          discountPercent: data.discountPercent,
+          discountAmount: data.discountAmount,
+          discountReason: data.discountReason || null,
+          netAmount: data.netAmount,
+          paidAmount: data.paidAmount,
+          dueAmount: data.dueAmount,
+          isFullyPaid: data.dueAmount <= 0,
+          
+          // 🔥 FIX: Only delete removed tests, and only create new tests.
+          // Existing tests remain entirely untouched, preserving your results!
+          items: {
+            delete: itemsToDelete.map((item) => ({ id: item.id })),
+            create: newItemsToCreate
+          },
+          
+          // Delete old payment records and replace with current
+          payments: {
+            deleteMany: {},
+            ...(data.paidAmount > 0 && {
+                create: {
+                  organizationId: orgId,
+                  amount: data.paidAmount,
+                  mode: data.paymentMode || 'Cash',
+                  date: new Date()
+                }
+            })
+          }
+        }
+      });
+      
+    } else {
+      // ➡️ CREATE NEW BILL
+      await prisma.bill.create({
+        data: {
+          organizationId: orgId, 
+          billNumber: billNumber,
+          patientId: patientDbId, 
+          doctorId: doctorId || null, 
+          date: new Date(data.date),
+          subTotal: data.subTotal,
+          discountPercent: data.discountPercent,
+          discountAmount: data.discountAmount,
+          discountReason: data.discountReason || null,
+          netAmount: data.netAmount,
+          paidAmount: data.paidAmount,
+          dueAmount: data.dueAmount,
+          isFullyPaid: data.dueAmount <= 0,
+          
+          items: {
+            create: finalItemsToSave 
+          },
+          
+          ...(data.paidAmount > 0 && {
+              payments: {
+                create: {
+                  organizationId: orgId,
+                  amount: data.paidAmount,
+                  mode: data.paymentMode || 'Cash',
+                  date: new Date()
+                }
+              }
+          })
+        }
+      });
+    }
 
     revalidatePath('/list');
     revalidatePath('/');
 
-    return { success: true, billNumber: newBill.billNumber };
-  } catch (error) {
-    console.error("Create Bill Error:", error);
-    return { success: false, message: "Failed to save bill" };
+    return { success: true, billNumber: billNumber };
+  } catch (error: any) {
+    console.error("Create/Update Bill Error:", error);
+    return { success: false, message: error.message || "Unknown database error occurred" };
   }
 }
 
@@ -188,5 +256,43 @@ export async function getCurrentUserSignature() {
     return { success: false };
   } catch (error) {
     return { success: false };
+  }
+}
+
+// 5. FETCH SPECIFIC BILL DETAILS
+export async function getBillDetails(billNumber: string) {
+  try {
+    const { orgId } = await requireAuth();
+
+    const bill = await prisma.bill.findFirst({
+      where: {
+        billNumber: billNumber,
+        organizationId: orgId
+      },
+      include: {
+        patient: true,
+        items: {
+          include: {
+            test: true 
+          }
+        },
+        payments: true 
+      }
+    });
+
+    if (!bill) {
+      return { success: false, error: "Bill not found." };
+    }
+
+    return {
+      success: true,
+      data: {
+        bill: bill,
+        patient: bill.patient
+      }
+    };
+  } catch (error: any) {
+    console.error("Error fetching bill details:", error);
+    return { success: false, error: error.message || "Failed to fetch bill details." };
   }
 }

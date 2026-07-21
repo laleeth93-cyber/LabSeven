@@ -1,8 +1,7 @@
-// --- BLOCK app/super-admin/components/GlobalSyncWidget.tsx OPEN ---
 "use client";
 
 import React, { useState } from 'react';
-import { DatabaseZap, Loader2 } from 'lucide-react';
+import { Database, Loader2 } from 'lucide-react'; // Changed DatabaseZap to Database
 import { pushMasterDataToAllLabs } from '@/app/actions/master-sync';
 import toast from 'react-hot-toast';
 
@@ -37,9 +36,8 @@ export default function GlobalSyncWidget() {
         style={{ background: 'linear-gradient(135deg, #d946ef, #9333ea)' }}
         title="Push new Tests, Parameters, and Sensitivity configs to all active labs"
     >
-        {isPushing ? <Loader2 size={14} className="animate-spin" /> : <DatabaseZap size={14} />}
+        {isPushing ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
         {isPushing ? 'Syncing Library...' : 'Global Master Data Sync'}
     </button>
   );
 }
-// --- BLOCK app/super-admin/components/GlobalSyncWidget.tsx CLOSE ---

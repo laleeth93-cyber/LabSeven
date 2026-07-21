@@ -2,7 +2,7 @@ import React from "react";
 import { prisma } from "@/lib/prisma";
 import SuperAdminTable from "./components/SuperAdminTable";
 import GlobalSyncWidget from "./components/GlobalSyncWidget"; 
-import GlobalWipeButton from "./components/GlobalWipeButton"; // 🚨 ADDED IMPORT
+import GlobalWipeButton from "./components/GlobalWipeButton"; 
 
 export default async function SuperAdminPage() {
   const labs = await prisma.organization.findMany({
@@ -34,7 +34,6 @@ export default async function SuperAdminPage() {
           <p className="text-sm font-medium text-slate-500 mt-1">Manage tenant lifecycle, subscriptions, and system security.</p>
         </div>
         
-        {/* 🚨 ADDED GLOBAL WIPE BUTTON NEXT TO SYNC WIDGET */}
         <div className="flex items-center gap-3">
             <GlobalWipeButton />
             <GlobalSyncWidget />

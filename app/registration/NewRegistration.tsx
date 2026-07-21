@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle, Type, X, User, Receipt, WifiOff } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid'; 
 
 import { registerPatient, getNextPatientId } from '@/app/actions/patient'; 
 import { getReferrals } from '@/app/actions/referral'; 
-import { createBill, getNextBillNumber, getCurrentUserSignature } from '@/app/actions/billing'; 
+import { createBill, getNextBillNumber, getCurrentUserSignature, getBillDetails } from '@/app/actions/billing'; 
 
-// Import our new Offline-First tools!
 import { localDB } from '@/lib/local-db/db';
 import { useNetworkStatus } from '@/lib/hooks/useNetworkStatus';
 
@@ -33,6 +33,9 @@ interface NewRegistrationProps {
 }
 
 export default function NewRegistration({ onCustomizeClick, onQuotationClick, fields }: NewRegistrationProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const editBillId = searchParams?.get('editBill');
   
   const isOnline = useNetworkStatus();
 
@@ -73,7 +76,6 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [invoiceData, setInvoiceData] = useState<any>(null);
-  
   const [userSignature, setUserSignature] = useState<any>(null);
 
   const getLocalISOString = () => {
@@ -94,7 +96,82 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
     fetchSignature();
   }, []);
 
+  // ==========================================
+  // EDIT BILL LOGIC
+  // ==========================================
   useEffect(() => {
+    const loadExistingBill = async () => {
+      if (!editBillId) return;
+
+      console.log("Loading existing bill details for editing:", editBillId);
+      
+      try {
+        const result = await getBillDetails(editBillId);
+
+        if (result && result.success && result.data) {
+          const { bill, patient } = result.data; 
+
+          // 1. Populate Patient Details (Fixed TS Errors)
+          setCurrentPatientId(patient.patientId || '');
+          setFormValues({
+            2: patient.designation || 'Mr.',
+            3: patient.firstName || '',
+            4: patient.lastName || '',
+            5: { Y: patient.ageY || 0, M: patient.ageM || 0, D: patient.ageD || 0 },
+            6: patient.gender || 'Not specified',
+            7: patient.height || '',
+            8: patient.weight || '',
+            9: patient.phone || '',
+            10: patient.email || '',
+            11: patient.address || ''
+          });
+
+          // 2. Populate Bill Details
+          setCurrentBillNumber(bill.billNumber);
+          if (bill.date) {
+             setBillingDate(new Date(bill.date).toISOString().slice(0, 19));
+          }
+          setIsManualTime(true); 
+
+          // 3. Populate Selected Tests
+          if (bill.items && bill.items.length > 0) {
+            setBillItems(bill.items.map((item: any) => ({
+              id: item.testId || item.id,
+              code: item.code || item.test?.code || '',
+              name: item.name || item.test?.name || 'Unknown Test',
+              price: item.price || 0,
+              type: item.type || 'Test',
+              isUrgent: item.isUrgent || false
+            })));
+          }
+
+          // 4. Populate Financial/Payment Details (Fixed TS Error)
+          setDiscountPercent(bill.discountPercent?.toString() || '');
+          setDiscountAmount(bill.discountAmount?.toString() || '');
+          setDiscountReason(bill.discountReason || '');
+          
+          const paymentMode = (bill as any).payments?.[0]?.mode || 'Cash';
+          setSelectedModes([paymentMode]);
+          
+          setAdvancePaid(bill.paidAmount?.toString() || '0');
+        } else {
+          alert("Could not find the details for this bill.");
+        }
+      } catch (error) {
+        console.error("Failed to load existing bill:", error);
+        alert("An error occurred while loading the invoice details.");
+      }
+    };
+
+    loadExistingBill();
+  }, [editBillId]);
+
+  // ==========================================
+  // NEW REGISTRATION LOGIC: Initialize IDs
+  // ==========================================
+  useEffect(() => {
+    if (editBillId) return; 
+
     const initializeSerialNumbers = async () => {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       
@@ -125,7 +202,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
       } catch (e) { console.error("Failed to load referrals", e); }
     };
     fetchRefs();
-  }, [isOnline]); 
+  }, [isOnline, editBillId]); 
 
   useEffect(() => {
     if (isManualTime) return;
@@ -263,7 +340,10 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
 
       billPayload.patientId = regResult.patient.patientId; 
       const billResult = await createBill(billPayload);
-      if (!billResult.success) throw new Error("Bill Creation Failed");
+
+      if (!billResult.success) {
+        throw new Error(`Bill Error: ${billResult.message}`);
+      }
 
       setShowSuccessPopup(true);
       setTimeout(() => {
@@ -338,7 +418,12 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
 
       <InvoiceModal 
          isOpen={isInvoiceOpen}
-         onClose={() => { setIsInvoiceOpen(false); window.location.reload(); }} 
+         onClose={() => { 
+             setIsInvoiceOpen(false); 
+             // Force navigation to the clean base route to wipe out the ?editBill parameter
+             window.location.href = '/registration'; 
+         }} 
+         onEdit={() => setIsInvoiceOpen(false)} 
          data={invoiceData}
       />
     </div>

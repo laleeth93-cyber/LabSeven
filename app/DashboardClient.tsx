@@ -4,10 +4,9 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock } from 'lucide-react';
 import DashboardOverview from '@/app/components/DashboardOverview';
-import { usePermissions } from '@/app/context/PermissionContext';
 import MusicBarLoader from '@/app/components/MusicBarLoader'; 
+import { usePermissions } from '@/app/context/PermissionContext';
 
-// 🚨 ACCEPTS initialData
 function DashboardContent({ initialData }: { initialData: any }) {
   const router = useRouter();
   const { orgId, permissions, userRole, permsLoaded } = usePermissions();

@@ -184,7 +184,7 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
         setShowSuccessPopup(true);
         setTimeout(() => { 
             setShowSuccessPopup(false); 
-            if (onSaveSuccess) onSaveSuccess(); 
+            if (onSaveSuccess) onSaveSuccess(); // This triggers the auto-advance in the parent!
         }, 1500);
     } else {
         alert("Error: " + res.message);
@@ -219,7 +219,7 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
         setShowSuccessPopup(true);
         setTimeout(() => { 
             setShowSuccessPopup(false); 
-            if (onSaveSuccess) onSaveSuccess(); 
+            if (onSaveSuccess) onSaveSuccess(); // This triggers the auto-advance in the parent!
         }, 1500);
     } else {
         alert("Error: " + res.message);
