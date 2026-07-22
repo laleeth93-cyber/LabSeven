@@ -184,7 +184,7 @@ export default function BarcodeModal({ isOpen, onClose, data }: BarcodeModalProp
   const allSelected = data.items && data.items.length > 0 && selectedIds.length === data.items.length;
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200 p-2 md:p-4">
+    <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200 p-2 md:p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 flex flex-col h-[90vh] md:max-h-[85vh]">
         
         {/* HEADER */}

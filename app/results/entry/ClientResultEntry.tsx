@@ -31,6 +31,15 @@ export default function ClientResultEntry({
       globalBillCache[initialFirstBillData.id] = initialFirstBillData;
   }
 
+  // FORCE FRESH FETCH ON DIRECT NAVIGATION:
+  // If the user navigates directly to a bill (e.g., from the invoice modal after adding a test),
+  // we must bypass the stale client cache to load the newly added tests.
+  const hasClearedCache = React.useRef(false);
+  if (initialBillId && !hasClearedCache.current) {
+      delete globalBillCache[initialBillId];
+      hasClearedCache.current = true;
+  }
+
   const { orgId, permissions, permsLoaded } = usePermissions();
 
   const canSee = (screenName: string) => {
@@ -407,7 +416,8 @@ export default function ClientResultEntry({
                                         <tr>
                                             <th className="border-b border-r border-slate-200 px-3 py-2 text-sm md:text-xs font-bold text-slate-500 bg-slate-50">Bill No</th>
                                             <th className="border-b border-r border-slate-200 px-3 py-2 text-sm md:text-xs font-bold text-slate-500 bg-slate-50">Patient Name</th>
-                                            <th className="border-b border-slate-200 px-3 py-2 text-sm md:text-xs font-bold text-slate-500 bg-slate-50">Age/Sex</th>
+                                            <th className="border-b border-r border-slate-200 px-3 py-2 text-sm md:text-xs font-bold text-slate-500 bg-slate-50">Age/Sex</th>
+                                            <th className="border-b border-slate-200 px-3 py-2 text-sm md:text-xs font-bold text-slate-500 bg-slate-50">Tests</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -415,7 +425,19 @@ export default function ClientResultEntry({
                                             <tr key={b.id} onClick={() => handleSelectBill(b.id)} className={`cursor-pointer transition-colors ${selectedBillId === b.id ? 'bg-blue-100/50' : 'hover:bg-slate-50'}`}>
                                                 <td className="border-b border-r border-slate-100 px-3 py-2 text-base md:text-sm font-mono text-slate-600">{b.billNumber}</td>
                                                 <td className="border-b border-r border-slate-100 px-3 py-2 text-base md:text-sm font-semibold text-slate-800 truncate max-w-[150px]">{b.patient.firstName} {b.patient.lastName}</td>
-                                                <td className="border-b border-slate-100 px-3 py-2 text-base md:text-sm text-slate-600">{b.patient.ageY}Y / {b.patient.gender.charAt(0)}</td>
+                                                <td className="border-b border-r border-slate-100 px-3 py-2 text-base md:text-sm text-slate-600">{b.patient.ageY}Y / {b.patient.gender.charAt(0)}</td>
+                                                <td className="border-b border-slate-100 px-3 py-2 text-base md:text-sm text-slate-600 max-w-[200px]" title={b.items?.map((i: any) => i.test?.name).join(', ')}>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {b.items?.length > 0 ? b.items.map((i: any) => (
+                                                            <span key={i.id} className={`inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-0.5 rounded border text-[11px] md:text-[10px] font-medium ${i.status === 'Entered' ? 'bg-blue-100 text-blue-700 border-blue-200' : i.status === 'Approved' ? 'bg-green-100 text-green-700 border-green-200' : i.status === 'Printed' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
+                                                                <span className="font-bold opacity-75">
+                                                                    {i.status === 'Entered' ? 'E' : i.status === 'Approved' ? 'A' : i.status === 'Printed' ? 'Pr' : 'P'}
+                                                                </span>
+                                                                {i.test?.name}
+                                                            </span>
+                                                        )) : <span className="text-slate-500">-</span>}
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

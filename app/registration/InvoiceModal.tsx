@@ -21,7 +21,7 @@ export interface InvoiceData {
 
 interface InvoiceModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (isNavigating?: boolean) => void;
   onEdit?: () => void; 
   data: InvoiceData | null;
 }
@@ -178,7 +178,7 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceM
   };
 
   const handleDownloadInvoice = () => handlePrintInvoice();
-  const handleEnterResults = () => { if (data?.billId) { onClose(); router.push(`/results/entry?billNumber=${data.billId}`); } };
+  const handleEnterResults = () => { if (data?.billId) { onClose(true); router.push(`/results/entry?billNumber=${data.billId}`); } };
 
   const plainBtnClass = "flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded border border-slate-300 bg-white text-slate-700 text-xs md:text-sm font-bold shadow-sm transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-1 md:flex-none";
   const mainGradient = { background: 'linear-gradient(135deg, #9575cd, #7e57c2)' };
@@ -198,7 +198,7 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceM
                 <p className="text-[9px] md:text-[10px] text-slate-500">Ready to Print or Download</p>
               </div>
            </div>
-           <button onClick={onClose} className="p-1.5 hover:bg-white/40 rounded-full text-slate-600 hover:text-red-500 transition-colors"><X size={20} /></button>
+           <button onClick={() => onClose()} className="p-1.5 hover:bg-white/40 rounded-full text-slate-600 hover:text-red-500 transition-colors"><X size={20} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto bg-slate-50/50 flex justify-center items-start print:p-0 print:bg-white print:overflow-visible">
@@ -351,7 +351,7 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceM
                       if (onEdit) {
                           onEdit(); 
                       } else {
-                          onClose();
+                          onClose(true);
                           // Update this URL string to match your exact route for the billing/registration page
                           router.push(`/registration?editBill=${data.billId}`); 
                       }

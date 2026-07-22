@@ -19,10 +19,11 @@ export default function WorklistPanel({ bills, onSelect, activeTab }: WorklistPa
                 <table className="w-full text-left whitespace-nowrap min-w-[750px]">
                     <thead className="bg-slate-100/80 sticky top-0 z-10 border-b border-slate-200 shadow-sm">
                         <tr>
-                            <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Patient Name</th>
                             <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Bill Number</th>
                             <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Bill Date</th>
+                            <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Patient Name</th>
                             <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Age / Gender</th>
+                            <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Test Name</th>
                             <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Phone</th>
                             <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider text-right">Action</th>
                         </tr>
@@ -30,12 +31,6 @@ export default function WorklistPanel({ bills, onSelect, activeTab }: WorklistPa
                     <tbody className="divide-y divide-slate-100 bg-white">
                         {bills.map((bill: any) => (
                             <tr key={bill.id} className="hover:bg-blue-50/60 transition-colors group">
-                                
-                                <td className="px-5 py-3.5">
-                                    <div className="font-bold text-slate-800 text-base md:text-sm">
-                                        {bill.patient.firstName} {bill.patient.lastName}
-                                    </div>
-                                </td>
                                 
                                 <td className="px-5 py-3.5">
                                     <span className="font-mono font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded text-sm md:text-xs">
@@ -56,9 +51,28 @@ export default function WorklistPanel({ bills, onSelect, activeTab }: WorklistPa
                                 </td>
 
                                 <td className="px-5 py-3.5">
+                                    <div className="font-bold text-slate-800 text-base md:text-sm">
+                                        {bill.patient.firstName} {bill.patient.lastName}
+                                    </div>
+                                </td>
+
+                                <td className="px-5 py-3.5">
                                     <span className="text-slate-600 font-medium text-sm md:text-xs">
                                         {bill.patient.ageY} Y / {bill.patient.gender.charAt(0)}
                                     </span>
+                                </td>
+
+                                <td className="px-5 py-3.5">
+                                    <div className="flex flex-wrap gap-1.5 max-w-[200px] md:max-w-[300px]" title={bill.items?.map((i: any) => i.test?.name).join(', ')}>
+                                        {bill.items?.length > 0 ? bill.items.map((i: any) => (
+                                            <span key={i.id} className={`inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-0.5 rounded border text-[11px] md:text-[10px] font-medium ${i.status === 'Entered' ? 'bg-blue-100 text-blue-700 border-blue-200' : i.status === 'Approved' ? 'bg-green-100 text-green-700 border-green-200' : i.status === 'Printed' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
+                                                <span className="font-bold opacity-75">
+                                                    {i.status === 'Entered' ? 'E' : i.status === 'Approved' ? 'A' : i.status === 'Printed' ? 'Pr' : 'P'}
+                                                </span>
+                                                {i.test?.name}
+                                            </span>
+                                        )) : <span className="text-slate-500 text-sm md:text-xs">-</span>}
+                                    </div>
                                 </td>
 
                                 <td className="px-5 py-3.5">
@@ -81,7 +95,7 @@ export default function WorklistPanel({ bills, onSelect, activeTab }: WorklistPa
 
                         {bills.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="px-5 py-16 text-center">
+                                <td colSpan={7} className="px-5 py-16 text-center">
                                     <div className="flex flex-col items-center justify-center text-slate-400">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-50 mb-3"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
                                         <p className="text-base md:text-sm font-medium">No pending results found.</p>

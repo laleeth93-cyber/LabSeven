@@ -418,10 +418,12 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
 
       <InvoiceModal 
          isOpen={isInvoiceOpen}
-         onClose={() => { 
+         onClose={(isNavigating) => { 
              setIsInvoiceOpen(false); 
-             // Force navigation to the clean base route to wipe out the ?editBill parameter
-             window.location.href = '/registration'; 
+             if (!isNavigating) {
+                 // Force navigation to the clean base route to wipe out the ?editBill parameter
+                 window.location.href = '/registration'; 
+             }
          }} 
          onEdit={() => setIsInvoiceOpen(false)} 
          data={invoiceData}
