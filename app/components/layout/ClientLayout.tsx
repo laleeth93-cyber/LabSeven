@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useNetworkStatus } from '@/lib/hooks/useNetworkStatus'; 
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState('dashboard');
   const pathname = usePathname();
 
