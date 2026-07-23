@@ -264,6 +264,7 @@ model Test {
   vacutainer    Vacutainer? @relation(fields: [vacutainerId], references: [id])
 
   gender        String?  @default("Both")
+  showTestNameOnReport Boolean @default(false)
   type          String   @default("Test") 
   description   String?
   sampleVolume  String?  
@@ -660,6 +661,7 @@ model ReportSettings {
   headerFontSize      String   @default("text-xs")
   headerFontWeight    String   @default("font-bold")
   headerRowHeight     String   @default("py-1.5")
+  headerBorderRadius  String   @default("none")
   testBlockSpacing    String   @default("mb-4")
 
   showDepartmentName  Boolean  @default(true)

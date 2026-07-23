@@ -113,8 +113,21 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
     const hFont = bodySettings.headerFontSize || 'text-xs';
     const hWeight = bodySettings.headerFontWeight || 'font-bold';
     const hPad = bodySettings.headerRowHeight || 'py-1.5';
-    const thClass = `${hPad} ${bodySettings.bodyColPadding || 'px-2'} ${hFont} ${hWeight} break-words align-middle`;
+    const thClass = `${hPad} ${bodySettings.bodyColPadding || 'px-2'} ${hFont} ${hWeight} break-words align-middle leading-tight`;
     const tdClass = `${bodySettings.bodyRowHeight || 'py-1.5'} ${bodySettings.bodyColPadding || 'px-2'} break-words align-top`;
+    
+    // Convert line height from string value
+    const bLineHeight = bodySettings.bodyLineHeight || '1.5';
+    tdStyle = { ...tdStyle, lineHeight: bLineHeight };
+
+    const borderRadiusMap: Record<string, string> = {
+        'none': '0px',
+        'sm': '2px',
+        'md': '6px',
+        'lg': '8px',
+        'xl': '12px'
+    };
+    const headerRadius = borderRadiusMap[bodySettings.headerBorderRadius || 'none'] || '0px';
 
     let totalCols = 2; 
     if (bodySettings.showFlagCol !== false) totalCols++;
@@ -334,13 +347,13 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
                                 <TableColGroup />
                                 <thead>
                                     <tr>
-                                        <th className={`${thClass} text-left pl-4`} style={thStyle}>Test Parameter</th>
-                                        <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={thStyle}>Result</th>
-                                        {bodySettings.showFlagCol !== false && <th className={`${thClass} text-center`} style={thStyle}>Flag</th>}
-                                        {bodySettings.showUnitCol !== false && <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={thStyle}>Units</th>}
-                                        {bodySettings.showRefRangeCol !== false && <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={thStyle}>Bio. Ref. Range</th>}
+                                        <th className={`${thClass} text-left pl-4`} style={{ ...thStyle, borderTopLeftRadius: headerRadius, borderBottomLeftRadius: headerRadius }}>Test Parameter</th>
+                                        <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={{ ...thStyle, borderTopRightRadius: totalCols === 2 ? headerRadius : '0px', borderBottomRightRadius: totalCols === 2 ? headerRadius : '0px' }}>Result</th>
+                                        {bodySettings.showFlagCol !== false && <th className={`${thClass} text-center`} style={{ ...thStyle, borderTopRightRadius: totalCols === 3 ? headerRadius : '0px', borderBottomRightRadius: totalCols === 3 ? headerRadius : '0px' }}>Flag</th>}
+                                        {bodySettings.showUnitCol !== false && <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={{ ...thStyle, borderTopRightRadius: totalCols === (bodySettings.showFlagCol !== false ? 4 : 3) ? headerRadius : '0px', borderBottomRightRadius: totalCols === (bodySettings.showFlagCol !== false ? 4 : 3) ? headerRadius : '0px' }}>Units</th>}
+                                        {bodySettings.showRefRangeCol !== false && <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={{ ...thStyle, borderTopRightRadius: totalCols === (bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column' ? totalCols - 1 : totalCols) ? headerRadius : '0px', borderBottomRightRadius: totalCols === (bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column' ? totalCols - 1 : totalCols) ? headerRadius : '0px' }}>Bio. Ref. Range</th>}
                                         {bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column' && (
-                                            <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={thStyle}>Method</th>
+                                            <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={{ ...thStyle, borderTopRightRadius: headerRadius, borderBottomRightRadius: headerRadius }}>Method</th>
                                         )}
                                     </tr>
                                 </thead>

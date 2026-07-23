@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Printer, Bug, LayoutTemplate } from 'lucide-react';
-import { PDFViewer, pdf } from '@react-pdf/renderer';
+import { pdf, PDFViewer } from '@react-pdf/renderer';
 import CultureReportDocument from './CultureReportDocument';
 import { getLabProfile } from '@/app/actions/lab-profile';
 import { getReportSettings } from '@/app/actions/reports';

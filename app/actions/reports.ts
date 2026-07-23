@@ -47,7 +47,7 @@ export async function updateReportSettings(payload: any) {
       "testColumnWidth", "colWidthParam", "colWidthResult", "colWidthUnit", "colWidthRef", "colWidthMethod",
       "bodyTableStyle", "bodyFontFamily", "bodyFontSize", "bodyRowHeight", "bodyColPadding", "bodyLineHeight",
       "bodyHeaderBgColor", "bodyHeaderTextColor", "bodyResultAlign", "testBlockSpacing",
-      "headerFontSize", "headerFontWeight", "headerRowHeight",
+      "headerFontSize", "headerFontWeight", "headerRowHeight", "headerBorderRadius",
       "showDepartmentName", "showTestName", "departmentNameSize", "testNameAlignment", "testNameUnderline", "testNameSize", "gridLineThickness",
       "subheadingColor", "subheadingSize", "showFlagCol", "colWidthFlag", "flagStyle", "flagColorLow", "flagColorNormal", "flagColorHigh",
       "tableHeaderRepeat", "separatePagesBy", "footerStyle", "sigSize", "sigSpacing", "docNameSize", "docDesigSize", "docNameSpacing", "sigAlignment",

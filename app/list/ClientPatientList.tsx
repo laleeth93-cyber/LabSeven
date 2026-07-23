@@ -7,15 +7,17 @@ import useSWR from 'swr';
 
 import ListTable from './components/ListTable';
 import ListHeader from './components/ListHeader'; 
+import dynamic from 'next/dynamic';
 import BarcodeModal from '@/app/components/BarcodeModal';
-import PatientReportModal from './components/PatientReportModal';
-import CultureReportModal from './components/CultureReportModal';
-import SmartReportModal from './components/SmartReportModal'; 
 import AuditLogModal from './components/AuditLogModal'; 
 import RefundModal from './components/RefundModal'; 
 import ClearDueModal from './components/ClearDueModal'; 
-import InvoiceModal from '@/app/registration/InvoiceModal';
 import EditPatientModal from './components/EditPatientModal';
+
+const PatientReportModal = dynamic(() => import('./components/PatientReportModal'), { ssr: false });
+const CultureReportModal = dynamic(() => import('./components/CultureReportModal'), { ssr: false });
+const SmartReportModal = dynamic(() => import('./components/SmartReportModal'), { ssr: false });
+const InvoiceModal = dynamic(() => import('@/app/registration/InvoiceModal'), { ssr: false });
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 
 import { usePermissions } from '@/app/context/PermissionContext';

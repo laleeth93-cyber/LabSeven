@@ -17,9 +17,9 @@ import InvoiceModal from './InvoiceModal';
 import RegistrationLeftPane from './RegistrationLeftPane';
 import BillingRightPane from './BillingRightPane';
 
-const RichTextEditor = dynamic(() => import('@/app/components/RichTextEditor'), {
+const RichTextEditor = dynamic(() => import('@/app/components/RichTextEditor').then((m) => m.default), {
   ssr: false,
-  loading: () => <div className="h-64 bg-slate-50 flex items-center justify-center text-slate-400"><Loader2 className="animate-spin mr-2" /> Loading Editor...</div>
+  loading: () => <div className="h-64 bg-slate-50 flex items-center justify-center text-slate-400">Loading Editor...</div>
 });
 
 export interface FieldData {

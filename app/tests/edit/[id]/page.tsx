@@ -32,7 +32,8 @@ export default function EditTestPage() {
     methodId: '', specimenId: '', vacutainerId: '', sampleVolume: '', barcodeCopies: '1', // 🚨 ADDED CLINICAL FIELDS
     minDays: '0', minHours: '0', minMinutes: '0', maxDays: '0', maxHours: '0', maxMinutes: '0',
     instructions: '', lmpRequired: false, idRequired: false, consentRequired: false, billingOnly: false,
-    isCulture: false, isOutsourced: false, outsourceLabId: '', printNextPage: false, isActive: true
+    isCulture: false, isOutsourced: false, outsourceLabId: '', printNextPage: false, isActive: true,
+    showTestNameOnReport: false
   });
 
   useEffect(() => {
@@ -56,7 +57,8 @@ export default function EditTestPage() {
                     methodId: t.methodId?.toString() || '', specimenId: t.specimenId?.toString() || '', vacutainerId: t.vacutainerId?.toString() || '', sampleVolume: t.sampleVolume || '', barcodeCopies: t.barcodeCopies ? t.barcodeCopies.toString() : '1',
                     minDays: (t.minDays ?? 0).toString(), minHours: (t.minHours ?? 0).toString(), minMinutes: (t.minMinutes ?? 0).toString(), maxDays: (t.maxDays ?? 0).toString(), maxHours: (t.maxHours ?? 0).toString(), maxMinutes: (t.maxMinutes ?? 0).toString(),
                     instructions: t.instructions || '', lmpRequired: t.lmpRequired || false, idRequired: t.idRequired || false, consentRequired: t.consentRequired || false, billingOnly: t.billingOnly || false,
-                    isCulture: (t as any).isCulture || false, isOutsourced: (t as any).isOutsourced || false, outsourceLabId: (t as any).outsourceLabId?.toString() || '', printNextPage: t.printNextPage || false, isActive: t.isActive
+                    isCulture: (t as any).isCulture || false, isOutsourced: (t as any).isOutsourced || false, outsourceLabId: (t as any).outsourceLabId?.toString() || '', printNextPage: t.printNextPage || false, isActive: t.isActive,
+                    showTestNameOnReport: (t as any).showTestNameOnReport || false
                 });
             } else {
                 toast.error("Test not found");
@@ -252,6 +254,8 @@ export default function EditTestPage() {
                           <Checkbox label="LMP Required" checked={formData.lmpRequired} onChange={(v) => handleChange('lmpRequired', v)} />
                           <Checkbox label="ID Proof Required" checked={formData.idRequired} onChange={(v) => handleChange('idRequired', v)} />
                           <Checkbox label="Consent Form Required" checked={formData.consentRequired} onChange={(v) => handleChange('consentRequired', v)} />
+                          <div className="border-t border-slate-100 my-1 pt-1"></div>
+                          <Checkbox label="Show Test Name on Report (Override)" checked={formData.showTestNameOnReport} onChange={(v) => handleChange('showTestNameOnReport', v)} />
                           <div className="border-t border-slate-100 my-1 pt-1"></div>
                           <Checkbox label="Is Billing Only (No Results)" checked={formData.billingOnly} onChange={(v) => handleChange('billingOnly', v)} />
                           <div className="flex flex-col gap-1">

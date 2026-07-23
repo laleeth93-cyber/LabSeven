@@ -244,6 +244,16 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">Header Border Radius</label>
+                                <select value={bodySettings.headerBorderRadius || 'none'} onChange={(e) => handleBodySettingChange('headerBorderRadius', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
+                                    <option value="none">None (0px)</option>
+                                    <option value="sm">Small (2px)</option>
+                                    <option value="md">Medium (6px)</option>
+                                    <option value="lg">Large (8px)</option>
+                                    <option value="xl">Extra Large (12px)</option>
+                                </select>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Header BG Color</label>
                                 <div className="flex items-center gap-2 w-full p-1.5 border border-slate-300 rounded-lg focus-within:border-[#9575cd] bg-white">
                                     <input type="color" value={bodySettings.bodyHeaderBgColor || '#ffffff'} onChange={(e) => handleBodySettingChange('bodyHeaderBgColor', e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 p-0 shrink-0 bg-transparent" />

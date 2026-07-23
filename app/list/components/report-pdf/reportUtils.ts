@@ -155,8 +155,8 @@ export const parseInterpretation = (html: string) => {
 };
 
 export const groupDisplayData = (displayData: any[], realData?: any) => {
-    const groupedData: { testName: string, items: any[], interpretationBlocks: any[], noteBlocks: any[] }[] = [];
-    let currentGroup = { testName: '', items: [] as any[], interpretationBlocks: [] as any[], noteBlocks: [] as any[] };
+    const groupedData: { testName: string, items: any[], interpretationBlocks: any[], noteBlocks: any[], showTestNameOverride: boolean }[] = [];
+    let currentGroup = { testName: '', items: [] as any[], interpretationBlocks: [] as any[], noteBlocks: [] as any[], showTestNameOverride: false };
 
     displayData?.forEach((row: any) => {
         
@@ -175,6 +175,7 @@ export const groupDisplayData = (displayData: any[], realData?: any) => {
             
             let foundInterpretation = '';
             let foundNotes = '';
+            let showTestNameOverride = false;
             
             if (realData && realData.items) {
                 const matchingItem = realData.items.find((item: any) => 
@@ -188,6 +189,9 @@ export const groupDisplayData = (displayData: any[], realData?: any) => {
                     if (matchingItem.notes) {
                         foundNotes = matchingItem.notes;
                     }
+                    if (matchingItem.test?.showTestNameOnReport) {
+                        showTestNameOverride = true;
+                    }
                 }
             }
 
@@ -197,7 +201,8 @@ export const groupDisplayData = (displayData: any[], realData?: any) => {
                 testName: row.param, 
                 items: [],
                 interpretationBlocks: parseInterpretation(foundInterpretation),
-                noteBlocks: parseInterpretation(foundNotes)
+                noteBlocks: parseInterpretation(foundNotes),
+                showTestNameOverride
             };
         } else {
             currentGroup.items.push(row);

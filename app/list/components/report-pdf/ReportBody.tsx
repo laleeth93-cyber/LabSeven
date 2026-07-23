@@ -36,8 +36,12 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
         const isNormal = !isLow && !isHigh;
 
         let text = '';
+        let type = '';
         const style = reportSettings?.flagStyle || 'lh';
-        if (style === 'arrows') text = isLow ? '↓' : isHigh ? '↑' : '';
+        if (style === 'arrows') {
+            type = isLow ? 'arrowDown' : isHigh ? 'arrowUp' : '';
+            text = '';
+        }
         else if (style === 'lh') text = isLow ? 'L' : isHigh ? 'H' : '';
         else if (style === 'star') text = (isLow || isHigh) ? '*' : '';
         else if (style === 'text') text = isLow ? 'Low' : isHigh ? 'High' : 'Normal';
@@ -45,7 +49,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
         if (isNormal && style !== 'text') text = ''; 
         const color = isLow ? (reportSettings?.flagColorLow || '#3b82f6') : isHigh ? (reportSettings?.flagColorHigh || '#ef4444') : (reportSettings?.flagColorNormal || '#000000');
-        return { text, color };
+        return { text, color, type };
     }
 
     const bodyTableStyle: string = reportSettings?.bodyTableStyle || 'grid';
@@ -73,13 +77,13 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
     const rawHighlightSetting = reportSettings?.highlightAbnormalValues ?? reportSettings?.highlightAbnormal ?? reportSettings?.highlightAbnormalResult;
     const isHighlightEnabled = rawHighlightSetting === true || String(rawHighlightSetting).toLowerCase() === 'true' || rawHighlightSetting === 1 || String(rawHighlightSetting) === '1';
 
-    // ✨ Calculates the dynamic Vertical (Py) and Horizontal (Px) Text Padding
-    const headerPy = parsePadding(reportSettings?.headerRowHeight, 6);
-    const bodyPy = parsePadding(reportSettings?.bodyRowHeight, 6);
-    const bodyPx = parsePxPadding(reportSettings?.bodyColPadding, 6);
-    
-    // ✨ Extracts Dynamic Line Height
     const bLineHeight = parseFloat(reportSettings?.bodyLineHeight || '1.5');
+    // Using a 1.5x multiplier to make the padding increase very noticeable when Line Spacing is increased
+    const extraVerticalPadding = (bLineHeight - 1.15) * bFontSize * 1.5;
+
+    const headerPy = parsePadding(reportSettings?.headerRowHeight, 6) + extraVerticalPadding;
+    const bodyPy = parsePadding(reportSettings?.bodyRowHeight, 6) + extraVerticalPadding;
+    const bodyPx = parsePxPadding(reportSettings?.bodyColPadding, 6);
 
     let totalCols = 2;
     if (showFlagCol) totalCols++;
@@ -107,6 +111,15 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
     const dynamicHeaderBgColor = reportSettings?.bodyHeaderBgColor || '#f8fafc';
     const dynamicHeaderTextColor = reportSettings?.bodyHeaderTextColor || '#0f172a';
 
+    const borderRadiusMap: Record<string, number> = {
+        'none': 0,
+        'sm': 2,
+        'md': 6,
+        'lg': 8,
+        'xl': 12
+    };
+    const headerRadius = borderRadiusMap[reportSettings?.headerBorderRadius || 'none'] || 0;
+
     const getTableWrapStyle = () => ({ marginTop: 4 });
 
     const getRowStyle = () => {
@@ -124,6 +137,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
             backgroundColor: dynamicHeaderBgColor,
             borderTopWidth: (bodyTableStyle === 'grid' || bodyTableStyle === 'horizontal' || bodyTableStyle === 'outer') ? bbw : 0,
             borderBottomWidth: (bodyTableStyle === 'grid' || bodyTableStyle === 'horizontal' || bodyTableStyle === 'outer') ? bbw : 0,
+            borderRadius: headerRadius,
         };
     };
 
@@ -186,7 +200,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                 </Text>
                             ) : null}
 
-                            {reportSettings?.showTestName !== false && group.testName ? (
+                            {(reportSettings?.showTestName !== false || group.showTestNameOverride) && group.testName ? (
                                 <Text style={[styles.testNameText, { marginBottom: 6 }]}>
                                     {group.testName}
                                 </Text>
@@ -196,34 +210,34 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                 
                                 {showTableHeader && (
                                     <View style={getHeaderRowStyle()} wrap={false} fixed>
-                                        <View style={[{ width: paramColWidth }, getCellBorder(false, true)]}>
-                                            <Text style={[styles.thText, { textAlign: 'left', color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>{"Test\u00A0Parameter"}</Text>
+                                        <View style={[{ width: paramColWidth }, getCellBorder(false, true), { borderTopLeftRadius: headerRadius, borderBottomLeftRadius: headerRadius }]}>
+                                            <Text style={[styles.thText, { textAlign: 'left', color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>{"Test\u00A0Parameter"}</Text>
                                         </View>
-                                        <View style={[{ width: resultColWidth }, getCellBorder(!showFlagCol && !showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true)]}>
-                                            <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>Result</Text>
+                                        <View style={[{ width: resultColWidth }, getCellBorder(!showFlagCol && !showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === 2 ? headerRadius : 0, borderBottomRightRadius: totalCols === 2 ? headerRadius : 0 }]}>
+                                            <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>Result</Text>
                                         </View>
                                         
                                         {showFlagCol ? (
-                                            <View style={[{ width: flagColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true)]}>
-                                                <Text style={[styles.thText, { textAlign: 'center', color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>Flag</Text>
+                                            <View style={[{ width: flagColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === 3 ? headerRadius : 0, borderBottomRightRadius: totalCols === 3 ? headerRadius : 0 }]}>
+                                                <Text style={[styles.thText, { textAlign: 'center', color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>Flag</Text>
                                             </View>
                                         ) : null}
 
                                         {showUnitCol ? (
-                                            <View style={[{ width: unitColWidth }, getCellBorder(!showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true)]}>
-                                                <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>Units</Text>
+                                            <View style={[{ width: unitColWidth }, getCellBorder(!showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === (showFlagCol ? 4 : 3) ? headerRadius : 0, borderBottomRightRadius: totalCols === (showFlagCol ? 4 : 3) ? headerRadius : 0 }]}>
+                                                <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>Units</Text>
                                             </View>
                                         ) : null}
 
                                         {showRefRangeCol ? (
-                                            <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'), true)]}>
-                                                <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>{"Bio.\u00A0Ref.\u00A0Range"}</Text>
+                                            <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === (showMethodCol && methodDisplay === 'column' ? totalCols - 1 : totalCols) ? headerRadius : 0, borderBottomRightRadius: totalCols === (showMethodCol && methodDisplay === 'column' ? totalCols - 1 : totalCols) ? headerRadius : 0 }]}>
+                                                <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>{"Bio.\u00A0Ref.\u00A0Range"}</Text>
                                             </View>
                                         ) : null}
 
                                         {showMethodCol && methodDisplay === 'column' ? (
-                                            <View style={[{ width: methodColWidth }, getCellBorder(true, true)]}>
-                                                <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: bLineHeight }]}>Method</Text>
+                                            <View style={[{ width: methodColWidth }, getCellBorder(true, true), { borderTopRightRadius: headerRadius, borderBottomRightRadius: headerRadius }]}>
+                                                <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>Method</Text>
                                             </View>
                                         ) : null}
                                     </View>
@@ -233,7 +247,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                     if (row.isGroup) {
                                         return (
                                             <View key={idx} style={[getRowStyle(), { paddingVertical: bodyPy, paddingHorizontal: bodyPx, backgroundColor: '#ffffff' }]} wrap={false}>
-                                                <Text style={[styles.subHeadingText, { lineHeight: bLineHeight }]}>{row.param}</Text>
+                                                <Text style={[styles.subHeadingText, { lineHeight: 1.15 }]}>{row.param}</Text>
                                             </View>
                                         );
                                     }
@@ -245,14 +259,14 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                         return (
                                             <View key={idx} style={[getRowStyle(), { backgroundColor: isStriped ? '#f8fafc' : '#ffffff' }]} wrap={false}>
                                                 <View style={[{ width: paramColWidth }, getCellBorder(false)]}>
-                                                    <Text style={[styles.tdText, { textAlign: 'left', fontFamily: getPdfFontName(rawFont, false), lineHeight: bLineHeight }]}>{row.param}</Text>
+                                                    <Text style={[styles.tdText, { textAlign: 'left', fontFamily: getPdfFontName(rawFont, false), lineHeight: 1.15 }]}>{row.param}</Text>
                                                 </View>
                                                 
                                                 <View style={[{ flex: 1, flexDirection: 'column', justifyContent: 'center' }, getCellBorder(true)]}>
                                                     {bigBlocks.map((block: any, bIdx: number) => {
                                                         if (block.type === 'text') {
                                                             return (
-                                                                <Text key={bIdx} style={{ fontFamily: getPdfFontName(rawFont, false), fontSize: bFontSize, color: '#000000', lineHeight: bLineHeight, marginBottom: 2 }}>
+                                                                <Text key={bIdx} style={{ fontFamily: getPdfFontName(rawFont, false), fontSize: bFontSize, color: '#000000', lineHeight: 1.15, marginBottom: 2 }}>
                                                                     {block.content}
                                                                 </Text>
                                                             );
@@ -265,7 +279,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                                                             <View key={rIdx} style={{ flexDirection: 'row', borderBottomWidth: rIdx === block.rows.length - 1 ? 0 : 1, borderColor: '#cbd5e1', backgroundColor: isHeader ? '#e2e8f0' : '#ffffff' }} wrap={false}>
                                                                                 {r.map((cell: string, cIdx: number) => (
                                                                                     <View key={cIdx} style={{ flex: 1, padding: 4, borderRightWidth: cIdx === r.length - 1 ? 0 : 1, borderColor: '#cbd5e1', justifyContent: 'center' }}>
-                                                                                        <Text style={{ fontFamily: getPdfFontName(rawFont, isHeader), fontSize: bFontSize - 1, color: isHeader ? '#334155' : '#0f172a', textAlign: 'center', lineHeight: bLineHeight }}>
+                                                                                        <Text style={{ fontFamily: getPdfFontName(rawFont, isHeader), fontSize: bFontSize - 1, color: isHeader ? '#334155' : '#0f172a', textAlign: 'center', lineHeight: 1.15 }}>
                                                                                             {cell}
                                                                                        </Text>
                                                                                     </View>
@@ -284,15 +298,15 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                     }
 
                                     const flagProps = getFlagProps(row.flag);
-                                    const isAbnormal = isHighlightEnabled && (flagProps.text !== '' && flagProps.text !== 'Normal');
+                                    const isAbnormal = isHighlightEnabled && ((flagProps.text !== '' && flagProps.text !== 'Normal') || flagProps.type !== '');
 
                                     return (
                                         <View key={idx} style={[getRowStyle(), { backgroundColor: isStriped ? '#f8fafc' : '#ffffff' }]} wrap={false}>
                                             <View style={[{ width: paramColWidth }, getCellBorder(false)]}>
-                                                <Text style={[styles.tdText, { textAlign: 'left', fontFamily: getPdfFontName(rawFont, false), lineHeight: bLineHeight }]}>{row.param}</Text>
+                                                <Text style={[styles.tdText, { textAlign: 'left', fontFamily: getPdfFontName(rawFont, false), lineHeight: 1.15 }]}>{row.param}</Text>
                                                 
                                                 {showMethodCol && methodDisplay === 'beneath' && row.method ? (
-                                                    <Text style={{ fontSize: bFontSize - 2, fontFamily: getPdfFontName(rawFont, false), color: '#475569', paddingTop: 2, lineHeight: bLineHeight }}>Method: {row.method}</Text>
+                                                    <Text style={{ fontSize: bFontSize - 2, fontFamily: getPdfFontName(rawFont, false), color: '#475569', paddingTop: 2, lineHeight: 1.15 }}>Method: {row.method}</Text>
                                                 ) : null}
                                             </View>
                                             
@@ -301,7 +315,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                                     textAlign: bodyAlign as any, 
                                                     fontFamily: getPdfFontName(rawFont, isAbnormal),
                                                     fontWeight: isAbnormal ? 'bold' : 'normal',
-                                                    lineHeight: bLineHeight
+                                                    lineHeight: 1.15
                                                 }]}>
                                                     {row.result ?? row.value ?? row.resultValue ?? ''}
                                                 </Text>
@@ -309,20 +323,33 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                                             {showFlagCol ? (
                                                 <View style={[{ width: flagColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'))]}>
-                                                    <Text style={[styles.tdText, { 
-                                                        textAlign: 'center',
-                                                        fontFamily: getPdfFontName(rawFont, true), 
-                                                        color: flagProps.color,
-                                                        lineHeight: bLineHeight
-                                                    }]}>
-                                                        {flagProps.text}
-                                                    </Text>
+                                                    {flagProps.type === 'arrowUp' || flagProps.type === 'arrowDown' ? (
+                                                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                                                            <ReactPDF.Svg style={{ width: 8, height: 10 }} viewBox="0 0 10 10">
+                                                                <ReactPDF.Path 
+                                                                    fill={flagProps.color} 
+                                                                    d={flagProps.type === 'arrowUp' 
+                                                                        ? "M 5,0 L 0,5 L 3,5 L 3,10 L 7,10 L 7,5 L 10,5 Z" 
+                                                                        : "M 5,10 L 0,5 L 3,5 L 3,0 L 7,0 L 7,5 L 10,5 Z"}
+                                                                />
+                                                            </ReactPDF.Svg>
+                                                        </View>
+                                                    ) : (
+                                                        <Text style={[styles.tdText, { 
+                                                            textAlign: 'center',
+                                                            fontFamily: getPdfFontName(rawFont, true), 
+                                                            color: flagProps.color,
+                                                            lineHeight: 1.15
+                                                        }]}>
+                                                            {flagProps.text}
+                                                        </Text>
+                                                    )}
                                                 </View>
                                             ) : null}
 
                                             {showUnitCol ? (
                                                 <View style={[{ width: unitColWidth }, getCellBorder(!showRefRangeCol && !(showMethodCol && methodDisplay === 'column'))]}>
-                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any, lineHeight: bLineHeight }]}>
+                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any, lineHeight: 1.15 }]}>
                                                         {row.unit ? String(row.unit).replace(/([/.\-])/g, '$1\u200B') : ''}
                                                     </Text>
                                                 </View>
@@ -330,7 +357,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                                             {showRefRangeCol ? (
                                                 <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'))]}>
-                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any, lineHeight: bLineHeight }]}>
+                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any, lineHeight: 1.15 }]}>
                                                         {cleanBasicHTML(row.range || row.normalRange || row.displayRange || row.referenceRange || row.refRange || row.ref || '')}
                                                     </Text>
                                                 </View>
@@ -338,7 +365,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
                                             {showMethodCol && methodDisplay === 'column' ? (
                                                 <View style={[{ width: methodColWidth }, getCellBorder(true)]}>
-                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any, fontSize: bFontSize - 1, lineHeight: bLineHeight }]}>{row.method}</Text>
+                                                    <Text style={[styles.tdText, { textAlign: bodyAlign as any, fontSize: bFontSize - 1, lineHeight: 1.15 }]}>{row.method}</Text>
                                                 </View>
                                             ) : null}
                                         </View>

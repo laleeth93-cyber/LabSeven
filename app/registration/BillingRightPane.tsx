@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Hash, ReceiptText, Plus, Search, Loader2, Stethoscope, Trash2, ShieldAlert, CreditCard } from 'lucide-react';
 import { searchTests } from '@/app/actions/billing';
-import { BillItem } from './NewRegistration';
+import type { BillItem } from './NewRegistration';
 
 interface Props {
   currentBillNumber: string;

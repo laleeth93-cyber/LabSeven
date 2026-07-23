@@ -111,7 +111,7 @@ export default function ReportsSettingsPage() {
         bodyTableStyle: 'horizontal', bodyFontFamily: 'font-sans', bodyFontSize: 'text-sm', bodyRowHeight: 'py-2', bodyColPadding: 'px-2',
         bodyLineHeight: '1.5', // 🚨 ADDED
         bodyHeaderBgColor: '#f8fafc', bodyHeaderTextColor: '#1e293b', bodyResultAlign: 'text-left',
-        headerFontSize: 'text-xs', headerFontWeight: 'font-bold', headerRowHeight: 'py-1.5', // 🚨 ADDED
+        headerFontSize: 'text-xs', headerFontWeight: 'font-bold', headerRowHeight: 'py-1.5', headerBorderRadius: 'none', // 🚨 ADDED
         showDepartmentName: true, showTestName: true, departmentNameSize: 'text-sm', testNameAlignment: 'text-center', testNameUnderline: true, testNameSize: 'text-base', gridLineThickness: '1',
         subheadingColor: '#5e35b1', subheadingSize: 'text-sm',
         flagStyle: 'lh', flagColorLow: '#3b82f6', flagColorNormal: '#000000', flagColorHigh: '#ef4444',
@@ -169,7 +169,7 @@ export default function ReportsSettingsPage() {
                     bodyTableStyle: dbData.bodyTableStyle || 'horizontal', bodyFontFamily: dbData.bodyFontFamily || 'font-sans', bodyFontSize: dbData.bodyFontSize || 'text-sm', bodyRowHeight: dbData.bodyRowHeight || 'py-2', bodyColPadding: dbData.bodyColPadding || 'px-2',
                     bodyLineHeight: dbData.bodyLineHeight || '1.5',
                     bodyHeaderBgColor: parseToHexColor(dbData.bodyHeaderBgColor, '#f8fafc'), bodyHeaderTextColor: parseToHexColor(dbData.bodyHeaderTextColor, '#1e293b'), bodyResultAlign: dbData.bodyResultAlign || 'text-left',
-                    headerFontSize: dbData.headerFontSize || 'text-xs', headerFontWeight: dbData.headerFontWeight || 'font-bold', headerRowHeight: dbData.headerRowHeight || 'py-1.5',
+                    headerFontSize: dbData.headerFontSize || 'text-xs', headerFontWeight: dbData.headerFontWeight || 'font-bold', headerRowHeight: dbData.headerRowHeight || 'py-1.5', headerBorderRadius: dbData.headerBorderRadius || 'none',
                     showDepartmentName: dbData.showDepartmentName !== undefined ? dbData.showDepartmentName : true, showTestName: dbData.showTestName !== undefined ? dbData.showTestName : true, departmentNameSize: dbData.departmentNameSize || 'text-sm', testNameAlignment: dbData.testNameAlignment || 'text-center', testNameUnderline: dbData.testNameUnderline !== undefined ? dbData.testNameUnderline : true, testNameSize: dbData.testNameSize || 'text-base', gridLineThickness: dbData.gridLineThickness || '1',
                     subheadingColor: parseToHexColor(dbData.subheadingColor, '#5e35b1'), subheadingSize: dbData.subheadingSize || 'text-sm',
                     flagStyle: dbData.flagStyle || 'lh',

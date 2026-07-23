@@ -2,8 +2,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, FileText } from 'lucide-react'; // Added FileText icon
-import RichTextEditor from './RichTextEditor';
+import { X, Save, FileText } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const RichTextEditor = dynamic(() => import('./RichTextEditor').then(m => m.default), {
+  ssr: false,
+  loading: () => <div className="h-64 bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-200 rounded-md shadow-sm">Loading Editor...</div>
+});
 
 interface RichTextEditorModalProps {
   isOpen: boolean;

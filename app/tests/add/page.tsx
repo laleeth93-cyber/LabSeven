@@ -28,7 +28,8 @@ export default function AddTestPage() {
     methodId: '', specimenId: '', vacutainerId: '', sampleVolume: '', barcodeCopies: '1', // 🚨 ADDED CLINICAL FIELDS
     minDays: '0', minHours: '0', minMinutes: '0', maxDays: '0', maxHours: '0', maxMinutes: '0',
     instructions: '', lmpRequired: false, idRequired: false, consentRequired: false,
-    billingOnly: false, isCulture: false, isOutsourced: false, outsourceLabId: '', printNextPage: false
+    billingOnly: false, isCulture: false, isOutsourced: false, outsourceLabId: '', printNextPage: false,
+    showTestNameOnReport: false
   });
 
   useEffect(() => {
@@ -222,6 +223,8 @@ export default function AddTestPage() {
                           <Checkbox label="LMP Required" checked={formData.lmpRequired} onChange={(v) => handleChange('lmpRequired', v)} />
                           <Checkbox label="ID Proof Required" checked={formData.idRequired} onChange={(v) => handleChange('idRequired', v)} />
                           <Checkbox label="Consent Form Required" checked={formData.consentRequired} onChange={(v) => handleChange('consentRequired', v)} />
+                          <div className="border-t border-slate-100 my-1 pt-1"></div>
+                          <Checkbox label="Show Test Name on Report (Override)" checked={formData.showTestNameOnReport} onChange={(v) => handleChange('showTestNameOnReport', v)} />
                           <div className="border-t border-slate-100 my-1 pt-1"></div>
                           <Checkbox label="Is Billing Only (No Results)" checked={formData.billingOnly} onChange={(v) => handleChange('billingOnly', v)} />
                           <div className="flex flex-col gap-1">

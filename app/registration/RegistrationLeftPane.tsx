@@ -4,7 +4,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Users, SlidersHorizontal, Search, Loader2, ChevronDown, Calendar, Paperclip, X } from 'lucide-react';
 import { searchPatients } from '@/app/actions/patient';
-import { FieldData } from './NewRegistration';
+import type { FieldData } from './NewRegistration';
 
 interface Props {
   fields: FieldData[];

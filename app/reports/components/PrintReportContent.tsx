@@ -189,7 +189,7 @@ export default function PrintReportContent({
         );
     };
 
-    const groupedDummyData: { testName: string, items: any[] }[] = [];
+    const groupedDummyData: { testName: string, items: any[], showTestNameOverride?: boolean }[] = [];
     let currentDummyGroup = { testName: '', items: [] as any[] };
 
     shortenedDummyData.forEach((row: any) => {
@@ -417,7 +417,7 @@ export default function PrintReportContent({
                         // ✨ DYNAMIC SPACING APPLIED HERE
                         <div key={gIdx} className={bodySettings?.testBlockSpacing || "mb-4"}>
                             
-                            {bodySettings?.showTestName !== false && group.testName && (
+                            {(bodySettings?.showTestName !== false || group.showTestNameOverride) && group.testName && (
                                 <h2 className={`font-bold text-slate-800 mb-2 ${bodySettings?.testNameAlignment} ${bodySettings?.testNameSize} ${bodySettings?.testNameUnderline ? 'underline underline-offset-4' : ''}`}>
                                     {group.testName}
                                 </h2>

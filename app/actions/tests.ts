@@ -81,6 +81,7 @@ export async function getTestsForFormats() {
         template: true,
         printNextPage: true,
         reportTitle: true,
+        showTestNameOnReport: true,
         _count: { select: { parameters: true } } // Fast way to count parameters without downloading them!
       },
       orderBy: { name: 'asc' }
@@ -168,6 +169,7 @@ export async function createTest(data: any) {
         billingOnly: data.billingOnly || false,
         isCulture: data.isCulture || false,
         cultureColumns: data.cultureColumns || null,
+        showTestNameOnReport: data.showTestNameOnReport || false,
         
         isOutsourced: data.isOutsourced || false,
         outsourceLabId: data.outsourceLabId ? parseInt(data.outsourceLabId) : null,
@@ -184,7 +186,7 @@ export async function createTest(data: any) {
       }
     });
 
-    revalidatePath('/tests');
+    revalidatePath('/', 'layout');
     return { success: true, data: newTest };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to create test." };
@@ -230,6 +232,7 @@ export async function updateTest(id: number, data: any) {
         billingOnly: data.billingOnly,
         isCulture: data.isCulture,
         cultureColumns: data.cultureColumns,
+        showTestNameOnReport: data.showTestNameOnReport,
         
         isOutsourced: data.isOutsourced,
         outsourceLabId: data.outsourceLabId ? parseInt(data.outsourceLabId) : null,
@@ -252,7 +255,7 @@ export async function updateTest(id: number, data: any) {
       }
     }
 
-    revalidatePath('/tests');
+    revalidatePath('/', 'layout');
     return { success: true, data: updated };
   } catch (error: any) {
     return { success: false, message: error.message || "Failed to update test." };
