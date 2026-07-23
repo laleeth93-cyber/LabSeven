@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from '@react-pdf/renderer';
+import { View, Text, Svg, Path } from '@react-pdf/renderer';
 import { getPdfFontName, cleanBasicHTML, parseInterpretation } from './reportUtils';
 
 const parsePadding = (val: string, defaultVal: number) => {
@@ -325,14 +325,14 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                                 <View style={[{ width: flagColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'))]}>
                                                     {flagProps.type === 'arrowUp' || flagProps.type === 'arrowDown' ? (
                                                         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                                                            <ReactPDF.Svg style={{ width: 8, height: 10 }} viewBox="0 0 10 10">
-                                                                <ReactPDF.Path 
+                                                            <Svg style={{ width: 8, height: 10 }} viewBox="0 0 10 10">
+                                                                <Path 
                                                                     fill={flagProps.color} 
                                                                     d={flagProps.type === 'arrowUp' 
                                                                         ? "M 5,0 L 0,5 L 3,5 L 3,10 L 7,10 L 7,5 L 10,5 Z" 
                                                                         : "M 5,10 L 0,5 L 3,5 L 3,0 L 7,0 L 7,5 L 10,5 Z"}
                                                                 />
-                                                            </ReactPDF.Svg>
+                                                            </Svg>
                                                         </View>
                                                     ) : (
                                                         <Text style={[styles.tdText, { 
