@@ -124,7 +124,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     if (u.regNumber) formattedDesignation += formattedDesignation ? ` | ${u.regNumber}` : u.regNumber;
                     
                     settingsData.doc1Name = u.signName || u.name;
-                    settingsData.doc1SignUrl = u.signatureUrl;
+                    settingsData.doc1SignUrl = u.signatureUrl === 'null' ? null : u.signatureUrl;
                     settingsData.doc1Designation = formattedDesignation;
                 } else {
                     settingsData.doc1Name = ' '; 
@@ -139,7 +139,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     if (u.regNumber) formattedDesignation += formattedDesignation ? ` | ${u.regNumber}` : u.regNumber;
 
                     settingsData.doc2Name = u.signName || u.name;
-                    settingsData.doc2SignUrl = u.signatureUrl;
+                    settingsData.doc2SignUrl = u.signatureUrl === 'null' ? null : u.signatureUrl;
                     settingsData.doc2Designation = formattedDesignation;
                 } else {
                     settingsData.doc2Name = null;
@@ -377,10 +377,10 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
         try {
             let activeImageBase64: string | null = null;
-            if (letterheadStyle === 'custom1' && reportSettings?.customHeader1?.trim()) activeImageBase64 = reportSettings.customHeader1;
-            if (letterheadStyle === 'custom2' && reportSettings?.customHeader2?.trim()) activeImageBase64 = reportSettings.customHeader2;
-            if (letterheadStyle === 'custom3' && reportSettings?.customHeader3?.trim()) activeImageBase64 = reportSettings.customHeader3;
-            if (letterheadStyle === 'custom4' && reportSettings?.customHeader4?.trim()) activeImageBase64 = reportSettings.customHeader4;
+            if (letterheadStyle === 'custom1' && reportSettings?.customHeader1?.trim() && reportSettings.customHeader1 !== 'null') activeImageBase64 = reportSettings.customHeader1;
+            if (letterheadStyle === 'custom2' && reportSettings?.customHeader2?.trim() && reportSettings.customHeader2 !== 'null') activeImageBase64 = reportSettings.customHeader2;
+            if (letterheadStyle === 'custom3' && reportSettings?.customHeader3?.trim() && reportSettings.customHeader3 !== 'null') activeImageBase64 = reportSettings.customHeader3;
+            if (letterheadStyle === 'custom4' && reportSettings?.customHeader4?.trim() && reportSettings.customHeader4 !== 'null') activeImageBase64 = reportSettings.customHeader4;
 
             const qrUrl = `${window.location.origin}/verify/${filteredRealData?.id || billId}`;
             const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });

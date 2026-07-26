@@ -1,42 +1,39 @@
-// --- FILE: app/actions/reports.ts ---
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAuth } from "@/lib/server-auth";
 import { revalidatePath } from "next/cache";
 import { unstable_noStore as noStore } from "next/cache";
 
 // 1. Fetch the settings when the page loads
 export async function getReportSettings(cacheBuster?: string) {
   noStore(); // 🚨 Forces Next.js to skip the cache and hit the database directly!
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.orgId) return { success: false, message: "Unauthorized" };
-
+  
   try {
+    const { orgId } = await requireAuth();
+
     let settings = await prisma.reportSettings.findFirst({
-      where: { organizationId: session.user.orgId }
+      where: { organizationId: orgId }
     });
 
     if (!settings) {
       settings = await prisma.reportSettings.create({
-        data: { organizationId: session.user.orgId }
+        data: { organizationId: orgId }
       });
     }
 
     return { success: true, data: settings };
   } catch (error: any) {
     console.error("Fetch Settings Error:", error);
-    return { success: false, message: "Failed to load report settings." };
+    return { success: false, message: "Unauthorized or Failed to load report settings." };
   }
 }
 
 // 2. Save the settings permanently
 export async function updateReportSettings(payload: any) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.orgId) return { success: false, message: "Unauthorized" };
-
   try {
+    const { orgId } = await requireAuth();
+
     // 🚨 Safe Filter: Only save fields that exist in our schema to prevent silent database crashes!
     const validKeys = [
       "doc1Name", "doc1Designation", "doc1SignUrl", "doc2Name", "doc2Designation", "doc2SignUrl",
@@ -63,7 +60,7 @@ export async function updateReportSettings(payload: any) {
     }
 
     const existingSettings = await prisma.reportSettings.findFirst({
-      where: { organizationId: session.user.orgId }
+      where: { organizationId: orgId }
     });
 
     if (existingSettings) {
@@ -73,7 +70,7 @@ export async function updateReportSettings(payload: any) {
       });
     } else {
       await prisma.reportSettings.create({
-        data: { ...safeData, organizationId: session.user.orgId }
+        data: { ...safeData, organizationId: orgId }
       });
     }
 

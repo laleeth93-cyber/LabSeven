@@ -111,14 +111,14 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
     const dynamicHeaderBgColor = reportSettings?.bodyHeaderBgColor || '#f8fafc';
     const dynamicHeaderTextColor = reportSettings?.bodyHeaderTextColor || '#0f172a';
 
-    const borderRadiusMap: Record<string, number> = {
-        'none': 0,
+    const borderRadiusMap: Record<string, number | undefined> = {
+        'none': undefined,
         'sm': 2,
         'md': 6,
         'lg': 8,
         'xl': 12
     };
-    const headerRadius = borderRadiusMap[reportSettings?.headerBorderRadius || 'none'] || 0;
+    const headerRadius = borderRadiusMap[reportSettings?.headerBorderRadius || 'none'] || undefined;
 
     const getTableWrapStyle = () => ({ marginTop: 4 });
 
@@ -143,8 +143,10 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
 
     const getCellBorder = (isLastCol: boolean, isHeader: boolean = false) => {
         const cellStyle: any = { 
-            paddingHorizontal: bodyPx, // ✨ Applies Dynamic Text-to-Border Width Padding
-            paddingVertical: isHeader ? headerPy : bodyPy, 
+            paddingLeft: bodyPx,
+            paddingRight: bodyPx,
+            paddingTop: isHeader ? headerPy : bodyPy, 
+            paddingBottom: isHeader ? headerPy : bodyPy, 
             justifyContent: 'center',
             overflow: 'hidden'
         };
@@ -213,24 +215,24 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                         <View style={[{ width: paramColWidth }, getCellBorder(false, true), { borderTopLeftRadius: headerRadius, borderBottomLeftRadius: headerRadius }]}>
                                             <Text style={[styles.thText, { textAlign: 'left', color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>{"Test\u00A0Parameter"}</Text>
                                         </View>
-                                        <View style={[{ width: resultColWidth }, getCellBorder(!showFlagCol && !showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === 2 ? headerRadius : 0, borderBottomRightRadius: totalCols === 2 ? headerRadius : 0 }]}>
+                                        <View style={[{ width: resultColWidth }, getCellBorder(!showFlagCol && !showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === 2 ? headerRadius : undefined, borderBottomRightRadius: totalCols === 2 ? headerRadius : undefined }]}>
                                             <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>Result</Text>
                                         </View>
                                         
                                         {showFlagCol ? (
-                                            <View style={[{ width: flagColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === 3 ? headerRadius : 0, borderBottomRightRadius: totalCols === 3 ? headerRadius : 0 }]}>
+                                            <View style={[{ width: flagColWidth }, getCellBorder(!showUnitCol && !showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === 3 ? headerRadius : undefined, borderBottomRightRadius: totalCols === 3 ? headerRadius : undefined }]}>
                                                 <Text style={[styles.thText, { textAlign: 'center', color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>Flag</Text>
                                             </View>
                                         ) : null}
 
                                         {showUnitCol ? (
-                                            <View style={[{ width: unitColWidth }, getCellBorder(!showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === (showFlagCol ? 4 : 3) ? headerRadius : 0, borderBottomRightRadius: totalCols === (showFlagCol ? 4 : 3) ? headerRadius : 0 }]}>
+                                            <View style={[{ width: unitColWidth }, getCellBorder(!showRefRangeCol && !(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === (showFlagCol ? 4 : 3) ? headerRadius : undefined, borderBottomRightRadius: totalCols === (showFlagCol ? 4 : 3) ? headerRadius : undefined }]}>
                                                 <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>Units</Text>
                                             </View>
                                         ) : null}
 
                                         {showRefRangeCol ? (
-                                            <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === (showMethodCol && methodDisplay === 'column' ? totalCols - 1 : totalCols) ? headerRadius : 0, borderBottomRightRadius: totalCols === (showMethodCol && methodDisplay === 'column' ? totalCols - 1 : totalCols) ? headerRadius : 0 }]}>
+                                            <View style={[{ width: refColWidth }, getCellBorder(!(showMethodCol && methodDisplay === 'column'), true), { borderTopRightRadius: totalCols === (showMethodCol && methodDisplay === 'column' ? totalCols - 1 : totalCols) ? headerRadius : undefined, borderBottomRightRadius: totalCols === (showMethodCol && methodDisplay === 'column' ? totalCols - 1 : totalCols) ? headerRadius : undefined }]}>
                                                 <Text style={[styles.thText, { textAlign: bodyAlign as any, color: dynamicHeaderTextColor, lineHeight: 1.15 }]}>{"Bio.\u00A0Ref.\u00A0Range"}</Text>
                                             </View>
                                         ) : null}
@@ -246,7 +248,7 @@ export default function ReportBody({ groupedData, reportSettings, styles, bFontS
                                 {group.items.map((row: any, idx: number) => {
                                     if (row.isGroup) {
                                         return (
-                                            <View key={idx} style={[getRowStyle(), { paddingVertical: bodyPy, paddingHorizontal: bodyPx, backgroundColor: '#ffffff' }]} wrap={false}>
+                                            <View key={idx} style={[getRowStyle(), { paddingTop: bodyPy, paddingBottom: bodyPy, paddingLeft: bodyPx, paddingRight: bodyPx, backgroundColor: '#ffffff' }]} wrap={false}>
                                                 <Text style={[styles.subHeadingText, { lineHeight: 1.15 }]}>{row.param}</Text>
                                             </View>
                                         );

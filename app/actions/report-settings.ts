@@ -1,45 +1,41 @@
-// --- FILE: app/actions/report-settings.ts ---
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAuth } from "@/lib/server-auth";
 
 // 1. Fetch the settings when the page loads
 export async function getReportSettings() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.orgId) return { success: false, message: "Unauthorized" };
-
   try {
+    const { orgId } = await requireAuth();
+
     let settings = await prisma.reportSettings.findFirst({
-      where: { organizationId: session.user.orgId }
+      where: { organizationId: orgId }
     });
 
     // If no settings exist for this lab yet, create default ones
     if (!settings) {
       settings = await prisma.reportSettings.create({
-        data: { organizationId: session.user.orgId }
+        data: { organizationId: orgId }
       });
     }
 
     return { success: true, data: settings };
   } catch (error: any) {
     console.error("Fetch Settings Error:", error);
-    return { success: false, message: "Failed to load report settings." };
+    return { success: false, message: "Unauthorized or Failed to load report settings." };
   }
 }
 
 // 2. Save the settings permanently
 export async function updateReportSettings(payload: any) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.orgId) return { success: false, message: "Unauthorized" };
-
   try {
+    const { orgId } = await requireAuth();
+
     // Prevent ID or OrganizationID from being overwritten
     const { id, organizationId, createdAt, updatedAt, ...safeData } = payload;
 
     const existingSettings = await prisma.reportSettings.findFirst({
-      where: { organizationId: session.user.orgId }
+      where: { organizationId: orgId }
     });
 
     if (existingSettings) {
@@ -49,7 +45,7 @@ export async function updateReportSettings(payload: any) {
       });
     } else {
       await prisma.reportSettings.create({
-        data: { ...safeData, organizationId: session.user.orgId }
+        data: { ...safeData, organizationId: orgId }
       });
     }
 

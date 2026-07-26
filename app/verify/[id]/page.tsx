@@ -71,7 +71,7 @@ function VerifyDocumentContent() {
                     if (u.degree) formattedDesignation += formattedDesignation ? ` | ${u.degree}` : u.degree;
                     if (u.regNumber) formattedDesignation += formattedDesignation ? ` | ${u.regNumber}` : u.regNumber;
                     settingsData.doc1Name = u.signName || u.name;
-                    settingsData.doc1SignUrl = u.signatureUrl;
+                    settingsData.doc1SignUrl = u.signatureUrl === 'null' ? null : u.signatureUrl;
                     settingsData.doc1Designation = formattedDesignation;
                 } else {
                     settingsData.doc1Name = ' '; settingsData.doc1SignUrl = null; settingsData.doc1Designation = null;
@@ -83,7 +83,7 @@ function VerifyDocumentContent() {
                     if (u.degree) formattedDesignation += formattedDesignation ? ` | ${u.degree}` : u.degree;
                     if (u.regNumber) formattedDesignation += formattedDesignation ? ` | ${u.regNumber}` : u.regNumber;
                     settingsData.doc2Name = u.signName || u.name;
-                    settingsData.doc2SignUrl = u.signatureUrl;
+                    settingsData.doc2SignUrl = u.signatureUrl === 'null' ? null : u.signatureUrl;
                     settingsData.doc2Designation = formattedDesignation;
                 } else {
                     settingsData.doc2Name = null; settingsData.doc2SignUrl = null; settingsData.doc2Designation = null;
@@ -371,10 +371,10 @@ function VerifyDocumentContent() {
 
                     let activeImageBase64: string | null = null;
                     const letterheadStyle = settingsData.letterheadStyle || 'none';
-                    if (letterheadStyle === 'custom1') activeImageBase64 = settingsData.customHeader1 || null;
-                    if (letterheadStyle === 'custom2') activeImageBase64 = settingsData.customHeader2 || null;
-                    if (letterheadStyle === 'custom3') activeImageBase64 = settingsData.customHeader3 || null;
-                    if (letterheadStyle === 'custom4') activeImageBase64 = settingsData.customHeader4 || null;
+                    if (letterheadStyle === 'custom1' && settingsData.customHeader1 !== 'null') activeImageBase64 = settingsData.customHeader1 || null;
+                    if (letterheadStyle === 'custom2' && settingsData.customHeader2 !== 'null') activeImageBase64 = settingsData.customHeader2 || null;
+                    if (letterheadStyle === 'custom3' && settingsData.customHeader3 !== 'null') activeImageBase64 = settingsData.customHeader3 || null;
+                    if (letterheadStyle === 'custom4' && settingsData.customHeader4 !== 'null') activeImageBase64 = settingsData.customHeader4 || null;
 
                     documentElement = (
                         <PatientReportDocument 

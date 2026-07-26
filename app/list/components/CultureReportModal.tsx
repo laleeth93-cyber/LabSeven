@@ -65,7 +65,7 @@ export default function CultureReportModal({ isOpen, onClose, bill }: CultureRep
                 if (u.regNumber) formattedDesignation += formattedDesignation ? ` | ${u.regNumber}` : u.regNumber;
                 
                 settingsData.doc1Name = u.signName || u.name;
-                settingsData.doc1SignUrl = u.signatureUrl; 
+                settingsData.doc1SignUrl = u.signatureUrl === 'null' ? null : u.signatureUrl; 
                 settingsData.doc1Designation = formattedDesignation;
             } else {
                 settingsData.doc1Name = ' '; 
@@ -80,7 +80,7 @@ export default function CultureReportModal({ isOpen, onClose, bill }: CultureRep
                 if (u.regNumber) formattedDesignation += formattedDesignation ? ` | ${u.regNumber}` : u.regNumber;
 
                 settingsData.doc2Name = u.signName || u.name;
-                settingsData.doc2SignUrl = u.signatureUrl;
+                settingsData.doc2SignUrl = u.signatureUrl === 'null' ? null : u.signatureUrl;
                 settingsData.doc2Designation = formattedDesignation;
             } else {
                 settingsData.doc2Name = null;
@@ -140,10 +140,10 @@ export default function CultureReportModal({ isOpen, onClose, bill }: CultureRep
         
         const lStyle = selectedHeaderStyle;
         let activeImageBase64 = '';
-        if (lStyle === 'custom1') activeImageBase64 = reportSettings?.customHeader1 || '';
-        if (lStyle === 'custom2') activeImageBase64 = reportSettings?.customHeader2 || '';
-        if (lStyle === 'custom3') activeImageBase64 = reportSettings?.customHeader3 || '';
-        if (lStyle === 'custom4') activeImageBase64 = reportSettings?.customHeader4 || '';
+        if (lStyle === 'custom1' && reportSettings?.customHeader1 !== 'null') activeImageBase64 = reportSettings?.customHeader1 || '';
+        if (lStyle === 'custom2' && reportSettings?.customHeader2 !== 'null') activeImageBase64 = reportSettings?.customHeader2 || '';
+        if (lStyle === 'custom3' && reportSettings?.customHeader3 !== 'null') activeImageBase64 = reportSettings?.customHeader3 || '';
+        if (lStyle === 'custom4' && reportSettings?.customHeader4 !== 'null') activeImageBase64 = reportSettings?.customHeader4 || '';
 
         const baseDate = overrideCollectionDate ? new Date(overrideCollectionDate) : (targetBill?.date ? new Date(targetBill.date) : new Date());
         const collectedDateStr = baseDate.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).replace(',', '');
