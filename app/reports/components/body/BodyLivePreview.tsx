@@ -37,6 +37,26 @@ const dummyCBPData = [
     { param: 'Alkaline Phosphatase', result: '120', unit: 'U/L', ref: '44 - 147', method: 'PNPP', abnormal: false },
 ];
 
+// ✨ BULLETPROOF PARSER: Identical to the PDF Engine[cite: 4]
+const parseExtremePadding = (val: any, defaultVal: number) => {
+    if (val === undefined || val === null) return defaultVal;
+    const str = String(val).toLowerCase().trim();
+    
+    if (str === 'py-0' || str === 'px-0' || str === '0') return 0;
+    if (str === 'py-px' || str === 'px-px') return 1;
+    if (str === 'py-0.5' || str === 'px-0.5') return 2;
+    if (str === 'py-1' || str === 'px-1') return 4;
+    if (str === 'py-1.5' || str === 'px-1.5') return 6;
+    if (str === 'py-2' || str === 'px-2') return 8;
+    if (str === 'py-2.5' || str === 'px-2.5') return 10;
+    if (str === 'py-3' || str === 'px-3') return 12;
+
+    const num = parseFloat(str.replace(/[^\d.-]/g, ''));
+    if (!isNaN(num)) return num;
+    
+    return defaultVal;
+};
+
 export default function BodyLivePreview({ formData, leftColFields, rightColFields, bodySettings, footerSettings }: BodyLivePreviewProps) {
     
     const getFlagProps = (flag: any) => {
@@ -57,6 +77,29 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
         const color = isLow ? (bodySettings.flagColorLow || '#3b82f6') : isHigh ? (bodySettings.flagColorHigh || '#ef4444') : (bodySettings.flagColorNormal || '#000000');
         return { text, color };
     }
+
+    // ✨ SYNCHRONIZED EXACT MATH FOR PADDING
+    const headerPy = Math.max(0, parseExtremePadding(bodySettings.headerRowHeight, 6));
+    const bodyPy = Math.max(0, parseExtremePadding(bodySettings.bodyRowHeight, 6) - 4);
+    const bodyPx = Math.max(0, parseExtremePadding(bodySettings.bodyColPadding, 6));
+
+    const headerToBodyGapPx = parseInt(bodySettings.headerToBodyGap || '0');
+
+    // Add explicit squish amount to row styles so text isn't lost when we force a small height;
+    const blhVal = bodySettings.bodyLineHeight;
+    let rawLineHeight = parseFloat(String(blhVal !== undefined && blhVal !== null ? blhVal : '').replace(/[^\d.-]/g, ''));
+    if (isNaN(rawLineHeight)) rawLineHeight = 1.5;
+    const bLineHeight = Math.max(0.01, rawLineHeight); 
+
+    let htmlFontSize = 12;
+    if (bodySettings.bodyFontSize === 'text-[10px]') htmlFontSize = 10;
+    else if (bodySettings.bodyFontSize === 'text-xs') htmlFontSize = 12;
+    else if (bodySettings.bodyFontSize === 'text-sm') htmlFontSize = 14;
+    else if (bodySettings.bodyFontSize === 'text-base') htmlFontSize = 16;
+    
+    // HTML line-height centers text. When < 1.0, text bleeds up and down evenly.
+    const bleedAmountPx = bLineHeight < 1.0 ? (1.0 - bLineHeight) * 0.6 * htmlFontSize : 0;
+    const textShiftStyle: React.CSSProperties = { position: 'relative', top: `${bleedAmountPx}px` };
 
     const activeStyle = (formData.letterheadStyle && formData.letterheadStyle.startsWith('custom')) ? formData.letterheadStyle : 'custom1';
     const currentMargins = formData.marginSettings?.[activeStyle] || { top: 120, bottom: 80, left: 40, right: 40 };
@@ -79,8 +122,8 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
     let demoTdStyle: React.CSSProperties = {};
 
     if (currentHeaderStyle === 'grid') {
-        demoTableStyle = { borderCollapse: 'separate', borderSpacing: bw, backgroundColor: bColor, border: 'none' };
-        demoTdStyle = { backgroundColor: '#ffffff', border: 'none' };
+        demoTableStyle = { borderCollapse: 'collapse', border: `${bw} solid ${bColor}` };
+        demoTdStyle = { border: `${bw} solid ${bColor}`, backgroundColor: 'transparent' };
     } else if (currentHeaderStyle === 'horizontal') {
         demoTableStyle = { borderCollapse: 'collapse', borderTop: `${bw} solid ${bColor}`, borderBottom: `${bw} solid ${bColor}` };
         demoTdStyle = { borderBottom: `${bw} solid ${bColor}` };
@@ -94,31 +137,44 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
     
     let bodyTableStyle: React.CSSProperties = { borderCollapse: 'collapse', borderSpacing: 0, width: '100%', tableLayout: 'fixed' };
     
-    // ✨ Header Colors Applied Here
-    let thStyle: React.CSSProperties = { backgroundColor: bodySettings.bodyHeaderBgColor || '#ffffff', color: bodySettings.bodyHeaderTextColor || '#000000' };
-    let tdStyle: React.CSSProperties = {};
+    // ✨ Overriding styles with math
+    let thStyle: React.CSSProperties = { 
+        backgroundColor: bodySettings.bodyHeaderBgColor || '#ffffff', 
+        color: bodySettings.bodyHeaderTextColor || '#000000',
+        paddingTop: `${headerPy}px`,
+        paddingBottom: `${headerPy}px`,
+        paddingLeft: `${bodyPx}px`,
+        paddingRight: `${bodyPx}px`,
+        lineHeight: 1.2,
+        margin: 0
+    };
+    let tdStyle: React.CSSProperties = {
+        paddingTop: `${bodyPy}px`,
+        paddingBottom: `${bodyPy}px`,
+        paddingLeft: `${bodyPx}px`,
+        paddingRight: `${bodyPx}px`,
+        lineHeight: bLineHeight,
+        margin: 0
+    };
 
     if (bodySettings.bodyTableStyle === 'grid') {
-        bodyTableStyle = { borderCollapse: 'separate', borderSpacing: bw, backgroundColor: bColor, border: 'none', width: '100%', tableLayout: 'fixed' };
-        thStyle = { ...thStyle, border: 'none' };
-        tdStyle = { border: 'none' };
+        bodyTableStyle = { borderCollapse: 'collapse', border: `${bw} solid ${bColor}`, width: '100%', tableLayout: 'fixed' };
+        thStyle = { ...thStyle, border: `${bw} solid ${bColor}` };
+        tdStyle = { ...tdStyle, border: `${bw} solid ${bColor}` };
     } else if (bodySettings.bodyTableStyle === 'horizontal') {
         bodyTableStyle = { borderCollapse: 'collapse', borderTop: `${bw} solid ${bColor}`, borderBottom: `${bw} solid ${bColor}`, width: '100%', tableLayout: 'fixed' };
         thStyle = { ...thStyle, borderBottom: `${bw} solid ${bColor}` };
-        tdStyle = { borderBottom: `${bw} solid ${bColor}` };
+        tdStyle = { ...tdStyle, borderBottom: `${bw} solid ${bColor}` };
     } else if (bodySettings.bodyTableStyle === 'outer') {
         bodyTableStyle = { borderCollapse: 'collapse', border: `${bw} solid ${bColor}`, width: '100%', tableLayout: 'fixed' };
     }
 
     const hFont = bodySettings.headerFontSize || 'text-xs';
     const hWeight = bodySettings.headerFontWeight || 'font-bold';
-    const hPad = bodySettings.headerRowHeight || 'py-1.5';
-    const thClass = `${hPad} ${bodySettings.bodyColPadding || 'px-2'} ${hFont} ${hWeight} break-words align-middle leading-tight`;
-    const tdClass = `${bodySettings.bodyRowHeight || 'py-1.5'} ${bodySettings.bodyColPadding || 'px-2'} break-words align-top`;
     
-    // Convert line height from string value
-    const bLineHeight = bodySettings.bodyLineHeight || '1.5';
-    tdStyle = { ...tdStyle, lineHeight: bLineHeight };
+    // ✨ Stripped out tailwind paddings to allow pure mathematical inline styles
+    const thClass = `${hFont} ${hWeight} break-words align-middle leading-tight`;
+    const tdClass = `break-words align-top`;
 
     const borderRadiusMap: Record<string, string> = {
         'none': '0px',
@@ -347,7 +403,7 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
                                 <TableColGroup />
                                 <thead>
                                     <tr>
-                                        <th className={`${thClass} text-left pl-4`} style={{ ...thStyle, borderTopLeftRadius: headerRadius, borderBottomLeftRadius: headerRadius }}>Test Parameter</th>
+                                        <th className={`${thClass} text-left`} style={{ ...thStyle, borderTopLeftRadius: headerRadius, borderBottomLeftRadius: headerRadius }}>Test Parameter</th>
                                         <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={{ ...thStyle, borderTopRightRadius: totalCols === 2 ? headerRadius : '0px', borderBottomRightRadius: totalCols === 2 ? headerRadius : '0px' }}>Result</th>
                                         {bodySettings.showFlagCol !== false && <th className={`${thClass} text-center`} style={{ ...thStyle, borderTopRightRadius: totalCols === 3 ? headerRadius : '0px', borderBottomRightRadius: totalCols === 3 ? headerRadius : '0px' }}>Flag</th>}
                                         {bodySettings.showUnitCol !== false && <th className={`${thClass} ${bodySettings.bodyResultAlign}`} style={{ ...thStyle, borderTopRightRadius: totalCols === (bodySettings.showFlagCol !== false ? 4 : 3) ? headerRadius : '0px', borderBottomRightRadius: totalCols === (bodySettings.showFlagCol !== false ? 4 : 3) ? headerRadius : '0px' }}>Units</th>}
@@ -358,11 +414,16 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {headerToBodyGapPx > 0 && (
+                                        <tr style={{ height: `${headerToBodyGapPx}px` }}>
+                                            <td colSpan={totalCols} style={{ padding: 0, border: 'none' }}></td>
+                                        </tr>
+                                    )}
                                     {pageData.map((row, i) => {
                                         if (row.isGroup) {
                                             return (
-                                                <tr key={i} style={{ backgroundColor: '#ffffff' }}>
-                                                    <td colSpan={totalCols} className={`font-bold ${bodySettings.bodyColPadding} pt-2 pb-0.5 pl-4 uppercase tracking-wide ${bodySettings.subheadingSize} break-words align-middle`} style={{ color: bodySettings.subheadingColor, ...tdStyle }}>{row.param}</td>
+                                                <tr key={i} style={{ backgroundColor: 'transparent' }}>
+                                                    <td colSpan={totalCols} className={`font-bold uppercase tracking-wide ${bodySettings.subheadingSize} break-words align-middle`} style={{ color: bodySettings.subheadingColor, ...tdStyle }}><div style={textShiftStyle}>{row.param}</div></td>
                                                 </tr>
                                             );
                                         }
@@ -371,22 +432,30 @@ export default function BodyLivePreview({ formData, leftColFields, rightColField
                                         const isAbnormal = bodySettings.highlightAbnormal && row.abnormal;
 
                                         return (
-                                            <tr key={i} style={{ backgroundColor: bodySettings.stripedRows && i % 2 !== 0 ? '#f8fafc' : '#ffffff' }}>
-                                                <td className={`${tdClass} text-black text-left pl-4`} style={tdStyle}>
-                                                    <div className="font-medium">{row.param}</div>
-                                                    {bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'beneath' && (<div className="text-[0.85em] text-black mt-0.5">Method: {row.method}</div>)}
+                                            <tr key={i} style={{ backgroundColor: bodySettings.stripedRows && i % 2 !== 0 ? '#f8fafc' : 'transparent' }}>
+                                                <td className={`${tdClass} text-black text-left`} style={tdStyle}>
+                                                    <div style={textShiftStyle}>
+                                                        <div className="font-medium">{row.param}</div>
+                                                        {bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'beneath' && (<div className="text-[0.85em] text-black mt-0.5">Method: {row.method}</div>)}
+                                                    </div>
                                                 </td>
-                                                <td className={`${tdClass} ${bodySettings.bodyResultAlign} ${isAbnormal ? 'font-bold text-black' : 'text-black'}`} style={tdStyle}>{row.result} {isAbnormal && bodySettings.flagStyle !== 'arrows' && bodySettings.flagStyle !== 'text' && '*'}</td>
+                                                <td className={`${tdClass} ${bodySettings.bodyResultAlign} ${isAbnormal ? 'font-bold text-black' : 'text-black'}`} style={tdStyle}>
+                                                    <div style={textShiftStyle}>
+                                                        {row.result} {isAbnormal && bodySettings.flagStyle !== 'arrows' && bodySettings.flagStyle !== 'text' && '*'}
+                                                    </div>
+                                                </td>
                                                 
                                                 {bodySettings.showFlagCol !== false && (
                                                     <td className={`${tdClass} text-center font-bold`} style={{ ...tdStyle, color: flagProps.color }}>
-                                                        {flagProps.text}
+                                                        <div style={textShiftStyle}>
+                                                            {flagProps.text}
+                                                        </div>
                                                     </td>
                                                 )}
 
-                                                {bodySettings.showUnitCol !== false && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black`} style={tdStyle}>{row.unit}</td>}
-                                                {bodySettings.showRefRangeCol !== false && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black`} style={tdStyle}>{row.ref}</td>}
-                                                {bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column' && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black text-[0.9em]`} style={tdStyle}>{row.method}</td>}
+                                                {bodySettings.showUnitCol !== false && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black`} style={tdStyle}><div style={textShiftStyle}>{row.unit}</div></td>}
+                                                {bodySettings.showRefRangeCol !== false && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black`} style={tdStyle}><div style={textShiftStyle}>{row.ref}</div></td>}
+                                                {bodySettings.showMethodCol && bodySettings.methodDisplayStyle === 'column' && <td className={`${tdClass} ${bodySettings.bodyResultAlign} text-black`} style={tdStyle}><div style={textShiftStyle}>{row.method}</div></td>}
                                             </tr>
                                         );
                                     })}

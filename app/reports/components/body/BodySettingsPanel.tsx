@@ -19,6 +19,28 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
     const isCustomActive = pW > 0 || rW > 0 || fW > 0 || uW > 0 || refW > 0 || mW > 0;
     const isValid = totalWidth === 100;
 
+    const getRowHeightVal = (val: any) => {
+        const str = String(val ?? '6').toLowerCase().trim();
+        if (str === 'py-0') return 0;
+        if (str === 'py-px') return 1;
+        if (str === 'py-0.5') return 2;
+        if (str === 'py-1') return 4;
+        if (str === 'py-1.5') return 6;
+        if (str === 'py-2') return 8;
+        
+        const parsed = parseInt(str.replace(/[^\d.-]/g, ''));
+        return isNaN(parsed) ? 0 : Math.max(0, parsed); // Clamped to 0
+    };
+    
+    const getLineHeightVal = (val: any) => {
+        const str = String(val || '1.5');
+        const parsed = parseFloat(str.replace(/[^\d.-]/g, ''));
+        return isNaN(parsed) ? 1.5 : parsed;
+    };
+
+    const rowHeightValue = getRowHeightVal(bodySettings.bodyRowHeight);
+    const lineHeightValue = getLineHeightVal(bodySettings.bodyLineHeight);
+
     return (
         <div className="w-full flex flex-col gap-5">
             
@@ -254,6 +276,22 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1.5">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase">Header To Body Gap</label>
+                                <select value={bodySettings.headerToBodyGap || '0'} onChange={(e) => handleBodySettingChange('headerToBodyGap', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
+                                    <option value="0">0px (None)</option>
+                                    <option value="2">2px</option>
+                                    <option value="4">4px</option>
+                                    <option value="6">6px</option>
+                                    <option value="8">8px</option>
+                                    <option value="12">12px</option>
+                                    <option value="16">16px</option>
+                                    <option value="20">20px</option>
+                                    <option value="24">24px</option>
+                                    <option value="32">32px</option>
+                                    <option value="40">40px</option>
+                                </select>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Header BG Color</label>
                                 <div className="flex items-center gap-2 w-full p-1.5 border border-slate-300 rounded-lg focus-within:border-[#9575cd] bg-white">
                                     <input type="color" value={bodySettings.bodyHeaderBgColor || '#ffffff'} onChange={(e) => handleBodySettingChange('bodyHeaderBgColor', e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 p-0 shrink-0 bg-transparent" />
@@ -291,7 +329,6 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                                 </select>
                                 <p className="text-[9px] text-slate-400">Forces a fresh page when the selected group changes.</p>
                             </div>
-                            {/* ✨ NEW FEATURE: Space Between Tests */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-bold text-[#9575cd] uppercase">Space Between Tests</label>
                                 <select value={bodySettings.testBlockSpacing || 'mb-4'} onChange={(e) => handleBodySettingChange('testBlockSpacing', e.target.value)} className="w-full text-xs p-2 border border-[#9575cd] bg-purple-50 text-[#5e35b1] font-bold rounded-lg outline-none focus:ring-1 focus:ring-[#9575cd]">
@@ -308,7 +345,8 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
 
                     <div>
                         <div className="w-full text-[10px] font-bold text-[#9575cd] uppercase border-b border-slate-100 pb-1.5 mb-3">Table Body Rows</div>
-                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                            
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Body Font Size</label>
                                 <select value={bodySettings.bodyFontSize || 'text-xs'} onChange={(e) => handleBodySettingChange('bodyFontSize', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
@@ -319,17 +357,25 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                                     <option value="text-sm">Large (14px)</option>
                                 </select>
                             </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase">Row Padding (Y)</label>
-                                <select value={bodySettings.bodyRowHeight || 'py-1.5'} onChange={(e) => handleBodySettingChange('bodyRowHeight', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
-                                    <option value="py-0">Ultra Compact (0px)</option>
-                                    <option value="py-px">Extra Compact (1px)</option>
-                                    <option value="py-0.5">Very Compact (2px)</option>
-                                    <option value="py-1">Compact (4px)</option>
-                                    <option value="py-1.5">Normal (6px)</option>
-                                    <option value="py-2">Comfortable (8px)</option>
-                                </select>
+
+                            {/* ✨ NEW FEATURE: Row Padding Slider fixed back to 0 */}
+                            <div className="flex flex-col gap-1.5 col-span-1">
+                                <div className="flex justify-between items-center mt-0.5">
+                                    <label className="text-[10px] font-bold text-[#9575cd] uppercase">Row Padding (Y)</label>
+                                    <span className="text-[10px] font-bold text-[#9575cd] bg-purple-50 border border-purple-100 px-1.5 py-0.5 rounded">{rowHeightValue}px</span>
+                                </div>
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="30" 
+                                    step="1" 
+                                    value={rowHeightValue} 
+                                    onChange={(e) => handleBodySettingChange('bodyRowHeight', `${e.target.value}px`)} 
+                                    className="w-full accent-[#9575cd] cursor-pointer mt-1" 
+                                />
+                                <p className="text-[9px] text-slate-400 mt-1 leading-tight">Drag to 0px, then reduce Line Spacing below to squish rows.</p>
                             </div>
+
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Column Padding (X)</label>
                                 <select value={bodySettings.bodyColPadding || 'px-2'} onChange={(e) => handleBodySettingChange('bodyColPadding', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
@@ -341,16 +387,24 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
                                     <option value="px-3">Wide (12px)</option>
                                 </select>
                             </div>
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase">Line Spacing</label>
-                                <select value={bodySettings.bodyLineHeight || '1.5'} onChange={(e) => handleBodySettingChange('bodyLineHeight', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">
-                                    <option value="1">Ultra Tight (1.0)</option>
-                                    <option value="1.15">Tight (1.15)</option>
-                                    <option value="1.3">Compact (1.3)</option>
-                                    <option value="1.5">Normal (1.5)</option>
-                                    <option value="1.8">Relaxed (1.8)</option>
-                                </select>
+
+                            {/* ✨ NEW FEATURE: Line Spacing Slider */}
+                            <div className="flex flex-col gap-1.5 col-span-1">
+                                <div className="flex justify-between items-center mt-0.5">
+                                    <label className="text-[10px] font-bold text-[#9575cd] uppercase">Line Spacing</label>
+                                    <span className="text-[10px] font-bold text-[#9575cd] bg-purple-50 border border-purple-100 px-1.5 py-0.5 rounded">{lineHeightValue}</span>
+                                </div>
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="2.5" 
+                                    step="0.05" 
+                                    value={lineHeightValue} 
+                                    onChange={(e) => handleBodySettingChange('bodyLineHeight', `${e.target.value}`)} 
+                                    className="w-full accent-[#9575cd] cursor-pointer mt-1" 
+                                />
                             </div>
+
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Data Alignment</label>
                                 <select value={bodySettings.bodyResultAlign || 'text-center'} onChange={(e) => handleBodySettingChange('bodyResultAlign', e.target.value)} className="w-full text-xs p-2 border border-slate-300 rounded-lg outline-none focus:border-[#9575cd]">

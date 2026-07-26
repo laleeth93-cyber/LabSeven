@@ -27,11 +27,31 @@ const shortenedDummyData: any[] = [
     { param: 'Mean Corpuscular Vol (MCV)', result: '82', unit: 'fL', ref: '83 - 101', method: 'Calculated', abnormal: true, flag: 'H' }
 ];
 
+const parseExtremePadding = (val: any, defaultVal: number) => {
+    if (val === undefined || val === null) return defaultVal;
+    const str = String(val).toLowerCase().trim();
+    
+    if (str === 'py-0' || str === 'px-0' || str === '0') return 0;
+    if (str === 'py-px' || str === 'px-px') return 1;
+    if (str === 'py-0.5' || str === 'px-0.5') return 2;
+    if (str === 'py-1' || str === 'px-1') return 4;
+    if (str === 'py-1.5' || str === 'px-1.5') return 6;
+    if (str === 'py-2' || str === 'px-2') return 8;
+    if (str === 'py-2.5' || str === 'px-2.5') return 10;
+    if (str === 'py-3' || str === 'px-3') return 12;
+
+    const num = parseFloat(str.replace(/[^\d.-]/g, ''));
+    if (!isNaN(num)) return num;
+    
+    return defaultVal;
+};
+
 export default function PrintReportContent({ 
     formData, leftColFields, rightColFields, bodySettings, footerSettings, 
     paperWidth, paperHeight, t, b, l, r, activeImageBase64, printHeaderFooter = true 
 }: PrintReportContentProps) {
 
+    // Scale mapping for accurate PDF representation
     const ptToPx = 1.3333;
     const topPx = t * ptToPx;
     const bottomPx = b * ptToPx;
@@ -56,6 +76,28 @@ export default function PrintReportContent({
         const color = isLow ? (bodySettings?.flagColorLow || '#3b82f6') : isHigh ? (bodySettings?.flagColorHigh || '#ef4444') : (bodySettings?.flagColorNormal || '#000000');
         return { text, color };
     }
+
+    // Exact pixel padding matching Live Preview
+    const headerPy = Math.max(0, parseExtremePadding(bodySettings?.headerRowHeight, 6));
+    const bodyPy = Math.max(0, parseExtremePadding(bodySettings?.bodyRowHeight, 6) - 4);
+    const bodyPx = Math.max(0, parseExtremePadding(bodySettings?.bodyColPadding, 6));
+
+    const headerToBodyGapPx = parseInt(bodySettings?.headerToBodyGap || '0');
+
+    const blhVal = bodySettings?.bodyLineHeight;
+    let rawLineHeight = parseFloat(String(blhVal !== undefined && blhVal !== null ? blhVal : '').replace(/[^\d.-]/g, ''));
+    if (isNaN(rawLineHeight)) rawLineHeight = 1.5;
+    const bLineHeight = Math.max(0.01, rawLineHeight); 
+
+    let htmlFontSize = 12;
+    if (bodySettings?.bodyFontSize === 'text-[10px]') htmlFontSize = 10;
+    else if (bodySettings?.bodyFontSize === 'text-xs') htmlFontSize = 12;
+    else if (bodySettings?.bodyFontSize === 'text-sm') htmlFontSize = 14;
+    else if (bodySettings?.bodyFontSize === 'text-base') htmlFontSize = 16;
+    
+    // HTML line-height centers text. When < 1.0, text bleeds up and down evenly.
+    const bleedAmountPx = bLineHeight < 1.0 ? (1.0 - bLineHeight) * 0.6 * htmlFontSize : 0;
+    const textShiftStyle: React.CSSProperties = { position: 'relative', top: `${bleedAmountPx}px` };
 
     let bw = '1px';
     if (bodySettings?.gridLineThickness === '1.75') bw = '1.75px';
@@ -121,7 +163,7 @@ export default function PrintReportContent({
 
     if (currentHeaderStyle === 'grid') {
         demoTableStyle = { ...demoTableStyle, border: `${bw} solid ${bColor}` };
-        demoTdStyle = { ...demoTdStyle, border: `${bw} solid ${bColor}`, backgroundColor: '#ffffff' };
+        demoTdStyle = { ...demoTdStyle, border: `${bw} solid ${bColor}`, backgroundColor: 'transparent' };
     } else if (currentHeaderStyle === 'horizontal') {
         demoTableStyle = { ...demoTableStyle, borderTop: `${bw} solid ${bColor}`, borderBottom: `${bw} solid ${bColor}` };
         demoTdStyle = { ...demoTdStyle, borderBottom: `${bw} solid ${bColor}` };
@@ -136,27 +178,44 @@ export default function PrintReportContent({
 
     let bodyTableStyle: React.CSSProperties = { borderCollapse: 'collapse', borderSpacing: 0, width: '100%', tableLayout: 'fixed' };
     
-    // ✨ Header Colors Applied Here
-    let thStyle: React.CSSProperties = { backgroundColor: bodySettings?.bodyHeaderBgColor || '#ffffff', color: bodySettings?.bodyHeaderTextColor || '#000000' };
-    let tdStyle: React.CSSProperties = {};
+    // Core Layout Alignment using proper scaled mathematical pixels
+    let thStyle: React.CSSProperties = { 
+        backgroundColor: bodySettings?.bodyHeaderBgColor || '#ffffff', 
+        color: bodySettings?.bodyHeaderTextColor || '#000000',
+        paddingTop: `${headerPy}px`,
+        paddingBottom: `${headerPy}px`,
+        paddingLeft: `${bodyPx}px`,
+        paddingRight: `${bodyPx}px`,
+        lineHeight: 1.2,
+        margin: 0 
+    };
+    
+    let tdStyle: React.CSSProperties = {
+        paddingTop: `${bodyPy}px`,
+        paddingBottom: `${bodyPy}px`,
+        paddingLeft: `${bodyPx}px`,
+        paddingRight: `${bodyPx}px`,
+        lineHeight: bLineHeight,
+        margin: 0
+    };
 
     if (bodySettings?.bodyTableStyle === 'grid') {
         bodyTableStyle = { ...bodyTableStyle, border: `${bw} solid ${bColor}` };
         thStyle = { ...thStyle, border: `${bw} solid ${bColor}` };
-        tdStyle = { border: `${bw} solid ${bColor}` }; 
+        tdStyle = { ...tdStyle, border: `${bw} solid ${bColor}` }; 
     } else if (bodySettings?.bodyTableStyle === 'horizontal') {
         bodyTableStyle = { ...bodyTableStyle, borderTop: `${bw} solid ${bColor}`, borderBottom: `${bw} solid ${bColor}` };
         thStyle = { ...thStyle, borderBottom: `${bw} solid ${bColor}` };
-        tdStyle = { borderBottom: `${bw} solid ${bColor}` };
+        tdStyle = { ...tdStyle, borderBottom: `${bw} solid ${bColor}` };
     } else if (bodySettings?.bodyTableStyle === 'outer') {
         bodyTableStyle = { ...bodyTableStyle, border: `${bw} solid ${bColor}` };
     }
 
     const hFont = bodySettings?.headerFontSize || 'text-xs';
     const hWeight = bodySettings?.headerFontWeight || 'font-bold';
-    const hPad = bodySettings?.headerRowHeight || 'py-1.5';
-    const thClass = `${hPad} ${bodySettings?.bodyColPadding || 'px-2'} ${hFont} ${hWeight} break-words align-middle`;
-    const tdClass = `${bodySettings?.bodyRowHeight || 'py-1.5'} ${bodySettings?.bodyColPadding || 'px-2'} break-words align-top`;
+    
+    const thClass = `${hFont} ${hWeight} break-words align-middle`;
+    const tdClass = `break-words align-top`;
 
     let totalCols = 2; 
     if (bodySettings?.showFlagCol !== false) totalCols++; 
@@ -280,7 +339,6 @@ export default function PrintReportContent({
     const dummyBill = { billNumber: 'INV-123456' };
     const dummyDate = new Date().toLocaleDateString('en-GB');
 
-    // ✨ Repeater engine logic
     const tableHeaderRepeat = bodySettings?.tableHeaderRepeat || 'test';
 
     return (
@@ -318,7 +376,6 @@ export default function PrintReportContent({
                     </div>
                 )}
 
-                {/* --- HEADER --- */}
                 <div className="mb-4 w-full shrink-0">
                     {previewRows.length > 0 ? (
                         <div className="flex w-full items-start">
@@ -401,7 +458,6 @@ export default function PrintReportContent({
                     )}
                 </div>
 
-                {/* --- FLOWING BODY --- */}
                 <div className={`w-full flex-grow flex flex-col overflow-hidden ${bodySettings?.bodyFontSize}`}>
                     
                     {bodySettings?.showDepartmentName !== false && (
@@ -410,11 +466,9 @@ export default function PrintReportContent({
                     
                     {groupedDummyData.map((group, gIdx) => {
                         
-                        // ✨ Evaluates exactly when the user wants to print the Header Row!
                         const showTableHeader = tableHeaderRepeat === 'test' || gIdx === 0;
 
                         return (
-                        // ✨ DYNAMIC SPACING APPLIED HERE
                         <div key={gIdx} className={bodySettings?.testBlockSpacing || "mb-4"}>
                             
                             {(bodySettings?.showTestName !== false || group.showTestNameOverride) && group.testName && (
@@ -426,11 +480,10 @@ export default function PrintReportContent({
                             <table className="w-full table-fixed" style={bodyTableStyle}>
                                 <TableColGroup />
                                 
-                                {/* ✨ NEW: Dynamically hides Header based on repeater setting */}
                                 {showTableHeader && (
                                     <thead>
                                         <tr>
-                                            <th className={`${thClass} text-left pl-4`} style={thStyle}>Test Parameter</th>
+                                            <th className={`${thClass} text-left`} style={thStyle}>Test Parameter</th>
                                             <th className={`${thClass} ${bodySettings?.bodyResultAlign}`} style={thStyle}>Result</th>
                                             {bodySettings?.showFlagCol !== false && <th className={`${thClass} text-center`} style={thStyle}>Flag</th>}
                                             {bodySettings?.showUnitCol !== false && <th className={`${thClass} ${bodySettings?.bodyResultAlign}`} style={thStyle}>Units</th>}
@@ -441,12 +494,17 @@ export default function PrintReportContent({
                                 )}
 
                                 <tbody>
+                                    {headerToBodyGapPx > 0 && showTableHeader && (
+                                        <tr style={{ height: `${headerToBodyGapPx}px` }}>
+                                            <td colSpan={totalCols} style={{ padding: 0, border: 'none' }}></td>
+                                        </tr>
+                                    )}
                                     {group.items.map((row, i) => {
                                         if (row.isGroup) {
                                             return (
-                                                <tr key={i} style={{ backgroundColor: '#ffffff' }}>
-                                                    <td colSpan={totalCols} className={`font-bold ${bodySettings?.bodyColPadding} pt-2 pb-0.5 pl-4 uppercase tracking-wide ${bodySettings?.subheadingSize} break-words align-middle`} style={{ color: bodySettings?.subheadingColor, ...tdStyle }}>
-                                                        {row.param}
+                                                <tr key={i} style={{ backgroundColor: 'transparent' }}>
+                                                    <td colSpan={totalCols} className={`font-bold uppercase tracking-wide ${bodySettings?.subheadingSize || 'text-sm'} break-words align-middle`} style={{ color: bodySettings?.subheadingColor || '#000000', ...tdStyle }}>
+                                                        <div style={textShiftStyle}>{row.param}</div>
                                                     </td>
                                                 </tr>
                                             );
@@ -459,26 +517,32 @@ export default function PrintReportContent({
                                         const isAbnormal = isHighlightEnabled && (flagProps.text !== '' && flagProps.text !== 'Normal');
 
                                         return (
-                                            <tr key={i} style={{ backgroundColor: bodySettings?.stripedRows && i % 2 !== 0 ? '#f8fafc' : '#ffffff' }}>
-                                                <td className={`${tdClass} text-black text-left pl-4`} style={tdStyle}>
-                                                    <div className="font-medium">{row.param}</div>
-                                                    {bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'beneath' && row.method && (
-                                                        <div className="text-[0.85em] text-slate-700 mt-0.5">Method: {row.method}</div>
-                                                    )}
+                                            <tr key={i} style={{ backgroundColor: bodySettings?.stripedRows && i % 2 !== 0 ? '#f8fafc' : 'transparent' }}>
+                                                <td className={`${tdClass} text-black text-left`} style={tdStyle}>
+                                                    <div style={textShiftStyle}>
+                                                        <div className="font-medium">{row.param}</div>
+                                                        {bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'beneath' && row.method && (
+                                                            <div className="text-[0.85em] text-slate-700 mt-0.5">Method: {row.method}</div>
+                                                        )}
+                                                    </div>
                                                 </td>
-                                                <td className={`${tdClass} ${bodySettings?.bodyResultAlign} ${isAbnormal ? 'font-bold text-black' : 'text-black'}`} style={tdStyle}>
-                                                    {row.result}
+                                                <td className={`${tdClass} ${bodySettings?.bodyResultAlign || 'text-center'} ${isAbnormal ? 'font-bold text-black' : 'text-black'}`} style={tdStyle}>
+                                                    <div style={textShiftStyle}>
+                                                        {row.result}
+                                                    </div>
                                                 </td>
                                                 
                                                 {bodySettings?.showFlagCol !== false && (
                                                     <td className={`${tdClass} text-center font-bold`} style={{ ...tdStyle, color: flagProps.color }}>
-                                                        {flagProps.text}
+                                                        <div style={textShiftStyle}>
+                                                            {flagProps.text}
+                                                        </div>
                                                     </td>
                                                 )}
 
-                                                {bodySettings?.showUnitCol !== false && <td className={`${tdClass} ${bodySettings?.bodyResultAlign} text-black`} style={tdStyle}>{row.unit}</td>}
-                                                {bodySettings?.showRefRangeCol !== false && <td className={`${tdClass} ${bodySettings?.bodyResultAlign} text-black`} style={tdStyle}>{row.ref}</td>}
-                                                {bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'column' && <td className={`${tdClass} ${bodySettings?.bodyResultAlign} text-black text-[0.9em]`} style={tdStyle}>{row.method}</td>}
+                                                {bodySettings?.showUnitCol !== false && <td className={`${tdClass} ${bodySettings?.bodyResultAlign || 'text-center'} text-black`} style={tdStyle}><div style={textShiftStyle}>{row.unit}</div></td>}
+                                                {bodySettings?.showRefRangeCol !== false && <td className={`${tdClass} ${bodySettings?.bodyResultAlign || 'text-center'} text-black`} style={tdStyle}><div style={textShiftStyle}>{row.ref}</div></td>}
+                                                {bodySettings?.showMethodCol && bodySettings?.methodDisplayStyle === 'column' && <td className={`${tdClass} ${bodySettings?.bodyResultAlign || 'text-center'} text-black text-[0.9em]`} style={tdStyle}><div style={textShiftStyle}>{row.method}</div></td>}
                                             </tr>
                                         );
                                     })}
@@ -495,12 +559,12 @@ export default function PrintReportContent({
                 </div>
             </div>
 
-            {/* --- 3. ABSOLUTE PINNED FOOTER --- */}
-            <div className="absolute z-20 flex justify-between items-end"
+            <div className="absolute z-20 flex justify-between items-end w-full"
                  style={{ 
                      bottom: `${bottomPx}px`, 
                      left: `${leftPx}px`, 
-                     right: `${rightPx}px` 
+                     right: `${rightPx}px`,
+                     width: `calc(100% - ${leftPx + rightPx}px)` 
                  }}>
                  {renderFooterItems()}
             </div>

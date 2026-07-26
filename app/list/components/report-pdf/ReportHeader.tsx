@@ -2,6 +2,26 @@ import React from 'react';
 import { View, Text } from '@react-pdf/renderer';
 import { getFieldValue } from './reportUtils';
 
+// ✨ FIX: Smart Parser for Header padding sliders
+const parsePadding = (val: any, defaultVal: number) => {
+    if (val === undefined || val === null) return defaultVal;
+    const strVal = String(val).trim().toLowerCase();
+    
+    if (strVal === 'py-0') return 0;
+    if (strVal === 'py-px') return 1;
+    if (strVal === 'py-0.5') return 2;
+    if (strVal === 'py-1') return 4;
+    if (strVal === 'py-1.5') return 6;
+    if (strVal === 'py-2') return 8;
+    if (strVal === 'py-2.5') return 10;
+    if (strVal === 'py-3') return 12;
+    
+    const parsed = parseFloat(strVal.replace('px', ''));
+    if (!isNaN(parsed)) return parsed;
+    
+    return defaultVal;
+};
+
 export default function ReportHeader({ reportSettings, realData, collectedDate, reportedDate, styles }: any) {
     const patient = realData?.patient || {};
     
@@ -54,7 +74,7 @@ export default function ReportHeader({ reportSettings, realData, collectedDate, 
 
 
     // 🚨 ABSOLUTE MATH LOCK: Keeps Label boundaries frozen on the PDF!
-    const gapPercent = parseFloat(reportSettings?.headerColumnGap || "2");
+    const gapPercent = parseFloat(reportSettings?.headerColumnGap || "2") || 0;
     const blockWidth = 50 - (gapPercent / 2);
 
     const leftSplitNums = (reportSettings?.leftColWidth || "35 65").split(" ").map(Number);
@@ -83,9 +103,8 @@ export default function ReportHeader({ reportSettings, realData, collectedDate, 
     const splitRightL = `${(absRightLabelW / blockWidth) * 100}%`;
     const splitRightD = `${(absRightDataW / blockWidth) * 100}%`;
 
-    let rowSpacing = 4; 
-    if (reportSettings?.rowPadding === 'py-0.5') rowSpacing = 2; 
-    if (reportSettings?.rowPadding === 'py-2.5') rowSpacing = 7; 
+    // ✨ FIX: Passes the incoming slider value directly to the safe parser
+    const rowSpacing = parsePadding(reportSettings?.rowPadding, 4);
 
     const tableStyleType = reportSettings?.tableStyle || 'grid';
     
