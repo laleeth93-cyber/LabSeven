@@ -31,7 +31,7 @@ export async function POST(req: Request) {
             } else {
                 // Vercel Production
                 const puppeteerCore = (await import('puppeteer-core')).default;
-                const chromium = (await import('@sparticuz/chromium')).default;
+                const chromium = (await import('@sparticuz/chromium')).default as any;
                 
                 cachedBrowser = await puppeteerCore.launch({
                     args: chromium.args,
