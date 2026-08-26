@@ -1,30 +1,49 @@
 // --- BLOCK middleware.ts OPEN ---
 import { withAuth } from "next-auth/middleware";
 
-export default withAuth({
-  pages: {
-    signIn: '/login',
-  },
-  callbacks: {
-    authorized: ({ req, token }) => {
-      const path = req.nextUrl.pathname;
-      
-      // Allow all public routes to bypass authentication
+import { NextResponse } from "next/server";
+
+export default withAuth(
+  function middleware(req) {
+    const token = req.nextauth.token;
+    const path = req.nextUrl.pathname;
+
+    if (token?.isSupportMode) {
       if (
-        path.startsWith('/login') ||
-        path.startsWith('/register') ||
-        path.startsWith('/reset') ||
-        path.startsWith('/verify') || 
-        path.startsWith('/api')
+        path.startsWith('/list') ||
+        path.startsWith('/results') ||
+        path.startsWith('/registration')
       ) {
-        return true; 
+        return NextResponse.redirect(new URL('/', req.url));
       }
-      
-      // Require auth for everything else
-      return !!token;
+    }
+    return NextResponse.next();
+  },
+  {
+    pages: {
+      signIn: '/login',
+    },
+    callbacks: {
+      authorized: ({ req, token }) => {
+        const path = req.nextUrl.pathname;
+        
+        // Allow all public routes to bypass authentication
+        if (
+          path.startsWith('/login') ||
+          path.startsWith('/register') ||
+          path.startsWith('/reset') ||
+          path.startsWith('/verify') || 
+          path.startsWith('/api')
+        ) {
+          return true; 
+        }
+        
+        // Require auth for everything else
+        return !!token;
+      }
     }
   }
-});
+);
 
 // Explicitly match all routes, letting the 'authorized' callback handle the logic
 export const config = {

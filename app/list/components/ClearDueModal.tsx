@@ -4,6 +4,9 @@
 import React, { useState, useEffect, useTransition } from 'react';
 import { Banknote, X, Loader2, CheckCircle2, CheckCircle } from 'lucide-react';
 import { clearBillDue } from '@/app/actions/patient-list';
+import { getMessageStationSettings } from '@/app/actions/message-station';
+import { toast } from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
 
 interface ClearDueModalProps {
     isOpen: boolean;
@@ -13,6 +16,9 @@ interface ClearDueModalProps {
 }
 
 export default function ClearDueModal({ isOpen, onClose, dueBill, onSuccess }: ClearDueModalProps) {
+    const { data: session } = useSession();
+    const orgId = (session?.user as any)?.orgId;
+    
     const [clearAmount, setClearAmount] = useState<string>('');
     const [payMode, setPayMode] = useState<string>('Cash');
     const [isPending, startTransition] = useTransition();
@@ -20,11 +26,21 @@ export default function ClearDueModal({ isOpen, onClose, dueBill, onSuccess }: C
     // --- SUCCESS POPUP STATE ---
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
+    const [adminAlertEnabled, setAdminAlertEnabled] = useState(false);
+    const [whatsappLimit, setWhatsappLimit] = useState(0);
+
     useEffect(() => {
         if (isOpen && dueBill) {
             setShowSuccessPopup(false);
             setClearAmount(dueBill.dueAmount.toString());
             setPayMode('Cash');
+            
+            getMessageStationSettings().then(res => {
+                if (res.success && res.data) {
+                    setAdminAlertEnabled(res.data.whatsappAdminAlertAuto ?? false);
+                    setWhatsappLimit(res.data.whatsappLimit ?? 0);
+                }
+            });
         }
     }, [isOpen, dueBill]);
 
@@ -37,6 +53,25 @@ export default function ClearDueModal({ isOpen, onClose, dueBill, onSuccess }: C
         startTransition(async () => {
             const res = await clearBillDue(dueBill.id, amount, payMode);
             if (res.success) {
+                // --- WHATSAPP ALERT DISPATCH ---
+                if (adminAlertEnabled) {
+                    if (Number(whatsappLimit) <= 0) {
+                        toast.error("Message credits are 0. Admin Alert skipped.");
+                    } else {
+                        fetch('/api/whatsapp/admin-alert', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            adminPhone: "919876543210", // Ensure this includes country code
+                            adminName: "Manager",
+                            paymentAmount: amount, 
+                            patientName: dueBill.patient?.firstName || "Patient"
+                          })
+                        }).catch(err => console.error("WhatsApp Alert Failed:", err));
+                    }
+                }
+                // ------------------------------------
+
                 // SHOW SUCCESS POPUP OVER MODAL
                 setShowSuccessPopup(true);
                 setTimeout(() => {

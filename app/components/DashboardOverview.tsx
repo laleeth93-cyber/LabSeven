@@ -7,7 +7,8 @@ import {
     getOutsourceData, getReferralList, getSpecificReferralTrendData,
     getSelfVsReferralData 
 } from '@/app/actions/dashboard';
-import { Loader2, TrendingUp, Users, Activity, AlertCircle, Building2, Calendar, Stethoscope, TestTube, ChevronDown, Search, FileText, UserPlus } from 'lucide-react';
+import { getMessageStationStats } from '@/app/actions/message-station';
+import { Loader2, TrendingUp, Users, Activity, AlertCircle, Building2, Calendar, Stethoscope, TestTube, ChevronDown, Search, FileText, UserPlus, Send, MessageSquare } from 'lucide-react';
 import { 
     LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, ComposedChart,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
@@ -233,16 +234,30 @@ export default function DashboardOverview({ initialData }: { initialData: any })
         getKPIs(fromStr, toStr).then(res => { setKpiData(res); setKpiLoading(false); });
     }, [kpiRange]);
 
-    const KPICard = ({ title, value, icon: Icon, colorClass, bgClass }: any) => (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col relative overflow-hidden group hover:shadow-md transition-all">
+    const [msgStats, setMsgStats] = useState<any>(null);
+    const [msgLoading, setMsgLoading] = useState(true);
+
+    useEffect(() => {
+        setMsgLoading(true);
+        getMessageStationStats().then(res => {
+            if (res.success) setMsgStats(res.data);
+            setMsgLoading(false);
+        });
+    }, []);
+
+    const KPICard = ({ title, value, icon: Icon, colorClass, bgClass, isLoading = kpiLoading, extraContent }: any) => (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col relative overflow-hidden group hover:shadow-md transition-all h-full">
             <div className={`absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-10 transition-transform group-hover:scale-150 ${bgClass}`}></div>
-            <div className="flex justify-between items-start mb-2">
+            <div className="flex justify-between items-start mb-2 relative z-10">
                 <div className={`p-2 rounded-xl ${bgClass} ${colorClass} bg-opacity-20`}><Icon size={20} /></div>
             </div>
-            <h3 className="text-3xl font-black text-slate-800 tracking-tight mt-1">
-                {kpiLoading ? <Loader2 className="animate-spin text-slate-300" size={24}/> : value}
-            </h3>
-            <p className="text-sm font-bold text-slate-500 mt-1">{title}</p>
+            <div className="relative z-10 flex-1">
+                <h3 className="text-3xl font-black text-slate-800 tracking-tight mt-1">
+                    {isLoading ? <Loader2 className="animate-spin text-slate-300" size={24}/> : value}
+                </h3>
+                <p className="text-sm font-bold text-slate-500 mt-1 mb-1">{title}</p>
+                {extraContent && <div>{extraContent}</div>}
+            </div>
         </div>
     );
 
@@ -264,13 +279,29 @@ export default function DashboardOverview({ initialData }: { initialData: any })
             </div>
 
             {/* KPI CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-6 relative z-10">
                 <KPICard title="Bills Generated" value={kpiData?.totalBills || 0} icon={FileText} colorClass="text-indigo-600" bgClass="bg-indigo-500" />
                 <KPICard title="Total Revenue" value={`₹${(kpiData?.totalRevenue || 0).toLocaleString('en-IN')}`} icon={TrendingUp} colorClass="text-emerald-600" bgClass="bg-emerald-500" />
                 <KPICard title="Patient Visits" value={kpiData?.totalPatients || 0} icon={Users} colorClass="text-blue-600" bgClass="bg-blue-500" />
                 <KPICard title="Tests Conducted" value={kpiData?.totalTests || 0} icon={Activity} colorClass="text-[#9575cd]" bgClass="bg-[#9575cd]" />
                 <KPICard title="Pending Dues" value={`₹${(kpiData?.totalDue || 0).toLocaleString('en-IN')}`} icon={AlertCircle} colorClass="text-rose-600" bgClass="bg-rose-500" />
                 <KPICard title="Outsourced Tests" value={kpiData?.outsourced || 0} icon={Building2} colorClass="text-amber-600" bgClass="bg-amber-500" />
+                <KPICard 
+                    title="Messages Sent" 
+                    value={msgStats?.totalSent || 0} 
+                    isLoading={msgLoading} 
+                    icon={Send} 
+                    colorClass="text-violet-600" 
+                    bgClass="bg-violet-500"
+                    extraContent={!msgLoading && msgStats && (
+                        <div className="flex items-center justify-start gap-3 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                            <div><span className="text-slate-800 text-xs">{msgStats.reportCount || 0}</span> Rep</div>
+                            <div><span className="text-slate-800 text-xs">{msgStats.invoiceCount || 0}</span> Bill</div>
+                            <div><span className="text-slate-800 text-xs">{msgStats.alertCount || 0}</span> Alt</div>
+                        </div>
+                    )}
+                />
+                <KPICard title="Messages Left" value={msgStats?.limit ?? 0} isLoading={msgLoading} icon={MessageSquare} colorClass="text-cyan-600" bgClass="bg-cyan-500" />
             </div>
 
             {/* CHARTS GRID 1 */}

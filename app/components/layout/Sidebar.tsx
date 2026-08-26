@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from "next-auth/react"; 
-import { LayoutDashboard, Home, UserPlus, Users, FileEdit, FileText, List, ClipboardList, TestTube, TestTubes, Server, Database, Layout, LayoutTemplate, Shield, ShieldCheck, Stethoscope, HeartPulse, Building2, Hospital, Microscope, Bug, Pill, FlaskConical, Crown, UserCog } from 'lucide-react';
+import { LayoutDashboard, Home, UserPlus, Users, FileEdit, FileText, List, ClipboardList, TestTube, TestTubes, Server, Database, Layout, LayoutTemplate, Shield, ShieldCheck, Stethoscope, HeartPulse, Building2, Hospital, Microscope, Bug, Pill, FlaskConical, Crown, UserCog, MessageSquare, Send, IndianRupee } from 'lucide-react';
 import { getTenantFeatures } from '@/app/actions/tenant';
 import { getUserPermissions } from '@/app/actions/authorizations';
 
@@ -20,6 +20,7 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
   
   const { data: session } = useSession();
   const orgId = (session?.user as any)?.orgId; 
+  const isSupportMode = (session?.user as any)?.isSupportMode;
 
   const [hasSensitivity, setHasSensitivity] = useState(false);
   const [permissions, setPermissions] = useState<any[]>([]);
@@ -77,6 +78,7 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
     pathname.includes('/lab-profile') ? 'lab-profile' :
     pathname.includes('/sensitivity') ? 'sensitivity' :
     pathname.includes('/registration') ? 'registration' : 
+    pathname.includes('/message-station') ? 'message-station' :
     pathname === '/' ? 'dashboard' :                      
     activeView;
 
@@ -96,6 +98,13 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
   };
 
   const canSee = (screenNames: string[]) => {
+      if (isSupportMode) {
+          const restricted = ['Registration', 'Result Entry', 'Patient List'];
+          if (screenNames.some(name => restricted.includes(name))) {
+              return false;
+          }
+      }
+
       if (orgId === 1) return true; 
       if (!permsLoaded) return false; 
       
@@ -184,6 +193,13 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
                 </Link>
             )}
 
+            {(orgId === 1 || isSupportMode) && (
+                <Link href="/message-station" prefetch={false} onClick={() => setActiveView('message-station')} className={getResponsiveLiClass(currentView === 'message-station', false)}>
+                  {currentView === 'message-station' ? <Send size={isSidebarOpen ? 18 : 20} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" /> : <MessageSquare size={isSidebarOpen ? 18 : 20} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />}
+                  {isSidebarOpen ? <span className={`text-[12px] tracking-wide whitespace-normal leading-snug ${currentView === 'message-station' ? 'font-bold' : 'font-medium'}`}>Message Station</span> : <span className={`text-[9px] tracking-tight text-center leading-[1.15] whitespace-normal w-full ${currentView === 'message-station' ? 'font-bold' : 'font-medium'}`}>Messages</span>}
+                </Link>
+            )}
+
             {canSee(['Header Setup', 'Body Settings', 'Footer Layout', 'Page Formatting']) && (
                 <Link href="/reports" prefetch={false} onClick={() => setActiveView('reports')} className={getResponsiveLiClass(currentView === 'reports', false)}>
                   {currentView === 'reports' ? <LayoutTemplate size={isSidebarOpen ? 18 : 20} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" /> : <Layout size={isSidebarOpen ? 18 : 20} color="#7e57c2" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />}
@@ -225,6 +241,19 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
                   <span className={`text-[12px] tracking-wide whitespace-normal leading-snug ${currentView === 'super-admin-admins' ? 'font-bold' : 'font-bold text-fuchsia-600'}`}>System Admins</span>
                 ) : (
                   <span className={`text-[9px] tracking-tight text-center leading-[1.15] whitespace-normal w-full ${currentView === 'super-admin-admins' ? 'font-bold' : 'font-bold text-fuchsia-600'}`}>Admins</span>
+                )}
+              </Link>
+
+              <Link href="/super-admin/recharge" prefetch={false} onClick={() => setActiveView('super-admin-recharge')} className={getResponsiveLiClass(currentView === 'super-admin-recharge', false)}>
+                {currentView === 'super-admin-recharge' ? (
+                    <IndianRupee size={isSidebarOpen ? 18 : 20} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+                ) : (
+                    <IndianRupee size={isSidebarOpen ? 18 : 20} color="#d946ef" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+                )}
+                {isSidebarOpen ? (
+                  <span className={`text-[12px] tracking-wide whitespace-normal leading-snug ${currentView === 'super-admin-recharge' ? 'font-bold' : 'font-bold text-fuchsia-600'}`}>Message Recharge</span>
+                ) : (
+                  <span className={`text-[9px] tracking-tight text-center leading-[1.15] whitespace-normal w-full ${currentView === 'super-admin-recharge' ? 'font-bold' : 'font-bold text-fuchsia-600'}`}>Recharge</span>
                 )}
               </Link>
             </div>

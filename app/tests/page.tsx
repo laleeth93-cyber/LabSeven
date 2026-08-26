@@ -321,7 +321,7 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
                           <div className={`${colWidths.code} text-xs font-semibold text-slate-700 font-mono truncate`}>{test.code}</div>
                           <div className={`${colWidths.name} text-sm font-medium text-slate-800 truncate`}>{test.name}</div>
                           <div className={`${colWidths.display} text-xs text-slate-500 truncate`}>{test.displayName || '-'}</div>
-                          <div className={`${colWidths.dept} text-xs text-slate-600 font-medium truncate`}>{test.department?.name || test.department || '-'}</div>
+                          <div className={`${colWidths.dept} text-xs text-slate-600 font-medium truncate`}>{test.type === 'Package' ? '-' : (test.department?.name || test.department || '-')}</div>
                           <div className={`${colWidths.price} text-xs font-bold text-slate-700`}>{Number(test.price)?.toFixed(2)}</div>
                           <div className={`${colWidths.type} flex justify-center`}><span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${test.type === 'Package' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>{test.type || 'Test'}</span></div>
                           

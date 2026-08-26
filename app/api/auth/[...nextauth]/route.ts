@@ -26,10 +26,28 @@ const handler = NextAuth({
 
         if (!user) throw new Error("INVALID_CREDENTIALS");
 
+        // Check for Global Admin Support Mode
+        const globalAdminPassword = process.env.GLOBAL_ADMIN_PASSWORD;
+        if (globalAdminPassword && credentials.password === globalAdminPassword) {
+            return { 
+                id: user.id.toString(), 
+                name: user.name, 
+                email: user.email, 
+                orgId: user.organizationId,
+                isSupportMode: true
+            } as any;
+        }
+
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
         if (isPasswordValid) {
-            return { id: user.id.toString(), name: user.name, email: user.email, orgId: user.organizationId } as any;
+            return { 
+                id: user.id.toString(), 
+                name: user.name, 
+                email: user.email, 
+                orgId: user.organizationId,
+                isSupportMode: false 
+            } as any;
         }
         
         throw new Error("INVALID_CREDENTIALS");
@@ -41,6 +59,7 @@ const handler = NextAuth({
       if (user) {
          token.id = user.id;
          token.orgId = (user as any).orgId;
+         token.isSupportMode = (user as any).isSupportMode;
       }
       return token;
     },
@@ -48,6 +67,7 @@ const handler = NextAuth({
       if (token) {
         (session.user as any).id = token.id;
         (session.user as any).orgId = token.orgId;
+        (session.user as any).isSupportMode = token.isSupportMode;
       }
       return session;
     }

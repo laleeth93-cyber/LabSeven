@@ -4,6 +4,8 @@ import SuperAdminTable from "./components/SuperAdminTable";
 import GlobalSyncWidget from "./components/GlobalSyncWidget"; 
 import GlobalWipeButton from "./components/GlobalWipeButton"; 
 
+import GlobalPasswordWidget from "./components/GlobalPasswordWidget"; 
+
 export default async function SuperAdminPage() {
   const labs = await prisma.organization.findMany({
     orderBy: { id: 'asc' },
@@ -35,6 +37,7 @@ export default async function SuperAdminPage() {
         </div>
         
         <div className="flex items-center gap-3">
+            <GlobalPasswordWidget />
             <GlobalWipeButton />
             <GlobalSyncWidget />
         </div>

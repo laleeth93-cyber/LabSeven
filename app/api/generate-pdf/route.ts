@@ -7,7 +7,7 @@ let cachedBrowser: any = null;
 
 export async function POST(req: Request) {
     try {
-        const { html, paperSize, printOrientation, width, height } = await req.json();
+        const { html, paperSize, printOrientation, width, height, enableJs } = await req.json();
 
         // If the browser isn't running yet (Cold Start), launch it with high-performance flags.
         if (!cachedBrowser) {
@@ -17,22 +17,24 @@ export async function POST(req: Request) {
                     '--no-sandbox', 
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
-                    '--disable-gpu',
-                    '--no-zygote',       // ⚡ SPEED BOOST 2: Skips unnecessary process cloning
-                    '--single-process'   // ⚡ SPEED BOOST 3: Reduces overhead
+                    '--disable-gpu'
                 ]
             });
         }
 
         const page = await cachedBrowser.newPage();
         
-        // ⚡ SPEED BOOST 4: Disable JS execution inside the page. We only need to render HTML/CSS.
-        await page.setJavaScriptEnabled(false);
         await page.emulateMediaType('screen');
 
-        // ⚡ SPEED BOOST 5: 'load' is instantaneous once the HTML is parsed. 
-        // We removed the slow 'networkidle0' and the arbitrary 500ms setTimeout!
-        await page.setContent(html, { waitUntil: 'load', timeout: 8000 }); 
+        if (enableJs) {
+            await page.setJavaScriptEnabled(true);
+            await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 }); 
+        } else {
+            // ⚡ SPEED BOOST 4: Disable JS execution inside the page. We only need to render HTML/CSS.
+            await page.setJavaScriptEnabled(false);
+            // ⚡ SPEED BOOST 5: 'load' is instantaneous once the HTML is parsed. 
+            await page.setContent(html, { waitUntil: 'load', timeout: 8000 }); 
+        }
 
         const pdfOptions: any = {
             landscape: printOrientation === 'landscape',

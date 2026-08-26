@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle, Type, X, User, Receipt, WifiOff } from 'lucide-react';
@@ -9,9 +9,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { registerPatient, getNextPatientId } from '@/app/actions/patient'; 
 import { getReferrals } from '@/app/actions/referral'; 
 import { createBill, getNextBillNumber, getCurrentUserSignature, getBillDetails } from '@/app/actions/billing'; 
+import { getMessageStationSettings } from '@/app/actions/message-station';
 
 import { localDB } from '@/lib/local-db/db';
 import { useNetworkStatus } from '@/lib/hooks/useNetworkStatus';
+import { useSession } from 'next-auth/react';
+import { toast } from 'react-hot-toast';
 
 import InvoiceModal from './InvoiceModal';
 import RegistrationLeftPane from './RegistrationLeftPane';
@@ -36,6 +39,8 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   const router = useRouter();
   const searchParams = useSearchParams();
   const editBillId = searchParams?.get('editBill');
+  const { data: session } = useSession();
+  const orgId = (session?.user as any)?.orgId;
   
   const isOnline = useNetworkStatus();
 
@@ -73,10 +78,16 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   // GLOBAL WORKFLOW STATES
   // ==========================================
   const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false); // 🚨 Synchronous lock to prevent double-clicks
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [invoiceData, setInvoiceData] = useState<any>(null);
   const [userSignature, setUserSignature] = useState<any>(null);
+  const [messageSettings, setMessageSettings] = useState({
+    whatsappInvoiceAuto: false, whatsappInvoiceManual: true,
+    whatsappAdminAlertAuto: false, whatsappAdminAlertManual: true,
+    whatsappLimit: 0
+  });
 
   const getLocalISOString = () => {
     const now = new Date();
@@ -94,6 +105,18 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
       }
     };
     fetchSignature();
+    
+    getMessageStationSettings().then(res => {
+        if (res.success && res.data) {
+            setMessageSettings({
+                whatsappInvoiceAuto: res.data.whatsappInvoiceAuto ?? false,
+                whatsappInvoiceManual: res.data.whatsappInvoiceManual ?? true,
+                whatsappAdminAlertAuto: res.data.whatsappAdminAlertAuto ?? false,
+                whatsappAdminAlertManual: res.data.whatsappAdminAlertManual ?? true,
+                whatsappLimit: res.data.whatsappLimit ?? 0
+            });
+        }
+    });
   }, []);
 
   // ==========================================
@@ -111,7 +134,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         if (result && result.success && result.data) {
           const { bill, patient } = result.data; 
 
-          // 1. Populate Patient Details (Fixed TS Errors)
+          // 1. Populate Patient Details 
           setCurrentPatientId(patient.patientId || '');
           setFormValues({
             2: patient.designation || 'Mr.',
@@ -145,7 +168,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
             })));
           }
 
-          // 4. Populate Financial/Payment Details (Fixed TS Error)
+          // 4. Populate Financial/Payment Details 
           setDiscountPercent(bill.discountPercent?.toString() || '');
           setDiscountAmount(bill.discountAmount?.toString() || '');
           setDiscountReason(bill.discountReason || '');
@@ -228,6 +251,9 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   const visibleFields = fields.filter(f => f.isVisible).sort((a, b) => (a.order || 0) - (b.order || 0));
 
   const handleSaveAndGenerate = async () => {
+    // 🚨 STAGE 1: Absolute Synchronous Lock (Prevents double-click bypass)
+    if (isSavingRef.current) return;
+
     const missingFields: string[] = [];
     visibleFields.forEach(field => {
       if (field.required && field.label !== 'Patient ID') {
@@ -251,6 +277,8 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         return alert("❌ Cannot generate a bill without selecting tests.");
     }
 
+    // 🚨 STAGE 2: Engage Locks
+    isSavingRef.current = true;
     setIsSaving(true); 
 
     try {
@@ -312,6 +340,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         patientName: fullName, ageGender: ageString, referredBy: dbPatientData.refDoctor || 'Self',
         paymentType: selectedModes.join(', '), items: billItems.map(item => ({ id: item.id, name: item.name, price: item.price })),
         subTotal, discount: finalDiscount, totalAmount: netAmount, paidAmount: totalPaid, balanceDue: dueAmount, note: notesContent,
+        phone: dbPatientData.phone,
         authorSign: userSignature 
       };
 
@@ -331,6 +360,8 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         setTimeout(() => {
             setShowSuccessPopup(false);
             setIsInvoiceOpen(true);
+            setIsSaving(false);
+            isSavingRef.current = false; // Safely unlock
         }, 1500);
         return; 
       }
@@ -345,16 +376,48 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         throw new Error(`Bill Error: ${billResult.message}`);
       }
 
+      setInvoiceData((prev: any) => ({
+          ...prev,
+          billId: billResult.billNumber || currentBillNumber
+      }));
+
+      // 🚨 Safely isolated WhatsApp dispatch to prevent ad-blockers from crashing the flow
+      if (messageSettings.whatsappAdminAlertAuto) {
+          try {
+              if (Number(messageSettings.whatsappLimit) <= 0) {
+                  toast.error("Message credits are 0. Admin Alert skipped.");
+              } else {
+                  const testNamesList = billItems.map(item => item.name).join(', ');
+                  fetch('/api/whatsapp/admin-alert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      adminPhone: "919876543210", // Replace with your admin phone number
+                      adminName: "Manager",
+                      patientName: fullName || `${dbPatientData.firstName} ${dbPatientData.lastName}`.trim(),
+                      testList: testNamesList || "N/A",
+                      paidAmount: totalPaid,
+                      dueAmount: dueAmount
+                    })
+                  }).catch(err => console.error("WhatsApp Admin Alert Failed:", err));
+              }
+          } catch (e) {
+              console.error("Sync error in whatsapp dispatch", e);
+          }
+      }
+
       setShowSuccessPopup(true);
       setTimeout(() => {
           setShowSuccessPopup(false);
           setIsInvoiceOpen(true);
+          setIsSaving(false);
+          isSavingRef.current = false; // Safely unlock
       }, 1500);
 
     } catch (error: any) {
       alert(`❌ ${error.message || 'Critical Error: Could not save.'}`);
-    } finally {
       setIsSaving(false);
+      isSavingRef.current = false; // Safely unlock on failure
     }
   };
 
@@ -421,12 +484,14 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
          onClose={(isNavigating) => { 
              setIsInvoiceOpen(false); 
              if (!isNavigating) {
-                 // Force navigation to the clean base route to wipe out the ?editBill parameter
                  window.location.href = '/registration'; 
              }
          }} 
          onEdit={() => setIsInvoiceOpen(false)} 
          data={invoiceData}
+         autoSendWhatsApp={messageSettings.whatsappInvoiceAuto}
+         whatsappManualEnabled={messageSettings.whatsappInvoiceManual}
+         whatsappLimit={messageSettings.whatsappLimit}
       />
     </div>
   );

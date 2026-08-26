@@ -1,5 +1,8 @@
-import React, { useEffect, useState } from 'react';
+"use client";
+
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { X, Printer, Download, CheckCircle, ScanBarcode, ArrowRight, FileText, Send, Loader2, Edit } from 'lucide-react';
 import { generateTRFHtml, TRFData } from '@/app/components/TRFDocument';
 import BarcodeModal from '@/app/components/BarcodeModal'; 
@@ -8,12 +11,18 @@ import html2canvas from 'html2canvas';
 import QRCode from 'qrcode'; 
 import { getLabProfile } from '@/app/actions/lab-profile';
 
+import { pdf } from '@react-pdf/renderer';
+import InvoiceDocument from './InvoiceDocument'; 
+import WhatsAppConfirmModal from '@/app/components/WhatsAppConfirmModal';
+import { toast } from 'react-hot-toast';
+
 export interface InvoiceItem { id: number; name: string; price: number; }
 export interface InvoiceData {
   billId: string; billDate: string; patientName: string; ageGender: string;
   referredBy: string; paymentType: string; items: InvoiceItem[];
   subTotal: number; discount: number; totalAmount: number;
   paidAmount: number; balanceDue: number;
+  phone?: string; 
   barcodeUrl?: string; note?: string; noteImage?: string; 
   labProfile?: any;
   authorSign?: any;
@@ -24,10 +33,16 @@ interface InvoiceModalProps {
   onClose: (isNavigating?: boolean) => void;
   onEdit?: () => void; 
   data: InvoiceData | null;
+  autoSendWhatsApp?: boolean;
+  whatsappManualEnabled?: boolean;
+  whatsappLimit?: number;
 }
 
-export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceModalProps) {
+export default function InvoiceModal({ isOpen, onClose, onEdit, data, autoSendWhatsApp, whatsappManualEnabled = true, whatsappLimit = 0 }: InvoiceModalProps) {
   const router = useRouter(); 
+  const { data: session } = useSession();
+  const orgId = (session?.user as any)?.orgId;
+
   const [isClient, setIsClient] = useState(false);
   const [barcodeUrl, setBarcodeUrl] = useState<string>('');
   const [qrUrl, setQrUrl] = useState<string>(''); 
@@ -37,6 +52,8 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceM
   
   const [isTrfLoading, setIsTrfLoading] = useState(false);
   const [isInvoiceLoading, setIsInvoiceLoading] = useState(false);
+  const [isSendingWA, setIsSendingWA] = useState(false); 
+  const [isWAConfirmOpen, setIsWAConfirmOpen] = useState(false);
 
   useEffect(() => { setIsClient(true); }, []);
 
@@ -87,6 +104,36 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceM
       return () => clearTimeout(timer);
     } else { setNoteImage(''); }
   }, [isOpen, data]);
+
+  const hasAutoSent = useRef(false);
+  useEffect(() => {
+      if (isOpen && autoSendWhatsApp && isClient && data && !hasAutoSent.current && !isSendingWA) {
+          hasAutoSent.current = true;
+          // Wait for DOM and images to settle before capturing HTML
+          const timer = setTimeout(async () => {
+              const el = document.getElementById('invoice-printable-area');
+              if (el) {
+                  // Ensure we have the lab profile so the WhatsApp payload has the correct lab name and phone
+                  let currentProfile = labProfile;
+                  if (!currentProfile) {
+                      try {
+                          const res = await getLabProfile();
+                          if (res?.success && res.data) {
+                              setLabProfile(res.data);
+                          }
+                      } catch (e) {
+                          console.error("Failed to fetch lab profile for auto-send", e);
+                      }
+                  }
+                  
+                  const phone = data.phone || (data as any).patientPhone || '';
+                  handleConfirmWhatsapp(phone, false);
+              }
+          }, 1500);
+          // Removed clearTimeout so the timeout is guaranteed to run once
+      }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, autoSendWhatsApp, isClient, data]); 
 
   if (!isClient || !isOpen || !data) return null;
 
@@ -178,6 +225,123 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceM
   };
 
   const handleDownloadInvoice = () => handlePrintInvoice();
+
+  const handleSendWhatsapp = async () => {
+      setIsWAConfirmOpen(true);
+  };
+
+  const handleConfirmWhatsapp = async (phoneToUse: string, shouldSave: boolean) => {
+      setIsWAConfirmOpen(false); 
+      
+      if (Number(whatsappLimit) <= 0) {
+          toast.error("Your message credits are 0. Please recharge to send messages.");
+          return;
+      }
+
+      if (shouldSave) {
+          try {
+              await fetch('/api/whatsapp/update-phone', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ billNumber: data.billId, phone: phoneToUse })
+              });
+              data.phone = phoneToUse;
+              if ((data as any).patientPhone) (data as any).patientPhone = phoneToUse;
+          } catch (error) {
+              console.error('Failed to save phone number:', error);
+          }
+      }
+
+      setIsSendingWA(true);
+      try {
+          const element = document.getElementById('invoice-printable-area');
+          if (!element) throw new Error("Invoice area not found");
+
+          const htmlContent = `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <meta charset="utf-8">
+                  <title>Invoice - ${data.billId}</title>
+                  <script src="https://cdn.tailwindcss.com"></script>
+                  <style>
+                      *, *::before, *::after { box-sizing: border-box !important; }
+                      body { background: white; font-family: sans-serif; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                      @media print {
+                          @page { size: A4 portrait; margin: 0; }
+                          body { padding: 0; margin: 0; }
+                          #invoice-printable-area { width: 210mm !important; min-height: 297mm !important; box-shadow: none !important; border: none !important; margin: 0 !important; }
+                      }
+                  </style>
+              </head>
+              <body style="display: flex; justify-content: center; background: white;">
+                  ${element.outerHTML}
+              </body>
+              </html>
+          `;
+
+          const pdfResponse = await fetch('/api/generate-pdf', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ html: htmlContent, paperSize: 'A4', printOrientation: 'portrait', enableJs: true })
+          });
+
+          if (!pdfResponse.ok) {
+              const errText = await pdfResponse.text();
+              throw new Error(`Failed to generate PDF: ${errText}`);
+          }
+
+          const blob = await pdfResponse.blob();
+
+          const formData = new FormData();
+          formData.append('file', blob, `${data.billId}_Receipt.pdf`);
+          formData.append('folder', 'receipts'); 
+
+          const uploadRes = await fetch('/api/upload', {
+              method: 'POST',
+              body: formData
+          });
+
+          if (!uploadRes.ok) {
+              throw new Error("Failed to upload receipt PDF to server/Cloudflare.");
+          }
+
+          const uploadData = await uploadRes.json();
+          const uploadedPdfUrl = uploadData.url; 
+
+          if (!uploadedPdfUrl) {
+              throw new Error("Upload succeeded, but no URL was returned.");
+          }
+
+          // --- DISPATCH WHATSAPP API WITH LAB DATA INCLUDED ---
+          const res = await fetch('/api/whatsapp/bill-receipt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  clientId: orgId || profile?.organizationId || profile?.id,
+                  phone: phoneToUse, 
+                  patientName: data.patientName,
+                  labName: profile?.name || 'Smart Lab',
+                  labPhone: profile?.phone || '',
+                  amount: data.paidAmount, 
+                  pdfUrl: uploadedPdfUrl 
+              })
+          });
+
+          if (!res.ok) {
+              const errData = await res.json();
+              throw new Error(errData.error?.message || "WhatsApp dispatch failed");
+          }
+          
+          toast.success("WhatsApp Invoice sent successfully!");
+      } catch (error: any) {
+          console.error("WhatsApp Error:", error);
+          toast.error(`Failed to send WhatsApp invoice: ${error.message}`);
+      } finally {
+          setIsSendingWA(false);
+      }
+  };
+
   const handleEnterResults = () => { if (data?.billId) { onClose(true); router.push(`/results/entry?billNumber=${data.billId}`); } };
 
   const plainBtnClass = "flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded border border-slate-300 bg-white text-slate-700 text-xs md:text-sm font-bold shadow-sm transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-1 md:flex-none";
@@ -352,7 +516,6 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceM
                           onEdit(); 
                       } else {
                           onClose(true);
-                          // Update this URL string to match your exact route for the billing/registration page
                           router.push(`/registration?editBill=${data.billId}`); 
                       }
                   }} 
@@ -375,7 +538,14 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceM
               <button onClick={handleDownloadInvoice} disabled={isInvoiceLoading} className={iconBtnClass} style={mainGradient} title="Download PDF"> 
                   {isInvoiceLoading ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />} 
               </button>
-              <button className={gradientBtnClass} style={mainGradient}> <Send size={16} /> <span className="hidden sm:inline">Send</span> </button>
+              
+              {whatsappManualEnabled && (
+              <button onClick={handleSendWhatsapp} disabled={isSendingWA} className={gradientBtnClass} style={mainGradient}> 
+                  {isSendingWA ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} 
+                  <span className="hidden sm:inline">{isSendingWA ? 'Sending WA...' : 'WhatsApp'}</span> 
+              </button>
+              )}
+
               <button onClick={handlePrintInvoice} disabled={isInvoiceLoading} className={gradientBtnClass} style={mainGradient}> 
                   {isInvoiceLoading ? <Loader2 size={16} className="animate-spin md:mr-1" /> : <Printer size={16} className="md:mr-1" />} <span className="hidden md:inline">Print</span>
               </button>
@@ -384,6 +554,15 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data }: InvoiceM
       </div>
     </div>
     
+    <WhatsAppConfirmModal
+        isOpen={isWAConfirmOpen}
+        onClose={() => setIsWAConfirmOpen(false)}
+        onConfirm={handleConfirmWhatsapp}
+        patientName={data?.patientName || ''}
+        existingPhone={data?.phone || (data as any)?.patientPhone}
+        documentType="Invoice"
+    />
+
     <BarcodeModal isOpen={isBarcodeOpen} onClose={() => setIsBarcodeOpen(false)} data={barcodeModalData} />
     </>
   );

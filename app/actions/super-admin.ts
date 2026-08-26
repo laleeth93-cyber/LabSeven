@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/server-auth"; // 🚨 REQUIRED FOR SECURITY CHECK
+import fs from "fs";
+import path from "path";
 
 // 1. Toggle Active/Suspended Status
 export async function toggleLabStatus(orgId: number, currentStatus: boolean) {
@@ -121,5 +123,44 @@ export async function wipeAllTenantData() {
     } catch (error: any) {
         console.error("Global Wipe Error:", error);
         return { success: false, message: error.message || "Failed to wipe global data." };
+    }
+}
+
+// 6. Change Global Admin Password
+export async function changeGlobalAdminPassword(newPassword: string) {
+    try {
+        const { orgId } = await requireAuth();
+        
+        if (orgId !== 1) {
+            throw new Error("Only Super Administrators can change the global admin password.");
+        }
+
+        if (!newPassword || newPassword.length < 6) {
+            throw new Error("Password must be at least 6 characters long.");
+        }
+
+        const envPath = path.resolve(process.cwd(), '.env');
+        let envContent = '';
+        if (fs.existsSync(envPath)) {
+            envContent = fs.readFileSync(envPath, 'utf8');
+        }
+
+        // Check if GLOBAL_ADMIN_PASSWORD already exists
+        const regex = /^GLOBAL_ADMIN_PASSWORD=.*$/m;
+        if (regex.test(envContent)) {
+            envContent = envContent.replace(regex, `GLOBAL_ADMIN_PASSWORD="${newPassword}"`);
+        } else {
+            envContent += `\nGLOBAL_ADMIN_PASSWORD="${newPassword}"\n`;
+        }
+
+        fs.writeFileSync(envPath, envContent, 'utf8');
+        
+        // Also update the current running process immediately
+        process.env.GLOBAL_ADMIN_PASSWORD = newPassword;
+
+        return { success: true, message: "Global Admin Password updated successfully." };
+    } catch (error: any) {
+        console.error("Change Password Error:", error);
+        return { success: false, message: error.message || "Failed to change global admin password." };
     }
 }

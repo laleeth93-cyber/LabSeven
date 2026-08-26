@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { getPrintableBillData } from '@/app/actions/result-entry'; 
+import React, { useState, useEffect, useRef } from 'react';
+import { getPrintableBillData } from '@/app/actions/result-entry';
 import { getReportSettings } from '@/app/actions/reports';
 import { getLabProfile } from '@/app/actions/lab-profile';
 import ReportDispatchModal from '@/app/reports/components/ReportDispatchModal';
@@ -9,27 +9,33 @@ import JsBarcode from 'jsbarcode';
 import QRCode from 'qrcode';
 import { pdf } from '@react-pdf/renderer';
 import PatientReportDocument from './PatientReportDocument';
+import { toast } from 'react-hot-toast';
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
     billId: number | null;
+    autoSendWhatsApp?: boolean; // NEW PROP
+    whatsappLimit?: number;
+    whatsappManualEnabled?: boolean;
 }
 
-export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
+export default function PatientReportModal({ isOpen, onClose, billId, autoSendWhatsApp = false, whatsappLimit = 0, whatsappManualEnabled = true }: Props) {
     const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+    const [rawPdfBlob, setRawPdfBlob] = useState<Blob | null>(null); // NEW STATE
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
-    
+    const [isSendingWA, setIsSendingWA] = useState(false); // NEW STATE
+
     const [realData, setRealData] = useState<any>(null);
     const [reportSettings, setReportSettings] = useState<any>(null);
     const [barcodeUrl, setBarcodeUrl] = useState<string | null>(null);
 
     const [printHeaderFooter, setPrintHeaderFooter] = useState(true);
     const [letterheadStyle, setLetterheadStyle] = useState('none');
-    
+
     const [separateDept, setSeparateDept] = useState(false);
     const [separateTest, setSeparateTest] = useState(false);
-    
+
     const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
 
     const [overrideCollectionDate, setOverrideCollectionDate] = useState<string>('');
@@ -54,9 +60,9 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
     const loadData = async () => {
         setIsPreviewLoading(true);
-        
+
         const [billRes, settingsRes, profileRes] = await Promise.all([
-            getPrintableBillData(billId!), 
+            getPrintableBillData(billId!),
             getReportSettings(),
             getLabProfile()
         ]);
@@ -73,12 +79,12 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
         settingsData.logoUrl = profileData.logoUrl;
 
         if (billRes.success && billRes.data) {
-            const billData: any = billRes.data; 
+            const billData: any = billRes.data;
 
             if (billData.items) {
                 billData.items = billData.items.filter((item: any) => {
                     const isCult = item.test?.isCulture;
-                    return isCult !== true && isCult !== 'true'; 
+                    return isCult !== true && isCult !== 'true';
                 });
             }
 
@@ -93,13 +99,13 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             let defaultReportedDate = new Date();
             if (billData.items && billData.items.length > 0) {
                 const savedItems = billData.items.filter((i: any) => i.status !== 'Pending');
-                
+
                 if (savedItems.length > 0) {
                     const latestUpdate = savedItems.reduce((latest: Date, current: any) => {
                         const currentUpdate = new Date(current.updatedAt || current.createdAt || Date.now());
                         return currentUpdate > latest ? currentUpdate : latest;
                     }, new Date(0));
-                    
+
                     if (latestUpdate.getTime() > 0) {
                         defaultReportedDate = latestUpdate;
                     }
@@ -114,7 +120,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                 setSelectedItemIds(printableItems.map((item: any) => item.id));
             }
 
-            const hasBeenSaved = billData.items && billData.items.some((i:any) => i.status !== 'Pending');
+            const hasBeenSaved = billData.items && billData.items.some((i: any) => i.status !== 'Pending');
 
             if (hasBeenSaved) {
                 if (billData.approvedBy1) {
@@ -122,12 +128,12 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     let formattedDesignation = u.designation || '';
                     if (u.degree) formattedDesignation += formattedDesignation ? ` | ${u.degree}` : u.degree;
                     if (u.regNumber) formattedDesignation += formattedDesignation ? ` | ${u.regNumber}` : u.regNumber;
-                    
+
                     settingsData.doc1Name = u.signName || u.name;
                     settingsData.doc1SignUrl = u.signatureUrl === 'null' ? null : u.signatureUrl;
                     settingsData.doc1Designation = formattedDesignation;
                 } else {
-                    settingsData.doc1Name = ' '; 
+                    settingsData.doc1Name = ' ';
                     settingsData.doc1SignUrl = null;
                     settingsData.doc1Designation = null;
                 }
@@ -153,7 +159,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                 const shortBarcodeText = String(billData.billNumber || '').slice(-4);
                 JsBarcode(canvas, shortBarcodeText, { displayValue: false, height: 40, width: 1.5, margin: 0, background: "transparent", lineColor: "#000000" });
                 setBarcodeUrl(canvas.toDataURL());
-            } catch(e){
+            } catch (e) {
                 setBarcodeUrl(null);
             }
         }
@@ -172,7 +178,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
     let displayData: any[] = [];
     if (filteredRealData && filteredRealData.items && Array.isArray(filteredRealData.items)) {
-        
+
         const getAgeInDays = (val: number, unit: string) => {
             if (unit === 'Years') return val * 365;
             if (unit === 'Months') return val * 30;
@@ -201,7 +207,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                 });
                 if (match) return match;
             }
-            return null; 
+            return null;
         };
 
         const getDisplayRange = (parameter: any, resultObj?: any) => {
@@ -211,7 +217,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             }
 
             if (!parameter) return '';
-            
+
             const range = getMatchedRange(parameter);
             if (range) {
                 if (range.normalRange && String(range.normalRange).trim() !== '') return String(range.normalRange);
@@ -225,7 +231,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
             if (parameter.minVal !== null && parameter.minVal !== undefined && parameter.maxVal !== null && parameter.maxVal !== undefined) {
                 return `${parameter.minVal} - ${parameter.maxVal}`;
             }
-            
+
             return parameter.normalRange ?? parameter.bioRefRange ?? parameter.referenceRange ?? parameter.displayRange ?? parameter.refRange ?? parameter.range ?? '';
         };
 
@@ -243,13 +249,13 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
             const testName = item.test?.displayName || item.test?.name || item.testName || 'TEST';
             displayData.push({ isGroup: true, isSubHeading: false, param: testName, result: '', unit: '', ref: '', method: '', abnormal: false });
-            
+
             const results = item.results || [];
             const printedParamIds = new Set();
 
             const processParams = (paramsList: any[]) => {
                 if (!paramsList || paramsList.length === 0) return;
-                
+
                 paramsList.forEach((junctionOrParam: any) => {
                     const actualParam = junctionOrParam.parameter;
 
@@ -259,8 +265,8 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                         return;
                     }
 
-                    if (!actualParam) return; 
-                    
+                    if (!actualParam) return;
+
                     const pId = actualParam.id;
                     printedParamIds.add(pId);
                     const pName = actualParam.displayName || actualParam.name || '-';
@@ -270,7 +276,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
                     val = val !== null && val !== undefined ? String(val).trim() : '';
 
-                    if (val === '') return; 
+                    if (val === '') return;
 
                     const refRange = getDisplayRange(actualParam, matchedResult);
                     const activeRange = getMatchedRange(actualParam);
@@ -278,10 +284,10 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
                     let isAbnormal = false;
                     const flag = String(matchedResult?.flag || '').trim().toUpperCase();
-                    
+
                     if (flag === 'H' || flag === 'L' || flag === 'HIGH' || flag === 'LOW' || flag === '*' || flag === 'A' || flag === 'ABNORMAL' || matchedResult?.isAbnormal) {
                         isAbnormal = true;
-                    } 
+                    }
 
                     if (val && abnormalValues.includes(String(val).trim().toLowerCase())) {
                         isAbnormal = true;
@@ -289,10 +295,10 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
                     // ✨ NEW: Passed flag directly to the data renderer
                     displayData.push({
-                        isGroup: false, param: pName, result: val !== '' ? String(val) : '', 
+                        isGroup: false, param: pName, result: val !== '' ? String(val) : '',
                         unit: actualParam.unit ?? '', ref: refRange, method: actualParam.method ?? '',
                         abnormal: isAbnormal,
-                        flag: flag === 'NORMAL' ? '' : flag, 
+                        flag: flag === 'NORMAL' ? '' : flag,
                         inputType: actualParam.inputType || 'Numerical'
                     });
                 });
@@ -308,7 +314,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
             if (results && results.length > 0) {
                 results.forEach((res: any) => {
-                    if (!res.parameterId || printedParamIds.has(res.parameterId)) return; 
+                    if (!res.parameterId || printedParamIds.has(res.parameterId)) return;
                     const actualParam = res.parameter || {};
                     const pName = actualParam.displayName || actualParam.name || '-';
                     if (pName === '-') return;
@@ -316,7 +322,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     let val = res.resultValue ?? res.value ?? res.result ?? res.enteredValue ?? '';
                     val = val !== null && val !== undefined ? String(val).trim() : '';
 
-                    if (val === '') return; 
+                    if (val === '') return;
 
                     const refRange = getDisplayRange(actualParam, res);
                     const activeRange = getMatchedRange(actualParam);
@@ -324,7 +330,7 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
                     let isAbnormal = false;
                     const flag = String(res.flag || '').trim().toUpperCase();
-                    
+
                     if (flag === 'H' || flag === 'L' || flag === 'HIGH' || flag === 'LOW' || flag === '*' || flag === 'A' || flag === 'ABNORMAL' || res.isAbnormal) {
                         isAbnormal = true;
                     }
@@ -351,11 +357,11 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
             if (current.isGroup) {
                 let hasData = false;
-                
+
                 for (let j = i + 1; j < displayData.length; j++) {
                     const next = displayData[j];
                     if (!next.isGroup) {
-                        hasData = true; 
+                        hasData = true;
                         break;
                     }
                     if (!current.isSubHeading && next.isGroup && !next.isSubHeading) break;
@@ -384,18 +390,18 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
             const qrUrl = `${window.location.origin}/verify/${filteredRealData?.id || billId}`;
             const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
-            
+
             const baseDate = overrideCollectionDate ? new Date(overrideCollectionDate) : (filteredRealData?.date ? new Date(filteredRealData.date) : new Date());
             const collectedDateStr = baseDate.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).replace(',', '');
-            
+
             const repDateObj = overrideReportedDate ? new Date(overrideReportedDate) : new Date();
             const reportedDateStr = repDateObj.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).replace(',', '');
 
             const pdfRealData = { ...filteredRealData, date: baseDate.toISOString() };
 
             const blob = await pdf(
-                <PatientReportDocument 
-                    realData={pdfRealData} 
+                <PatientReportDocument
+                    realData={pdfRealData}
                     displayData={displayData}
                     reportSettings={reportSettings}
                     barcodeUrl={barcodeUrl}
@@ -409,7 +415,9 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
                     separateTest={separateTest}
                 />
             ).toBlob();
-            
+
+            setRawPdfBlob(blob); // Save blob for auto send
+
             const url = URL.createObjectURL(blob);
             setPdfPreviewUrl(prev => { if (prev) URL.revokeObjectURL(prev); return url; });
         } catch (error) {
@@ -423,7 +431,77 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
         if (realData) {
             generatePDF();
         }
-    }, [realData, reportSettings, printHeaderFooter, letterheadStyle, separateDept, separateTest, selectedItemIds, overrideCollectionDate, overrideReportedDate]); 
+    }, [realData, reportSettings, printHeaderFooter, letterheadStyle, separateDept, separateTest, selectedItemIds, overrideCollectionDate, overrideReportedDate]);
+
+    const handleSendReport = async () => {
+        if (!rawPdfBlob || !realData || isSendingWA) return;
+
+        if (Number(whatsappLimit) <= 0) {
+            toast.error("Your message credits are 0. Please recharge to send messages.");
+            onClose();
+            return;
+        }
+
+        setIsSendingWA(true);
+        try {
+            // 1. Upload to R2
+            const formData = new FormData();
+            formData.append('file', rawPdfBlob, `${realData.billNumber}_Lab_Report.pdf`);
+            formData.append('folder', 'reports');
+
+            const uploadRes = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!uploadRes.ok) throw new Error('Failed to upload PDF');
+            const uploadData = await uploadRes.json();
+            if (!uploadData.success) throw new Error(uploadData.error || 'Upload failed');
+
+            const uploadedPdfUrl = uploadData.url;
+
+            // 2. Send via WhatsApp
+            const fullName = `${realData.patient?.firstName || ''} ${realData.patient?.lastName || ''}`.trim();
+            const phoneToUse = realData.patient?.phone;
+
+            if (!phoneToUse) throw new Error('Patient does not have a registered phone number.');
+
+            const sendRes = await fetch('/api/whatsapp/patient-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    patientPhone: phoneToUse,
+                    patientName: fullName,
+                    pdfUrl: uploadedPdfUrl,
+                    fileName: `${realData.billNumber}_Lab_Report.pdf`
+                })
+            });
+
+            if (!sendRes.ok) {
+                const errData = await sendRes.json();
+                throw new Error(errData.error?.message || "WhatsApp dispatch failed");
+            }
+
+            toast.success("WhatsApp Report sent successfully!");
+            onClose(); // Close modal on success
+        } catch (error: any) {
+            console.error("WhatsApp Send Error:", error);
+            toast.error(`Failed to send WhatsApp report: ${error.message}`);
+            // Don't close on manual send error unless we want to, wait, autoSend closed it. 
+            // We can conditionally close or just leave it. Let's not close on error so user can retry if manual.
+            if (autoSendWhatsApp) onClose(); 
+        } finally {
+            setIsSendingWA(false);
+            if (autoSendWhatsApp) setRawPdfBlob(null); // Clear blob so it doesn't trigger again for auto send
+        }
+    };
+
+    // --- WHATSAPP AUTO SEND EFFECT ---
+    useEffect(() => {
+        if (autoSendWhatsApp && rawPdfBlob && realData && !isSendingWA) {
+            handleSendReport();
+        }
+    }, [rawPdfBlob, realData, autoSendWhatsApp, isSendingWA]);
 
     const handleDirectDownload = () => {
         if (!pdfPreviewUrl) return;
@@ -441,15 +519,31 @@ export default function PatientReportModal({ isOpen, onClose, billId }: Props) {
 
     if (!isOpen) return null;
 
+    if (autoSendWhatsApp) {
+        return (
+            <div className="fixed inset-0 z-[99999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-2xl p-6 flex flex-col items-center max-w-sm w-full text-center">
+                    <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-2">Sending WhatsApp Report...</h3>
+                    <p className="text-sm text-slate-500">Please wait while the PDF is generated and sent.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <ReportDispatchModal 
+        <ReportDispatchModal
             isOpen={isOpen} onClose={onClose} pdfPreviewUrl={pdfPreviewUrl} isPreviewLoading={isPreviewLoading}
-            handleDirectDownload={handleDirectDownload} 
+            handleDirectDownload={handleDirectDownload}
             printHeaderFooter={printHeaderFooter} onToggleHeaderFooter={setPrintHeaderFooter}
             letterheadStyle={letterheadStyle} onChangeLetterheadStyle={setLetterheadStyle}
             separateDept={separateDept} onToggleSeparateDept={setSeparateDept}
             separateTest={separateTest} onToggleSeparateTest={setSeparateTest}
-            
+
+            onSendReport={handleSendReport}
+            isSendingReport={isSendingWA}
+            whatsappManualEnabled={whatsappManualEnabled}
+
             billItems={realData?.items || []}
             selectedItemIds={selectedItemIds}
             onToggleItem={toggleTestSelection}

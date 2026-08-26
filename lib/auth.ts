@@ -74,6 +74,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.orgId = (user as any).orgId;
+        token.isSupportMode = (user as any).isSupportMode;
       }
       return token;
     },
@@ -81,6 +82,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         (session.user as any).id = token.id;
         (session.user as any).orgId = token.orgId;
+        (session.user as any).isSupportMode = token.isSupportMode;
       }
       return session;
     }

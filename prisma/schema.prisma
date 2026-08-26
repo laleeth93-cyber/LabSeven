@@ -20,6 +20,14 @@ model Organization {
   updatedAt                 DateTime                   @default(now()) @updatedAt
   subscriptionEndsAt        DateTime?
   hasSensitivity            Boolean                    @default(false)
+  whatsappReportAuto        Boolean                    @default(false)
+  whatsappReportManual      Boolean                    @default(true)
+  whatsappInvoiceAuto       Boolean                    @default(false)
+  whatsappInvoiceManual     Boolean                    @default(true)
+  whatsappAdminAlertAuto    Boolean                    @default(false)
+  whatsappAdminAlertManual  Boolean                    @default(true)
+  whatsappLimit             Int                        @default(0)
+
   antibiotics               Antibiotic[]
   antibioticClasses         AntibioticClass[]
   antibioticInterpretations AntibioticInterpretation[]
@@ -47,6 +55,10 @@ model Organization {
   uoms                      UOM[]
   users                     User[]
   vacutainers               Vacutainer[]
+  whatsappAccounts          WhatsAppAccount[]
+  whatsappLogs              WhatsAppLog[]
+  whatsappQueues            WhatsAppQueue[]
+  whatsappAuditLogs         WhatsAppAuditLog[]
 }
 
 model Patient {
@@ -752,4 +764,85 @@ model SupportMessage {
   content          String
   createdAt        DateTime      @default(now())
   thread           SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+}
+
+model WhatsAppAccount {
+  id                   Int          @id @default(autoincrement())
+  organizationId       Int
+  businessAccountId    String?
+  phoneNumberId        String?
+  encryptedAccessToken String?
+  displayName          String?
+  status               String       @default("ACTIVE")
+  templateName         String?
+  failureCount         Int          @default(0)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @default(now()) @updatedAt
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model WhatsAppLog {
+  id                 Int          @id @default(autoincrement())
+  organizationId     Int
+  patientId          Int?
+  billId             Int?
+  phone              String
+  category           String
+  transport          String
+  status             String
+  pdfUrl             String?
+  templateName       String?
+  caption            String?
+  metaMessageId      String?
+  metaConversationId String?
+  metaErrorCode      String?
+  metaErrorMessage   String?
+  metaTraceId        String?
+  metaResponse       Json?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @default(now()) @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([billId])
+  @@index([patientId])
+}
+
+model WhatsAppQueue {
+  id                  Int          @id @default(autoincrement())
+  organizationId      Int
+  patientId           Int?
+  billId              Int?
+  phone               String
+  category            String
+  transport           String
+  pdfUrl              String?
+  templateName        String?
+  caption             String?
+  status              String       @default("PENDING")
+  priority            Int          @default(0)
+  retryCount          Int          @default(0)
+  lastError           String?
+  scheduledAt         DateTime     @default(now())
+  processingStartedAt DateTime?
+  completedAt         DateTime?
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status, scheduledAt])
+}
+
+model WhatsAppAuditLog {
+  id             Int          @id @default(autoincrement())
+  organizationId Int
+  userId         Int?
+  action         String
+  oldValue       Json?
+  newValue       Json?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }

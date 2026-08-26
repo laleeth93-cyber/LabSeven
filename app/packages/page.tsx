@@ -138,11 +138,6 @@ export default function PackagesPage() {
                                                 <span className="text-[10px] font-mono text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded shadow-sm">
                                                     {pkg.code}
                                                 </span>
-                                                {pkg.department?.name && (
-                                                    <span className="text-[10px] font-bold uppercase bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full shadow-sm truncate max-w-[120px]" title={pkg.department.name}>
-                                                        {pkg.department.name}
-                                                    </span>
-                                                )}
                                             </div>
 
                                             <div className="flex-1"></div>
@@ -201,13 +196,6 @@ export default function PackagesPage() {
                                                     <span className="font-bold text-slate-800 text-base">{pkg.name}</span>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <span className="text-xs font-mono text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">{pkg.code}</span>
-                                                        {pkg.department?.name ? (
-                                                            <span className="text-[10px] font-bold uppercase bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full shadow-sm">
-                                                                {pkg.department.name}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-[10px] font-medium text-slate-400 italic">No Department</span>
-                                                        )}
                                                     </div>
                                                 </div>
                                             </td>

@@ -1,45 +1,57 @@
-import { NextRequest, NextResponse } from "next/server";
-import { r2Client } from "@/lib/r2";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { NextResponse } from "next/server";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-export async function POST(req: NextRequest) {
+// Initialize Cloudflare R2 Client
+const s3Client = new S3Client({
+  region: "auto",
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+  },
+});
+
+export async function POST(request: Request) {
   try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
+    const formData = await request.formData();
+    const file = formData.get("file") as File;
     const folder = formData.get("folder") as string || "uploads";
 
     if (!file) {
-      return NextResponse.json({ success: false, error: "No file uploaded" }, { status: 400 });
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Convert file to buffer for uploading
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Convert file to Buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    // Create a clean, unique filename to prevent overwrites
-    const ext = file.name.split('.').pop();
-    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '').replace(`.${ext}`, '');
-    const uniqueFilename = `${folder}/${Date.now()}-${cleanName}.${ext}`;
+    // Create a clean filename with a timestamp to avoid overwrites
+    const originalName = file.name.replace(/\s+/g, '_');
+    const fileName = `${folder}/${Date.now()}-${originalName}`;
 
-    // Upload to Cloudflare R2
-    const command = new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET_NAME,
-      Key: uniqueFilename,
-      Body: buffer,
-      ContentType: file.type,
-    });
-
-    await r2Client.send(command);
+    // Upload to R2
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: fileName,
+        Body: buffer,
+        ContentType: file.type,
+      })
+    );
 
     // Construct the public URL
-    // Ensure R2_PUBLIC_URL doesn't end with a trailing slash in your .env
-    const baseUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, '');
-    const fileUrl = `${baseUrl}/${uniqueFilename}`;
+    const publicUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
 
-    return NextResponse.json({ success: true, url: fileUrl });
-    
-  } catch (error: any) {
+    console.log(`File successfully uploaded to R2: ${publicUrl}`);
+
+    // Return the exact JSON structure the frontend InvoiceModal expects
+    return NextResponse.json({ success: true, url: publicUrl }, { status: 200 });
+
+  } catch (error) {
     console.error("R2 Upload Error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Failed to upload file to Cloudflare R2" },
+      { status: 500 }
+    );
   }
 }

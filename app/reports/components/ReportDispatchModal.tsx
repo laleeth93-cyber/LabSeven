@@ -23,11 +23,14 @@ interface ReportDispatchModalProps {
     onSelectAll: () => void;
     onDeselectAll: () => void;
 
-    // Time Override Props
     overrideCollectionDate?: string;
     setOverrideCollectionDate?: (val: string) => void;
     overrideReportedDate?: string;
     setOverrideReportedDate?: (val: string) => void;
+
+    onSendReport?: () => void;
+    isSendingReport?: boolean;
+    whatsappManualEnabled?: boolean;
 }
 
 export default function ReportDispatchModal({
@@ -35,10 +38,17 @@ export default function ReportDispatchModal({
     printHeaderFooter, onToggleHeaderFooter, letterheadStyle, onChangeLetterheadStyle,
     separateDept, onToggleSeparateDept, separateTest, onToggleSeparateTest,
     billItems, selectedItemIds, onToggleItem, onSelectAll, onDeselectAll,
-    overrideCollectionDate, setOverrideCollectionDate, overrideReportedDate, setOverrideReportedDate
+    overrideCollectionDate, setOverrideCollectionDate, overrideReportedDate, setOverrideReportedDate,
+    onSendReport, isSendingReport = false, whatsappManualEnabled = true
 }: ReportDispatchModalProps) {
+    
+    // Compute available dispatch modes based on settings
+    const availableModes = [];
+    if (whatsappManualEnabled) availableModes.push('Manual WhatsApp');
+    availableModes.push('Hard Copy', 'Mark Delivered');
+
     const [panelSendLetterhead, setPanelSendLetterhead] = useState(true);
-    const [panelDispatchMode, setPanelDispatchMode] = useState('Manual WhatsApp');
+    const [panelDispatchMode, setPanelDispatchMode] = useState(availableModes[0]);
     
     // MOBILE TAB STATE: Controls which panel is visible on small screens
     const [activeTab, setActiveTab] = useState<'preview' | 'tests' | 'dispatch'>('preview');
@@ -216,7 +226,7 @@ export default function ReportDispatchModal({
                         <div className="mb-4">
                             <h3 className="text-[11px] md:text-xs font-bold text-[#9575cd] uppercase tracking-wider mb-3">Mode of Dispatch</h3>
                             <div className="flex flex-col gap-2">
-                                {['Manual WhatsApp', 'Hard Copy', 'Mark Delivered'].map((mode) => (
+                                {availableModes.map((mode) => (
                                     <label key={mode} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${panelDispatchMode === mode ? 'border-[#9575cd] bg-purple-50 shadow-sm' : 'border-slate-200 hover:border-[#9575cd]/50 bg-white'}`}>
                                         <input type="radio" name="dispatchMode" value={mode} checked={panelDispatchMode === mode} onChange={(e) => setPanelDispatchMode(e.target.value)} className="w-4 h-4 accent-[#9575cd]" />
                                         <span className={`text-sm font-bold ${panelDispatchMode === mode ? 'text-[#9575cd]' : 'text-slate-600'}`}>{mode}</span>
@@ -234,9 +244,16 @@ export default function ReportDispatchModal({
                             <button onClick={handleDirectDownload} disabled={isPreviewLoading} className="flex-1 flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-300 hover:border-[#9575cd] hover:text-[#9575cd] px-4 py-3 md:py-2.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 text-sm md:text-base">
                                 <Download size={18} /> Download
                             </button>
-                            <button disabled={isPreviewLoading} className="flex-1 flex items-center justify-center gap-2 bg-[#9575cd] hover:bg-[#7e57c2] text-white px-4 py-3 md:py-2.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 hover:shadow-md text-sm md:text-base">
-                                <Send size={18} /> Send
-                            </button>
+                            {whatsappManualEnabled && panelDispatchMode === 'Manual WhatsApp' && (
+                                <button 
+                                    onClick={onSendReport} 
+                                    disabled={isPreviewLoading || isSendingReport} 
+                                    className="flex-1 flex items-center justify-center gap-2 bg-[#9575cd] hover:bg-[#7e57c2] text-white px-4 py-3 md:py-2.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 hover:shadow-md text-sm md:text-base"
+                                >
+                                    {isSendingReport ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />} 
+                                    {isSendingReport ? 'Sending...' : 'Send'}
+                                </button>
+                            )}
                         </div>
                     </div>
 

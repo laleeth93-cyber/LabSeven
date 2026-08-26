@@ -72,7 +72,10 @@ export async function getTestsForFormats() {
   try {
     const { orgId } = await requireAuth(); 
     const data = await prisma.test.findMany({
-      where: { organizationId: orgId }, 
+      where: { 
+        organizationId: orgId,
+        type: { not: 'Package' }
+      }, 
       select: {
         id: true,
         name: true,

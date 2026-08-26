@@ -10,6 +10,11 @@ import {
      getTestParametersBatch
  } from '@/app/actions/result-entry';
  
+import { getMessageStationSettings } from '@/app/actions/message-station';
+import dynamic from 'next/dynamic';
+ 
+const PatientReportModal = dynamic(() => import('@/app/list/components/PatientReportModal'), { ssr: false });
+
 import RichTextEditorModal from '@/app/components/RichTextEditorModal';
 import HistoryModal from './HistoryModal';
 import TestItemCard from './TestItemCard';
@@ -49,6 +54,18 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
 
   const [loadedParameters, setLoadedParameters] = useState<Record<number, any[]>>({});
   const [isParamsLoading, setIsParamsLoading] = useState(true);
+
+  const [reportSettings, setReportSettings] = useState({ whatsappReportAuto: false, whatsappReportManual: true });
+  const [waAutoSendBillId, setWaAutoSendBillId] = useState<number | null>(null);
+
+  useEffect(() => {
+    getMessageStationSettings().then(res => {
+        if (res.success && res.data) setReportSettings({
+            whatsappReportAuto: res.data.whatsappReportAuto ?? false,
+            whatsappReportManual: res.data.whatsappReportManual ?? true
+        });
+    });
+  }, []);
 
   const safeItems = Array.isArray(bill?.items) ? bill.items : [];
   const visibleItems = safeItems.filter((item: any) => filterTestIds.includes(item?.id));
@@ -184,7 +201,11 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
         setShowSuccessPopup(true);
         setTimeout(() => { 
             setShowSuccessPopup(false); 
-            if (onSaveSuccess) onSaveSuccess(); // This triggers the auto-advance in the parent!
+            if (status === 'Approved' && reportSettings.whatsappReportAuto) {
+                setWaAutoSendBillId(bill.id);
+            } else {
+                if (onSaveSuccess) onSaveSuccess(); 
+            }
         }, 1500);
     } else {
         alert("Error: " + res.message);
@@ -219,7 +240,11 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
         setShowSuccessPopup(true);
         setTimeout(() => { 
             setShowSuccessPopup(false); 
-            if (onSaveSuccess) onSaveSuccess(); // This triggers the auto-advance in the parent!
+            if (status === 'Approved' && reportSettings.whatsappReportAuto) {
+                setWaAutoSendBillId(bill.id);
+            } else {
+                if (onSaveSuccess) onSaveSuccess(); 
+            }
         }, 1500);
     } else {
         alert("Error: " + res.message);
@@ -407,6 +432,8 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
                 </div>
             </div>
         )}
+
+        {waAutoSendBillId && <PatientReportModal isOpen={true} onClose={() => { setWaAutoSendBillId(null); if (onSaveSuccess) onSaveSuccess(); }} billId={waAutoSendBillId} autoSendWhatsApp={true} />}
     </div>
   );
 }

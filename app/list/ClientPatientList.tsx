@@ -13,19 +13,20 @@ import AuditLogModal from './components/AuditLogModal';
 import RefundModal from './components/RefundModal'; 
 import ClearDueModal from './components/ClearDueModal'; 
 import EditPatientModal from './components/EditPatientModal';
+import WhatsAppConfirmModal from '@/app/components/WhatsAppConfirmModal';
+import { toast } from 'react-hot-toast';
 
 const PatientReportModal = dynamic(() => import('./components/PatientReportModal'), { ssr: false });
 const CultureReportModal = dynamic(() => import('./components/CultureReportModal'), { ssr: false });
 const SmartReportModal = dynamic(() => import('./components/SmartReportModal'), { ssr: false });
 const InvoiceModal = dynamic(() => import('@/app/registration/InvoiceModal'), { ssr: false });
 import MusicBarLoader from '@/app/components/MusicBarLoader';
-
 import { usePermissions } from '@/app/context/PermissionContext';
+import { useSession } from 'next-auth/react';
 import { getPatientList, deleteBill } from '@/app/actions/patient-list';
-// 🚨 FIX: Imported getCurrentUserSignature to fetch signature on the List Page
 import { getCurrentUserSignature } from '@/app/actions/billing';
+import { getMessageStationSettings } from '@/app/actions/message-station';
 
-// 🚨 ACCEPTS THE PRE-LOADED SERVER DATA
 export default function ClientPatientList({ initialBills }: { initialBills: any[] }) {
     const router = useRouter();
 
@@ -78,8 +79,11 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
 
     const bills = fetchRes?.success && fetchRes?.data ? fetchRes.data : [];
 
-    // 🚨 FIX: State to hold the logged-in user's signature for printing old bills
     const [userSignature, setUserSignature] = useState<any>(null);
+    const [isSendingWA, setIsSendingWA] = useState(false); // State for WA Dispatch Loader
+    const [whatsappManualEnabled, setWhatsappManualEnabled] = useState(true);
+    const [whatsappInvoiceManualEnabled, setWhatsappInvoiceManualEnabled] = useState(true);
+    const [whatsappLimit, setWhatsappLimit] = useState<number>(0);
 
     useEffect(() => {
         const savedView = localStorage.getItem('patientListViewPref');
@@ -87,7 +91,6 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
             setViewMode(savedView);
         }
 
-        // 🚨 FIX: Fetch the user's signature when the list loads
         const fetchSignature = async () => {
             try {
                 const sigRes = await getCurrentUserSignature();
@@ -97,6 +100,18 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
             }
         };
         fetchSignature();
+
+        const fetchSettings = async () => {
+            try {
+                const res = await getMessageStationSettings();
+                if (res.success && res.data) {
+                    setWhatsappManualEnabled(res.data.whatsappReportManual ?? true);
+                    setWhatsappInvoiceManualEnabled(res.data.whatsappInvoiceManual ?? true);
+                    setWhatsappLimit(res.data.whatsappLimit ?? 0);
+                }
+            } catch (e) {}
+        };
+        fetchSettings();
     }, []);
 
     const handleSetViewMode = (mode: 'list' | 'grid') => {
@@ -135,6 +150,10 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [billToDelete, setBillToDelete] = useState<any>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    
+    // NEW STATE for background WA Dispatch
+    const [waAutoSendBillId, setWaAutoSendBillId] = useState<number | null>(null);
+    const [waConfirmBill, setWaConfirmBill] = useState<any>(null);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -243,11 +262,52 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
             paidAmount: Number(bill.paidAmount || 0),
             balanceDue: Number(bill.dueAmount || 0),
             note: bill.discountReason || '',
-            authorSign: userSignature // 🚨 FIX: Injected the signature payload here!
+            phone: bill.patient?.phone,
+            authorSign: userSignature 
         });
         
         setIsInvoiceOpen(true);
     };
+
+    // --- WHATSAPP DISPATCH FUNCTION ---
+    const handleSendWhatsappReport = async (bill: any) => {
+        setWaConfirmBill(bill);
+    };
+
+    const handleConfirmWhatsappReport = async (phoneToUse: string, shouldSave: boolean) => {
+        if (!waConfirmBill) return;
+        
+        if (Number(whatsappLimit) <= 0) {
+            toast.error("Your message credits are 0. Please recharge to send messages.");
+            setWaConfirmBill(null); // close modal
+            return;
+        }
+
+        const currentBill = { ...waConfirmBill };
+        setWaConfirmBill(null); // close modal
+
+        if (shouldSave) {
+            try {
+                await fetch('/api/whatsapp/update-phone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ billNumber: currentBill.billNumber, phone: phoneToUse })
+                });
+                if (currentBill.patient) currentBill.patient.phone = phoneToUse;
+            } catch (error) {
+                console.error('Failed to save phone number:', error);
+            }
+        }
+        
+        // Pass the final phone to the background dispatcher
+        // by temporarily modifying the bill object (since it relies on bill.patient.phone inside the generator)
+        if (currentBill.patient) {
+             currentBill.patient.phone = phoneToUse;
+        }
+
+        setWaAutoSendBillId(currentBill.id);
+    };
+    // ----------------------------------
 
     const handlePrintBarcode = (bill: any) => { setSelectedBill(bill); setIsBarcodeOpen(true); };
     const handleOpenReport = (bill: any) => { setSelectedBill(bill); setIsPatientReportOpen(true); };
@@ -339,7 +399,7 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
                 </div>
             )}
 
-            <InvoiceModal isOpen={isInvoiceOpen} onClose={() => setIsInvoiceOpen(false)} data={invoiceData} />
+            <InvoiceModal isOpen={isInvoiceOpen} onClose={() => setIsInvoiceOpen(false)} data={invoiceData} whatsappManualEnabled={whatsappInvoiceManualEnabled} whatsappLimit={whatsappLimit} />
             
             {selectedBill && (
                 <BarcodeModal 
@@ -352,7 +412,8 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
                 />
             )}
 
-            {isPatientReportOpen && selectedBill && <PatientReportModal isOpen={isPatientReportOpen} onClose={() => { setIsPatientReportOpen(false); setSelectedBill(null); }} billId={selectedBill.id} />}
+            {isPatientReportOpen && selectedBill && <PatientReportModal isOpen={isPatientReportOpen} onClose={() => { setIsPatientReportOpen(false); setSelectedBill(null); }} billId={selectedBill.id} whatsappManualEnabled={whatsappManualEnabled} whatsappLimit={whatsappLimit} />}
+            {waAutoSendBillId && <PatientReportModal isOpen={true} onClose={() => setWaAutoSendBillId(null)} billId={waAutoSendBillId} autoSendWhatsApp={true} whatsappManualEnabled={whatsappManualEnabled} whatsappLimit={whatsappLimit} />}
             {isCultureReportOpen && selectedBill && <CultureReportModal isOpen={isCultureReportOpen} onClose={() => { setIsCultureReportOpen(false); setSelectedBill(null); }} bill={selectedBill} />}
             {isSmartReportOpen && selectedBill && <SmartReportModal isOpen={isSmartReportOpen} onClose={() => { setIsSmartReportOpen(false); setSelectedBill(null); }} bill={selectedBill} />}
             {isAuditOpen && selectedBill && <AuditLogModal isOpen={isAuditOpen} onClose={() => { setIsAuditOpen(false); setSelectedBill(null); }} auditBill={selectedBill} />}
@@ -366,6 +427,17 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
                     onClose={() => { setIsEditOpen(false); setSelectedBill(null); }} 
                     editBill={selectedBill} 
                     onSuccess={refreshBills} 
+                />
+            )}
+
+            {waConfirmBill && (
+                <WhatsAppConfirmModal
+                    isOpen={!!waConfirmBill}
+                    onClose={() => setWaConfirmBill(null)}
+                    onConfirm={handleConfirmWhatsappReport}
+                    patientName={`${waConfirmBill.patient?.firstName || ''} ${waConfirmBill.patient?.lastName || ''}`.trim()}
+                    existingPhone={waConfirmBill.patient?.phone}
+                    documentType="Report"
                 />
             )}
 
@@ -386,6 +458,7 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
                         bills={paginatedBills} isLoading={isLoading} viewMode={viewMode}
                         currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={setCurrentPage}
                         onPrintBill={handlePrintBill} onPrintBarcode={handlePrintBarcode} onOpenReport={handleOpenReport}
+                        onSendWhatsappReport={handleSendWhatsappReport} whatsappManualEnabled={whatsappManualEnabled}
                         onOpenSmartReport={handleOpenSmartReport} onOpenCultureReport={handleOpenCultureReport}
                         onOpenClearDue={handleOpenClearDue} onOpenRefund={handleOpenRefund} onOpenAudit={handleOpenAudit}
                         onEditBill={handleEditBill} onDeleteBill={handleDeleteBill}
