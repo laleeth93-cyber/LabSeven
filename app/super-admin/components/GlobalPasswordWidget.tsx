@@ -53,11 +53,13 @@ export default function GlobalPasswordWidget() {
                     </p>
 
                     <div className="space-y-3">
+                        <input type="text" autoComplete="username" style={{ display: 'none' }} />
                         <input 
                             type="password" 
                             placeholder="New Password" 
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            autoComplete="new-password"
                             className="w-full text-sm px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-fuchsia-500 font-medium"
                         />
                         <div className="flex gap-2 justify-end mt-2">

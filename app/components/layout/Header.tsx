@@ -140,6 +140,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
         <div className="relative flex items-center w-full">
             <input 
               type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => { if (searchQuery.length >= 2) setShowDropdown(true); }}
+              autoComplete="off"
               className="w-full py-1.5 px-4 pr-16 rounded-full border bg-white/80 text-sm font-medium focus:outline-none focus:ring-2 transition placeholder:text-slate-400"
               style={{ borderColor: 'rgba(77,208,225,0.4)', color: '#455a64' }} 
             />
