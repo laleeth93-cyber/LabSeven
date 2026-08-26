@@ -1,8 +1,10 @@
 // --- BLOCK app/api/generate-pdf/route.ts OPEN ---
+import { NextResponse } from 'next/server';
+import puppeteerCore from 'puppeteer-core';
 
+export const runtime = 'nodejs';
+export const maxDuration = 30; 
 
-// ⚡ SPEED BOOST 1: Global Browser Cache. 
-// This keeps Chrome "warm" across multiple rapid requests on the server, saving 1.5s - 2s of boot time!
 let cachedBrowser: any = null;
 
 export async function POST(req: Request) {
@@ -11,16 +13,16 @@ export async function POST(req: Request) {
 
         // Check if we are running locally or on Vercel
         const isLocal = !process.env.VERCEL && process.env.NODE_ENV === 'development';
-        let browser;
 
-        // If the browser isn't running yet (Cold Start), launch it with high-performance flags.
         if (!cachedBrowser) {
             if (isLocal) {
-                // Local Development
-                const puppeteer = (await import('puppeteer')).default;
-                cachedBrowser = await puppeteer.launch({
+                // LOCAL: Use puppeteer-core but point it to your computer's Chrome
+                // NOTE: Change this path if you are on a Mac or Linux!
+                const localChromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+                
+                cachedBrowser = await puppeteerCore.launch({
                     headless: true,
-                    executablePath: puppeteer.executablePath(),
+                    executablePath: localChromePath,
                     args: [
                         '--no-sandbox', 
                         '--disable-setuid-sandbox',
@@ -29,8 +31,7 @@ export async function POST(req: Request) {
                     ]
                 });
             } else {
-                // Vercel Production
-                const puppeteerCore = (await import('puppeteer-core')).default;
+                // VERCEL: Use @sparticuz/chromium
                 const chromium = (await import('@sparticuz/chromium')).default as any;
                 
                 cachedBrowser = await puppeteerCore.launch({
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
                     defaultViewport: chromium.defaultViewport,
                     executablePath: await chromium.executablePath(),
                     headless: chromium.headless,
+                    // ignoreHTTPSErrors removed to satisfy strict TypeScript rules
                 });
             }
         }
@@ -50,9 +52,7 @@ export async function POST(req: Request) {
             await page.setJavaScriptEnabled(true);
             await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 }); 
         } else {
-            // ⚡ SPEED BOOST 4: Disable JS execution inside the page. We only need to render HTML/CSS.
             await page.setJavaScriptEnabled(false);
-            // ⚡ SPEED BOOST 5: 'load' is instantaneous once the HTML is parsed. 
             await page.setContent(html, { waitUntil: 'load', timeout: 8000 }); 
         }
 
@@ -62,7 +62,6 @@ export async function POST(req: Request) {
             margin: { top: '0', right: '0', bottom: '0', left: '0' }
         };
 
-        // --- BULLETPROOF DIMENSION CLEANER ---
         const cleanDimension = (dim: any) => {
             if (!dim) return undefined;
             const str = String(dim).trim().toLowerCase();
@@ -78,14 +77,12 @@ export async function POST(req: Request) {
         } else {
             pdfOptions.format = paperSize || 'A4';
         }
-        // -------------------------------------
 
         const pdfBuffer = await page.pdf(pdfOptions);
         
-        // ⚡ SPEED BOOST 6: Close ONLY the page/tab, leaving the main browser alive for the next print job.
         await page.close(); 
 
-        return new Response(pdfBuffer as any, {
+        return new NextResponse(pdfBuffer, {
             status: 200,
             headers: {
                 'Content-Type': 'application/pdf',
@@ -95,16 +92,15 @@ export async function POST(req: Request) {
     } catch (error) {
         console.error('Puppeteer PDF Generation Error:', error);
         
-        // If something crashes completely, kill the cached browser so it restarts fresh next time
         if (cachedBrowser) {
             await cachedBrowser.close().catch(() => {});
             cachedBrowser = null;
         }
         
-        return new Response(JSON.stringify({ error: 'Failed to generate PDF', details: String(error) }), { 
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return NextResponse.json(
+            { error: 'Failed to generate PDF', details: String(error) },
+            { status: 500 }
+        );
     }
 }
 // --- BLOCK app/api/generate-pdf/route.ts CLOSE ---
