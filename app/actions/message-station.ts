@@ -131,7 +131,7 @@ export async function getOrganizationsForRecharge() {
         }
 
         const orgs: any = await (prisma.organization as any).findMany({
-            where: { isActive: true, id: { not: 1 } },
+            where: { isActive: true },
             select: {
                 id: true,
                 name: true,

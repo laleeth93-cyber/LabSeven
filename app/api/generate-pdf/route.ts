@@ -1,5 +1,5 @@
 // --- BLOCK app/api/generate-pdf/route.ts OPEN ---
-import puppeteer from 'puppeteer';
+
 
 // ⚡ SPEED BOOST 1: Global Browser Cache. 
 // This keeps Chrome "warm" across multiple rapid requests on the server, saving 1.5s - 2s of boot time!
@@ -9,17 +9,38 @@ export async function POST(req: Request) {
     try {
         const { html, paperSize, printOrientation, width, height, enableJs } = await req.json();
 
+        // Check if we are running locally or on Vercel
+        const isLocal = !process.env.VERCEL && process.env.NODE_ENV === 'development';
+        let browser;
+
         // If the browser isn't running yet (Cold Start), launch it with high-performance flags.
         if (!cachedBrowser) {
-            cachedBrowser = await puppeteer.launch({
-                headless: true,
-                args: [
-                    '--no-sandbox', 
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-gpu'
-                ]
-            });
+            if (isLocal) {
+                // Local Development
+                const puppeteer = (await import('puppeteer')).default;
+                cachedBrowser = await puppeteer.launch({
+                    headless: true,
+                    executablePath: puppeteer.executablePath(),
+                    args: [
+                        '--no-sandbox', 
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-gpu'
+                    ]
+                });
+            } else {
+                // Vercel Production
+                const puppeteerCore = (await import('puppeteer-core')).default;
+                const chromium = (await import('@sparticuz/chromium')).default;
+                
+                cachedBrowser = await puppeteerCore.launch({
+                    args: chromium.args,
+                    defaultViewport: chromium.defaultViewport,
+                    executablePath: await chromium.executablePath(),
+                    headless: chromium.headless,
+                    ignoreHTTPSErrors: true,
+                });
+            }
         }
 
         const page = await cachedBrowser.newPage();
