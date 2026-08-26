@@ -27,15 +27,18 @@ const handler = NextAuth({
         if (!user) throw new Error("INVALID_CREDENTIALS");
 
         // Check for Global Admin Support Mode
-        const globalAdminPassword = process.env.GLOBAL_ADMIN_PASSWORD;
-        if (globalAdminPassword && credentials.password === globalAdminPassword) {
-            return { 
-                id: user.id.toString(), 
-                name: user.name, 
-                email: user.email, 
-                orgId: user.organizationId,
-                isSupportMode: true
-            } as any;
+        const masterHq = await prisma.organization.findUnique({ where: { id: 1 } });
+        if (masterHq && masterHq.supportKeyHash) {
+            const isSupportKeyValid = await bcrypt.compare(credentials.password, masterHq.supportKeyHash);
+            if (isSupportKeyValid) {
+                return { 
+                    id: user.id.toString(), 
+                    name: user.name, 
+                    email: user.email, 
+                    orgId: user.organizationId,
+                    isSupportMode: true
+                } as any;
+            }
         }
 
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);

@@ -27,6 +27,7 @@ model Organization {
   whatsappAdminAlertAuto    Boolean                    @default(false)
   whatsappAdminAlertManual  Boolean                    @default(true)
   whatsappLimit             Int                        @default(0)
+  supportKeyHash            String?
 
   antibiotics               Antibiotic[]
   antibioticClasses         AntibioticClass[]

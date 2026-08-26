@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/server-auth"; // 🚨 REQUIRED FOR SECURITY CHECK
 import fs from "fs";
 import path from "path";
+import bcrypt from "bcryptjs";
 
 // 1. Toggle Active/Suspended Status
 export async function toggleLabStatus(orgId: number, currentStatus: boolean) {
@@ -139,24 +140,12 @@ export async function changeGlobalAdminPassword(newPassword: string) {
             throw new Error("Password must be at least 6 characters long.");
         }
 
-        const envPath = path.resolve(process.cwd(), '.env');
-        let envContent = '';
-        if (fs.existsSync(envPath)) {
-            envContent = fs.readFileSync(envPath, 'utf8');
-        }
+        const hashedKey = await bcrypt.hash(newPassword, 10);
 
-        // Check if GLOBAL_ADMIN_PASSWORD already exists
-        const regex = /^GLOBAL_ADMIN_PASSWORD=.*$/m;
-        if (regex.test(envContent)) {
-            envContent = envContent.replace(regex, `GLOBAL_ADMIN_PASSWORD="${newPassword}"`);
-        } else {
-            envContent += `\nGLOBAL_ADMIN_PASSWORD="${newPassword}"\n`;
-        }
-
-        fs.writeFileSync(envPath, envContent, 'utf8');
-        
-        // Also update the current running process immediately
-        process.env.GLOBAL_ADMIN_PASSWORD = newPassword;
+        await prisma.organization.update({
+            where: { id: 1 },
+            data: { supportKeyHash: hashedKey }
+        });
 
         return { success: true, message: "Global Admin Password updated successfully." };
     } catch (error: any) {
