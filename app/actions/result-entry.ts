@@ -95,7 +95,7 @@ export async function getTestParametersBatch(testIds: number[]) {
         id: true,
         parameters: {
           include: { 
-            parameter: { select: { id: true, name: true, unit: true, ranges: true, inputType: true, isMultiValue: true, options: true, method: true } } 
+            parameter: { select: { id: true, name: true, code: true, unit: true, ranges: true, inputType: true, isMultiValue: true, options: true, method: true, decimals: true, minVal: true, maxVal: true } }
           },
           orderBy: { order: 'asc' }
         }
@@ -116,7 +116,7 @@ export async function getTestParameters(testId: number) {
       select: {
         parameters: {
           include: { 
-            parameter: { select: { id: true, name: true, unit: true, ranges: true, inputType: true, isMultiValue: true, options: true, method: true } } 
+            parameter: { select: { id: true, name: true, code: true, unit: true, ranges: true, inputType: true, isMultiValue: true, options: true, method: true, decimals: true, minVal: true, maxVal: true } }
           },
           orderBy: { order: 'asc' }
         }

@@ -104,22 +104,27 @@ export const recalculateFormulas = (currentResults: any, currentFlags: any, bill
 
             if (/\[.*?\]/.test(formulaStr)) isReady = false; 
 
+            let calculatedFinalValue = "";
+            let calculatedFlag = "Normal";
+
             if (isReady) {
                 try {
                     const calcValue = new Function('return ' + formulaStr)();
                     
                     if (typeof calcValue === 'number' && !isNaN(calcValue) && isFinite(calcValue)) {
                         const decimals = tp.parameter.decimals !== null ? tp.parameter.decimals : 2;
-                        const finalValue = calcValue.toFixed(decimals);
-                        const key = `${billItemId}-${tp.parameter.id}`;
-
-                        if (updatedResults[key] !== finalValue) {
-                            updatedResults[key] = finalValue;
-                            updatedFlags[key] = getFlag(finalValue, tp.parameter, patient); 
-                            hasChanges = true;
-                        }
+                        calculatedFinalValue = calcValue.toFixed(decimals);
+                        calculatedFlag = getFlag(calculatedFinalValue, tp.parameter, patient);
                     }
                 } catch (err) { }
+            }
+
+            const key = `${billItemId}-${tp.parameter.id}`;
+            const currentVal = updatedResults[key] || "";
+            if (currentVal !== calculatedFinalValue) {
+                updatedResults[key] = calculatedFinalValue;
+                updatedFlags[key] = calculatedFlag;
+                hasChanges = true;
             }
         }
     });
