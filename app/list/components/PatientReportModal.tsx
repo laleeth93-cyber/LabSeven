@@ -388,7 +388,7 @@ export default function PatientReportModal({ isOpen, onClose, billId, autoSendWh
             if (letterheadStyle === 'custom3' && reportSettings?.customHeader3?.trim() && reportSettings.customHeader3 !== 'null') activeImageBase64 = reportSettings.customHeader3;
             if (letterheadStyle === 'custom4' && reportSettings?.customHeader4?.trim() && reportSettings.customHeader4 !== 'null') activeImageBase64 = reportSettings.customHeader4;
 
-            const qrUrl = `${window.location.origin}/verify/${filteredRealData?.id || billId}`;
+            const qrUrl = `${window.location.origin}/verify/${filteredRealData?.id || billId}?lh=${letterheadStyle}`;
             const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
 
             const baseDate = overrideCollectionDate ? new Date(overrideCollectionDate) : (filteredRealData?.date ? new Date(filteredRealData.date) : new Date());

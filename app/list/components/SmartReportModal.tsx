@@ -176,7 +176,7 @@ export default function SmartReportModal({ isOpen, onClose, bill }: SmartReportM
             // 🚨 FIX: Generate the dynamic QR Code here and inject it into the Document.
             let qrDataUrl = '';
             try {
-                const qrUrl = `${window.location.origin}/verify/${bill.id}?type=smart`;
+                const qrUrl = `${window.location.origin}/verify/${bill.id}?type=smart&lh=${reportSettings?.letterheadStyle || 'none'}`;
                 qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } });
             } catch(e) {}
 

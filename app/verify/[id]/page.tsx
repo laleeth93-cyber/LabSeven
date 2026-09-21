@@ -40,6 +40,11 @@ function VerifyDocumentContent() {
                 let settingsData: any = reportSettings || {};
                 let profileData: any = labProfile || {};
 
+                const queryLh = searchParams.get('lh');
+                if (queryLh) {
+                    settingsData.letterheadStyle = queryLh;
+                }
+
                 settingsData.labName = profileData.name;
                 settingsData.tagline = profileData.tagline;
                 settingsData.address = profileData.address;
