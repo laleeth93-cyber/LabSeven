@@ -34,10 +34,12 @@ export default function GlobalWipeButton() {
             {/* The Trigger Button on Super Admin Dashboard */}
             <button 
                 onClick={() => setIsOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white font-bold text-xs rounded shadow-sm border border-red-200 transition-all active:scale-95"
+                className="flex items-center gap-1 sm:gap-1.5 h-6.5 sm:h-7.5 px-1.5 sm:px-2.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white font-bold text-[9.5px] sm:text-xs rounded sm:rounded-lg shadow-xs border border-red-200 transition-all active:scale-95 shrink-0 select-none whitespace-nowrap"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+                title="Permanently wipe all tenant data"
             >
-                <Trash2 size={14} />
-                Global Wipe
+                <Trash2 size={10.5} className="sm:w-3.5 sm:h-3.5 shrink-0" />
+                <span>Global Wipe</span>
             </button>
 
             {/* The Danger Modal */}

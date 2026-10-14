@@ -32,12 +32,12 @@ export default function GlobalSyncWidget() {
     <button
         onClick={handlePushLibrary}
         disabled={isPushing}
-        className="h-9 px-4 rounded-lg font-bold text-white text-[11px] shadow-sm transition-all hover:shadow-md active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70 whitespace-nowrap"
-        style={{ background: 'linear-gradient(135deg, #d946ef, #9333ea)' }}
+        className="h-6.5 sm:h-7.5 px-2 sm:px-3 rounded sm:rounded-lg font-bold text-white text-[9.5px] sm:text-[11px] shadow-xs transition-all hover:shadow-md active:scale-95 flex items-center justify-center gap-1 sm:gap-1.5 disabled:opacity-70 whitespace-nowrap shrink-0 select-none"
+        style={{ background: 'linear-gradient(135deg, #d946ef, #9333ea)', WebkitTapHighlightColor: 'transparent' }}
         title="Push new Tests, Parameters, and Sensitivity configs to all active labs"
     >
-        {isPushing ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
-        {isPushing ? 'Syncing Library...' : 'Global Master Data Sync'}
+        {isPushing ? <Loader2 size={11} className="animate-spin sm:w-3.5 sm:h-3.5 shrink-0" /> : <Database size={11} className="sm:w-3.5 sm:h-3.5 shrink-0" />}
+        <span>{isPushing ? 'Syncing...' : <><span className="sm:hidden">Data Sync</span><span className="hidden sm:inline">Global Master Data Sync</span></>}</span>
     </button>
   );
 }

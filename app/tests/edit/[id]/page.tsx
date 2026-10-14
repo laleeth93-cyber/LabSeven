@@ -123,175 +123,471 @@ export default function EditTestPage() {
   const labelClass = "text-[11px] font-bold text-slate-500 uppercase h-4 flex items-center mb-1";
   const inputClass = "w-full text-xs font-medium border border-slate-300 rounded px-3 h-[38px] bg-white focus:ring-1 focus:ring-[#9575cd] outline-none transition-all placeholder:text-slate-400";
 
+  const mLabelClass = "text-[8px] font-bold text-slate-500 uppercase mb-0.5 block tracking-wider";
+  const mInputClass = "w-full text-[10px] font-medium border border-slate-200 rounded px-1.5 h-6 bg-white focus:ring-1 focus:ring-[#9575cd] focus:border-[#9575cd] outline-none transition-all placeholder:text-slate-400";
+
   if (isLoading) return <div className="h-screen flex items-center justify-center text-slate-500 gap-2"><Loader2 className="animate-spin"/> Loading...</div>;
 
   return (
     <>
-      <div className="flex flex-col w-full h-full bg-[#f8fafc] p-6 font-sans text-slate-700">
+      <div className="flex flex-col w-full h-full bg-[#f8fafc] p-2 md:p-6 font-sans text-slate-700">
         <RichTextEditorModal isOpen={isEditorOpen} onClose={() => setIsEditorOpen(false)} onSave={(content) => handleChange('instructions', content)} initialContent={formData.instructions} title="Pre-Collection Guidelines" />
-        <div className="flex items-center justify-between mb-6 shrink-0">
-          <div className="flex items-center gap-4">
-             <button onClick={() => router.push('/tests?tab=Test Library')} className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"><ArrowLeft size={20} /></button>
-             <h1 className="text-xl font-bold text-slate-800">Edit Test</h1>
+        
+        {/* --- DESKTOP LAYOUT --- */}
+        <div className="hidden md:flex flex-col h-full overflow-hidden">
+          <div className="flex items-center justify-between mb-6 shrink-0">
+            <div className="flex items-center gap-4">
+               <button onClick={() => router.push('/tests?tab=Test Library')} className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"><ArrowLeft size={20} /></button>
+               <h1 className="text-xl font-bold text-slate-800">Edit Test</h1>
+            </div>
+            <button onClick={handleDelete} className="text-red-500 hover:bg-red-50 px-3 py-2 rounded text-xs font-bold flex items-center gap-2 transition-colors"><Trash2 size={14} /> Delete Test</button>
           </div>
-          <button onClick={handleDelete} className="text-red-500 hover:bg-red-50 px-3 py-2 rounded text-xs font-bold flex items-center gap-2 transition-colors"><Trash2 size={14} /> Delete Test</button>
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden w-full flex-1 flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+                <div className="flex items-center gap-2 font-bold text-slate-700"><ChevronDown size={18} /><span>{formData.testName}</span></div>
+                <button onClick={handleSave} disabled={isPending} className="px-6 py-2 text-xs font-bold text-white bg-[#9575cd] rounded hover:bg-[#7e57c2] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-70">
+                    {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {isPending ? 'Updating...' : 'Update Test'}
+                </button>
+            </div>
+            <div className="p-8 space-y-8 overflow-y-auto flex-1">
+                
+                {/* --- Core Details --- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="lg:col-span-1">
+                        <label className={labelClass}>Test Type</label>
+                        <div className="relative">
+                            <select value={formData.testType} onChange={(e) => handleChange('testType', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}><option value="Test">Test</option><option value="Package">Package</option><option value="Other">Other</option></select>
+                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                        </div>
+                    </div>
+                    {formData.testType === 'Test' && (
+                        <div className="lg:col-span-1">
+                            <label className={labelClass}><span className="text-red-500 mr-0.5">*</span> Department</label>
+                            <div className="relative">
+                                <select value={formData.departmentId} onChange={(e) => handleChange('departmentId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
+                                    {departments.length > 0 ? (departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)) : (<option value="">Loading...</option>)}
+                                </select>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                            </div>
+                        </div>
+                    )}
+                    <div className={formData.testType === 'Test' ? "lg:col-span-2" : "lg:col-span-3"}>
+                        <label className={labelClass}><span className="text-red-500 mr-0.5">*</span> {formData.testType === 'Package' ? 'Package Name' : 'Test Name'}</label>
+                        <input type="text" value={formData.testName} onChange={(e) => handleChange('testName', e.target.value)} className={inputClass} />
+                    </div>
+                    <div className="lg:col-span-2">
+                        <label className={labelClass}>Display Name</label>
+                        <input type="text" value={formData.displayTestName} onChange={(e) => handleChange('displayTestName', e.target.value)} placeholder="Report/Display Name (Optional)" className={inputClass} />
+                    </div>
+                    <div className="lg:col-span-1">
+                        <label className={labelClass}><span className="text-red-500 mr-0.5">*</span> Code</label>
+                        <input type="text" value={formData.code} onChange={(e) => handleChange('code', e.target.value)} className={inputClass} />
+                    </div>
+                    <div className="lg:col-span-1">
+                        <label className={labelClass}><span className="text-red-500 mr-0.5">*</span> Price</label>
+                        <input type="number" value={formData.price} onChange={(e) => handleChange('price', e.target.value)} className={inputClass} />
+                    </div>
+                </div>
+
+                {/* 🚨 NEW: Clinical Details & TAT Section (Replaces Configuration Tab) */}
+                {formData.testType === 'Test' && (
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6 pt-6 border-t border-slate-100">
+                        <div className="md:col-span-5 mb-[-10px]">
+                            <h3 className="text-[12px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                                <Beaker size={14} className="text-[#9575cd]"/> Clinical & Turnaround Time
+                            </h3>
+                        </div>
+                        
+                        <div className="lg:col-span-1">
+                            <label className={labelClass}>Method</label>
+                            <select value={formData.methodId} onChange={(e) => handleChange('methodId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
+                                <option value="">-- None --</option>
+                                {methods.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="lg:col-span-1">
+                            <label className={labelClass}>Specimen</label>
+                            <select value={formData.specimenId} onChange={(e) => handleChange('specimenId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
+                                <option value="">-- None --</option>
+                                {specimens.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="lg:col-span-1">
+                            <label className={labelClass}>Container</label>
+                            <select value={formData.vacutainerId} onChange={(e) => handleChange('vacutainerId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
+                                <option value="">-- None --</option>
+                                {vacutainers.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="lg:col-span-1">
+                            <label className={labelClass}>Sample Volume</label>
+                            <input type="text" value={formData.sampleVolume} onChange={(e) => handleChange('sampleVolume', e.target.value)} placeholder="e.g. 2 ml" className={inputClass} />
+                        </div>
+                        <div className="lg:col-span-1">
+                            <label className={labelClass}>Barcode Copies</label>
+                            <input type="number" min="0" value={formData.barcodeCopies} onChange={(e) => handleChange('barcodeCopies', e.target.value)} className={inputClass} />
+                        </div>
+
+                        {/* Turnaround Time Row */}
+                        <div className="md:col-span-5 grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+                           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                               <label className="text-[10px] font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">Report Available (Min)</label>
+                               <div className="flex gap-2">
+                                   <div className="flex-1"><input type="number" value={formData.minDays} onChange={(e) => handleChange('minDays', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Days</span></div>
+                                   <div className="flex-1"><input type="number" value={formData.minHours} onChange={(e) => handleChange('minHours', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Hrs</span></div>
+                                   <div className="flex-1"><input type="number" value={formData.minMinutes} onChange={(e) => handleChange('minMinutes', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Mins</span></div>
+                               </div>
+                           </div>
+                           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                               <label className="text-[10px] font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">Deadline (Max)</label>
+                               <div className="flex gap-2">
+                                   <div className="flex-1"><input type="number" value={formData.maxDays} onChange={(e) => handleChange('maxDays', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Days</span></div>
+                                   <div className="flex-1"><input type="number" value={formData.maxHours} onChange={(e) => handleChange('maxHours', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Hrs</span></div>
+                                   <div className="flex-1"><input type="number" value={formData.maxMinutes} onChange={(e) => handleChange('maxMinutes', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Mins</span></div>
+                               </div>
+                           </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- Flags & Guidelines --- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+                    <div>
+                        <label className={labelClass}>Configuration Flags</label>
+                        <div className="flex flex-col gap-2 mt-2">
+                            <Checkbox label="Is Culture & Susceptibility Test" checked={formData.isCulture} onChange={(v) => handleChange('isCulture', v)} color="#ef4444" />
+                            <div className="border-t border-slate-100 my-1 pt-1"></div>
+                            <Checkbox label="LMP Required" checked={formData.lmpRequired} onChange={(v) => handleChange('lmpRequired', v)} />
+                            <Checkbox label="ID Proof Required" checked={formData.idRequired} onChange={(v) => handleChange('idRequired', v)} />
+                            <Checkbox label="Consent Form Required" checked={formData.consentRequired} onChange={(v) => handleChange('consentRequired', v)} />
+                            <div className="border-t border-slate-100 my-1 pt-1"></div>
+                            <Checkbox label="Show Test Name on Report (Override)" checked={formData.showTestNameOnReport} onChange={(v) => handleChange('showTestNameOnReport', v)} />
+                            <div className="border-t border-slate-100 my-1 pt-1"></div>
+                            <Checkbox label="Is Billing Only (No Results)" checked={formData.billingOnly} onChange={(v) => handleChange('billingOnly', v)} />
+                            <div className="flex flex-col gap-1">
+                                <Checkbox label="Is Outsourced Test" checked={formData.isOutsourced} onChange={(v) => handleChange('isOutsourced', v)} />
+                                {formData.isOutsourced && (
+                                    <div className="ml-6 mt-1 mb-2">
+                                        <select value={formData.outsourceLabId} onChange={(e) => handleChange('outsourceLabId', e.target.value)} className={`${inputClass} !h-8 !text-[11px]`}>
+                                            <option value="">-- Select Outsource Lab --</option>
+                                            {outsourceLabs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="pt-2"><Checkbox label="Test is Active" checked={formData.isActive} onChange={(v) => handleChange('isActive', v)} /></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label className={labelClass}>Guidelines</label>
+                        <div className="flex items-center gap-4 mt-2">
+                             <button onClick={() => setIsEditorOpen(true)} className="text-xs text-[#9575cd] border border-[#d1c4e9] rounded px-4 py-2 bg-purple-50 hover:bg-purple-100 font-bold transition-colors">{formData.instructions ? 'Edit Guidelines' : '+ Add Guidelines'}</button>
+                            {formData.instructions && <span className="text-[10px] text-green-600 font-bold">✓ Configured</span>}
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden w-full flex-1 flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-              <div className="flex items-center gap-2 font-bold text-slate-700"><ChevronDown size={18} /><span>{formData.testName}</span></div>
-              <button onClick={handleSave} disabled={isPending} className="px-6 py-2 text-xs font-bold text-white bg-[#9575cd] rounded hover:bg-[#7e57c2] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-70">
-                  {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {isPending ? 'Updating...' : 'Update Test'}
-              </button>
-          </div>
-          <div className="p-8 space-y-8 overflow-y-auto flex-1">
+
+        {/* --- MOBILE LAYOUT --- */}
+        <div className="flex md:hidden flex-col flex-1 overflow-hidden p-0 bg-transparent">
+          <div className="w-full h-full bg-white rounded-none border-0 overflow-hidden flex flex-col relative">
+            
+            {/* Form Content */}
+            <div className="flex-1 overflow-y-auto px-2.5 pt-2 pb-16 space-y-2.5 custom-scrollbar">
               
-              {/* --- Core Details --- */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="lg:col-span-1">
-                      <label className={labelClass}>Test Type</label>
-                      <div className="relative">
-                          <select value={formData.testType} onChange={(e) => handleChange('testType', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}><option value="Test">Test</option><option value="Package">Package</option><option value="Other">Other</option></select>
-                          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
-                      </div>
+              {/* Core Details */}
+              <div className="space-y-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={mLabelClass}>Test Type</label>
+                    <div className="relative">
+                      <select 
+                        value={formData.testType} 
+                        onChange={(e) => handleChange('testType', e.target.value)} 
+                        className={`${mInputClass} appearance-none cursor-pointer pr-5`}
+                      >
+                        <option value="Test">Test</option>
+                        <option value="Package">Package</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                    </div>
                   </div>
+
                   {formData.testType === 'Test' && (
-                      <div className="lg:col-span-1">
-                          <label className={labelClass}><span className="text-red-500 mr-0.5">*</span> Department</label>
-                          <div className="relative">
-                              <select value={formData.departmentId} onChange={(e) => handleChange('departmentId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
-                                  {departments.length > 0 ? (departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)) : (<option value="">Loading...</option>)}
-                              </select>
-                              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
-                          </div>
+                    <div>
+                      <label className={mLabelClass}><span className="text-red-500 mr-0.5">*</span> Department</label>
+                      <div className="relative">
+                        <select 
+                          value={formData.departmentId} 
+                          onChange={(e) => handleChange('departmentId', e.target.value)} 
+                          className={`${mInputClass} appearance-none cursor-pointer pr-5`}
+                        >
+                          {departments.length > 0 ? (
+                            departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)
+                          ) : (
+                            <option value="">Loading...</option>
+                          )}
+                        </select>
+                        <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
                       </div>
+                    </div>
                   )}
-                  <div className={formData.testType === 'Test' ? "lg:col-span-2" : "lg:col-span-3"}>
-                      <label className={labelClass}><span className="text-red-500 mr-0.5">*</span> {formData.testType === 'Package' ? 'Package Name' : 'Test Name'}</label>
-                      <input type="text" value={formData.testName} onChange={(e) => handleChange('testName', e.target.value)} className={inputClass} />
+                </div>
+
+                <div>
+                  <label className={mLabelClass}><span className="text-red-500 mr-0.5">*</span> {formData.testType === 'Package' ? 'Package Name' : 'Test Name'}</label>
+                  <input 
+                    type="text" 
+                    value={formData.testName} 
+                    onChange={(e) => handleChange('testName', e.target.value)} 
+                    className={mInputClass} 
+                  />
+                </div>
+
+                <div>
+                  <label className={mLabelClass}>Display Name</label>
+                  <input 
+                    type="text" 
+                    value={formData.displayTestName} 
+                    onChange={(e) => handleChange('displayTestName', e.target.value)} 
+                    placeholder="Report/Display Name (Optional)" 
+                    className={mInputClass} 
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={mLabelClass}><span className="text-red-500 mr-0.5">*</span> Code</label>
+                    <input 
+                      type="text" 
+                      value={formData.code} 
+                      onChange={(e) => handleChange('code', e.target.value)} 
+                      className={`${mInputClass} font-mono`} 
+                    />
                   </div>
-                  <div className="lg:col-span-2">
-                      <label className={labelClass}>Display Name</label>
-                      <input type="text" value={formData.displayTestName} onChange={(e) => handleChange('displayTestName', e.target.value)} placeholder="Report/Display Name (Optional)" className={inputClass} />
+                  <div>
+                    <label className={mLabelClass}><span className="text-red-500 mr-0.5">*</span> Price (₹)</label>
+                    <input 
+                      type="number" 
+                      value={formData.price} 
+                      onChange={(e) => handleChange('price', e.target.value)} 
+                      className={`${mInputClass} font-bold`} 
+                    />
                   </div>
-                  <div className="lg:col-span-1">
-                      <label className={labelClass}><span className="text-red-500 mr-0.5">*</span> Code</label>
-                      <input type="text" value={formData.code} onChange={(e) => handleChange('code', e.target.value)} className={inputClass} />
-                  </div>
-                  <div className="lg:col-span-1">
-                      <label className={labelClass}><span className="text-red-500 mr-0.5">*</span> Price</label>
-                      <input type="number" value={formData.price} onChange={(e) => handleChange('price', e.target.value)} className={inputClass} />
-                  </div>
+                </div>
               </div>
 
-              {/* 🚨 NEW: Clinical Details & TAT Section (Replaces Configuration Tab) */}
+              {/* Clinical & Turnaround Time */}
               {formData.testType === 'Test' && (
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-6 pt-6 border-t border-slate-100">
-                      <div className="md:col-span-5 mb-[-10px]">
-                          <h3 className="text-[12px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
-                              <Beaker size={14} className="text-[#9575cd]"/> Clinical & Turnaround Time
-                          </h3>
-                      </div>
-                      
-                      <div className="lg:col-span-1">
-                          <label className={labelClass}>Method</label>
-                          <select value={formData.methodId} onChange={(e) => handleChange('methodId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
-                              <option value="">-- None --</option>
-                              {methods.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                          </select>
-                      </div>
-                      <div className="lg:col-span-1">
-                          <label className={labelClass}>Specimen</label>
-                          <select value={formData.specimenId} onChange={(e) => handleChange('specimenId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
-                              <option value="">-- None --</option>
-                              {specimens.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                          </select>
-                      </div>
-                      <div className="lg:col-span-1">
-                          <label className={labelClass}>Container</label>
-                          <select value={formData.vacutainerId} onChange={(e) => handleChange('vacutainerId', e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
-                              <option value="">-- None --</option>
-                              {vacutainers.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                          </select>
-                      </div>
-                      <div className="lg:col-span-1">
-                          <label className={labelClass}>Sample Volume</label>
-                          <input type="text" value={formData.sampleVolume} onChange={(e) => handleChange('sampleVolume', e.target.value)} placeholder="e.g. 2 ml" className={inputClass} />
-                      </div>
-                      <div className="lg:col-span-1">
-                          <label className={labelClass}>Barcode Copies</label>
-                          <input type="number" min="0" value={formData.barcodeCopies} onChange={(e) => handleChange('barcodeCopies', e.target.value)} className={inputClass} />
-                      </div>
+                <div className="pt-2 border-t border-slate-100 space-y-2.5">
+                  <h3 className="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-1.5">
+                    <Beaker size={12} className="text-[#9575cd]"/> Clinical & Turnaround Time
+                  </h3>
 
-                      {/* Turnaround Time Row */}
-                      <div className="md:col-span-5 grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-                         <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                             <label className="text-[10px] font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">Report Available (Min)</label>
-                             <div className="flex gap-2">
-                                 <div className="flex-1"><input type="number" value={formData.minDays} onChange={(e) => handleChange('minDays', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Days</span></div>
-                                 <div className="flex-1"><input type="number" value={formData.minHours} onChange={(e) => handleChange('minHours', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Hrs</span></div>
-                                 <div className="flex-1"><input type="number" value={formData.minMinutes} onChange={(e) => handleChange('minMinutes', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Mins</span></div>
-                             </div>
-                         </div>
-                         <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                             <label className="text-[10px] font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">Deadline (Max)</label>
-                             <div className="flex gap-2">
-                                 <div className="flex-1"><input type="number" value={formData.maxDays} onChange={(e) => handleChange('maxDays', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Days</span></div>
-                                 <div className="flex-1"><input type="number" value={formData.maxHours} onChange={(e) => handleChange('maxHours', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Hrs</span></div>
-                                 <div className="flex-1"><input type="number" value={formData.maxMinutes} onChange={(e) => handleChange('maxMinutes', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Mins</span></div>
-                             </div>
-                         </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={mLabelClass}>Method</label>
+                      <div className="relative">
+                        <select 
+                          value={formData.methodId} 
+                          onChange={(e) => handleChange('methodId', e.target.value)} 
+                          className={`${mInputClass} appearance-none cursor-pointer pr-4`}
+                        >
+                          <option value="">-- None --</option>
+                          {methods.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        </select>
+                        <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
                       </div>
+                    </div>
+
+                    <div>
+                      <label className={mLabelClass}>Specimen</label>
+                      <div className="relative">
+                        <select 
+                          value={formData.specimenId} 
+                          onChange={(e) => handleChange('specimenId', e.target.value)} 
+                          className={`${mInputClass} appearance-none cursor-pointer pr-4`}
+                        >
+                          <option value="">-- None --</option>
+                          {specimens.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                        <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                      </div>
+                    </div>
                   </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className={mLabelClass}>Container</label>
+                      <div className="relative">
+                        <select 
+                          value={formData.vacutainerId} 
+                          onChange={(e) => handleChange('vacutainerId', e.target.value)} 
+                          className={`${mInputClass} appearance-none cursor-pointer pr-4`}
+                        >
+                          <option value="">-- None --</option>
+                          {vacutainers.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                        </select>
+                        <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={mLabelClass}>Sample Vol</label>
+                      <input 
+                        type="text" 
+                        value={formData.sampleVolume} 
+                        onChange={(e) => handleChange('sampleVolume', e.target.value)} 
+                        placeholder="e.g. 2 ml" 
+                        className={mInputClass} 
+                      />
+                    </div>
+
+                    <div>
+                      <label className={mLabelClass}>Barcodes</label>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={formData.barcodeCopies} 
+                        onChange={(e) => handleChange('barcodeCopies', e.target.value)} 
+                        className={mInputClass} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Turnaround Time Cards */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                      <label className="text-[8px] font-bold text-slate-600 uppercase mb-1 block">Report Available (Min)</label>
+                      <div className="flex gap-1">
+                        <div className="flex-1">
+                          <input type="number" value={formData.minDays} onChange={(e) => handleChange('minDays', e.target.value)} className={`${mInputClass} text-center`} />
+                          <span className="text-[7.5px] text-center block mt-0.5 text-slate-400 font-bold uppercase">Days</span>
+                        </div>
+                        <div className="flex-1">
+                          <input type="number" value={formData.minHours} onChange={(e) => handleChange('minHours', e.target.value)} className={`${mInputClass} text-center`} />
+                          <span className="text-[7.5px] text-center block mt-0.5 text-slate-400 font-bold uppercase">Hrs</span>
+                        </div>
+                        <div className="flex-1">
+                          <input type="number" value={formData.minMinutes} onChange={(e) => handleChange('minMinutes', e.target.value)} className={`${mInputClass} text-center`} />
+                          <span className="text-[7.5px] text-center block mt-0.5 text-slate-400 font-bold uppercase">Mins</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                      <label className="text-[8px] font-bold text-slate-600 uppercase mb-1 block">Deadline (Max)</label>
+                      <div className="flex gap-1">
+                        <div className="flex-1">
+                          <input type="number" value={formData.maxDays} onChange={(e) => handleChange('maxDays', e.target.value)} className={`${mInputClass} text-center`} />
+                          <span className="text-[7.5px] text-center block mt-0.5 text-slate-400 font-bold uppercase">Days</span>
+                        </div>
+                        <div className="flex-1">
+                          <input type="number" value={formData.maxHours} onChange={(e) => handleChange('maxHours', e.target.value)} className={`${mInputClass} text-center`} />
+                          <span className="text-[7.5px] text-center block mt-0.5 text-slate-400 font-bold uppercase">Hrs</span>
+                        </div>
+                        <div className="flex-1">
+                          <input type="number" value={formData.maxMinutes} onChange={(e) => handleChange('maxMinutes', e.target.value)} className={`${mInputClass} text-center`} />
+                          <span className="text-[7.5px] text-center block mt-0.5 text-slate-400 font-bold uppercase">Mins</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {/* --- Flags & Guidelines --- */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
-                  <div>
-                      <label className={labelClass}>Configuration Flags</label>
-                      <div className="flex flex-col gap-2 mt-2">
-                          <Checkbox label="Is Culture & Susceptibility Test" checked={formData.isCulture} onChange={(v) => handleChange('isCulture', v)} color="#ef4444" />
-                          <div className="border-t border-slate-100 my-1 pt-1"></div>
-                          <Checkbox label="LMP Required" checked={formData.lmpRequired} onChange={(v) => handleChange('lmpRequired', v)} />
-                          <Checkbox label="ID Proof Required" checked={formData.idRequired} onChange={(v) => handleChange('idRequired', v)} />
-                          <Checkbox label="Consent Form Required" checked={formData.consentRequired} onChange={(v) => handleChange('consentRequired', v)} />
-                          <div className="border-t border-slate-100 my-1 pt-1"></div>
-                          <Checkbox label="Show Test Name on Report (Override)" checked={formData.showTestNameOnReport} onChange={(v) => handleChange('showTestNameOnReport', v)} />
-                          <div className="border-t border-slate-100 my-1 pt-1"></div>
-                          <Checkbox label="Is Billing Only (No Results)" checked={formData.billingOnly} onChange={(v) => handleChange('billingOnly', v)} />
-                          <div className="flex flex-col gap-1">
-                              <Checkbox label="Is Outsourced Test" checked={formData.isOutsourced} onChange={(v) => handleChange('isOutsourced', v)} />
-                              {formData.isOutsourced && (
-                                  <div className="ml-6 mt-1 mb-2">
-                                      <select value={formData.outsourceLabId} onChange={(e) => handleChange('outsourceLabId', e.target.value)} className={`${inputClass} !h-8 !text-[11px]`}>
-                                          <option value="">-- Select Outsource Lab --</option>
-                                          {outsourceLabs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                                      </select>
-                                  </div>
-                              )}
-                          </div>
-                          <div className="pt-2"><Checkbox label="Test is Active" checked={formData.isActive} onChange={(v) => handleChange('isActive', v)} /></div>
+              {/* Flags & Guidelines */}
+              <div className="pt-2 border-t border-slate-100 space-y-2.5">
+                <label className={mLabelClass}>Configuration Flags</label>
+                <div className="flex flex-col gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                  <Checkbox label="Is Culture & Susceptibility Test" checked={formData.isCulture} onChange={(v) => handleChange('isCulture', v)} color="#ef4444" />
+                  <div className="border-t border-slate-200/60 my-0.5"></div>
+                  <Checkbox label="LMP Required" checked={formData.lmpRequired} onChange={(v) => handleChange('lmpRequired', v)} />
+                  <Checkbox label="ID Proof Required" checked={formData.idRequired} onChange={(v) => handleChange('idRequired', v)} />
+                  <Checkbox label="Consent Form Required" checked={formData.consentRequired} onChange={(v) => handleChange('consentRequired', v)} />
+                  <div className="border-t border-slate-200/60 my-0.5"></div>
+                  <Checkbox label="Show Test Name on Report (Override)" checked={formData.showTestNameOnReport} onChange={(v) => handleChange('showTestNameOnReport', v)} />
+                  <div className="border-t border-slate-200/60 my-0.5"></div>
+                  <Checkbox label="Is Billing Only (No Results)" checked={formData.billingOnly} onChange={(v) => handleChange('billingOnly', v)} />
+                  <div className="flex flex-col gap-1">
+                    <Checkbox label="Is Outsourced Test" checked={formData.isOutsourced} onChange={(v) => handleChange('isOutsourced', v)} />
+                    {formData.isOutsourced && (
+                      <div className="ml-4 mt-1">
+                        <select 
+                          value={formData.outsourceLabId} 
+                          onChange={(e) => handleChange('outsourceLabId', e.target.value)} 
+                          className={`${mInputClass} !h-6 !text-[9.5px]`}
+                        >
+                          <option value="">-- Select Outsource Lab --</option>
+                          {outsourceLabs.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                        </select>
                       </div>
+                    )}
                   </div>
-                  <div>
-                      <label className={labelClass}>Guidelines</label>
-                      <div className="flex items-center gap-4 mt-2">
-                           <button onClick={() => setIsEditorOpen(true)} className="text-xs text-[#9575cd] border border-[#d1c4e9] rounded px-4 py-2 bg-purple-50 hover:bg-purple-100 font-bold transition-colors">{formData.instructions ? 'Edit Guidelines' : '+ Add Guidelines'}</button>
-                          {formData.instructions && <span className="text-[10px] text-green-600 font-bold">✓ Configured</span>}
-                      </div>
+                  <div className="pt-1 border-t border-slate-200/60">
+                    <Checkbox label="Test is Active" checked={formData.isActive} onChange={(v) => handleChange('isActive', v)} />
                   </div>
+                </div>
+
+                {/* Guidelines Button */}
+                <div className="pt-0.5">
+                  <label className={mLabelClass}>Guidelines</label>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setIsEditorOpen(true)} 
+                      className="h-6 px-2 text-[9px] text-[#9575cd] border border-[#d1c4e9] rounded bg-purple-50 hover:bg-purple-100 font-bold transition-colors"
+                    >
+                      {formData.instructions ? 'Edit Guidelines' : '+ Add Guidelines'}
+                    </button>
+                    {formData.instructions && <span className="text-[9px] text-green-600 font-bold">✓ Configured</span>}
+                  </div>
+                </div>
               </div>
+
+            </div>
+
+            {/* MOBILE FIXED FOOTER */}
+            <div className="absolute bottom-0 left-0 right-0 bg-white p-2 z-[50] pb-safe flex items-center justify-between border-t border-slate-100 shadow-sm">
+              <div className="flex items-center gap-1.5">
+                <button 
+                  onClick={() => router.push('/tests?tab=Test Library')} 
+                  className="h-6 px-2.5 flex items-center justify-center bg-slate-50 border border-slate-100 text-slate-600 font-medium text-[9px] rounded shrink-0 active:scale-95 transition-all"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-0.5"><path d="m15 18-6-6 6-6"/></svg> Back
+                </button>
+                <button 
+                  onClick={handleDelete} 
+                  className="h-6 px-2 text-[9px] font-bold text-red-500 bg-red-50/60 hover:bg-red-50 border border-red-100 rounded flex items-center gap-1 active:scale-95 transition-all"
+                >
+                  <Trash2 size={10} /> Delete
+                </button>
+              </div>
+              
+              <button 
+                onClick={handleSave} 
+                disabled={isPending} 
+                className="h-6 px-3 bg-[#9575cd] hover:bg-[#7e57c2] text-white font-bold text-[10px] rounded shrink-0 shadow-sm flex items-center gap-1 active:scale-95 transition-all disabled:opacity-70"
+              >
+                {isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                <span>{isPending ? 'Updating...' : 'Update'}</span>
+              </button>
+            </div>
+
           </div>
         </div>
       </div>
 
       {showSuccessPopup && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-sm w-full mx-4 border border-slate-100">
-            <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-5 border-[4px] border-emerald-100">
-              <CheckCircle className="text-emerald-500" size={32} strokeWidth={2.5} />
+        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300 p-4">
+          <div className="bg-white rounded-2xl p-6 md:p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-[280px] md:max-w-sm w-full mx-4 border border-slate-100">
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-3 md:mb-5 border-[3px] md:border-[4px] border-emerald-100">
+              <CheckCircle className="text-emerald-500" size={24} strokeWidth={2.5} />
             </div>
-            <h2 className="text-xl font-black text-slate-800 tracking-tight text-center">Updated Successfully!</h2>
-            <p className="text-slate-500 text-sm mt-1 text-center font-medium">{formData.testName}</p>
+            <h2 className="text-base md:text-xl font-black text-slate-800 tracking-tight text-center">Updated Successfully!</h2>
+            <p className="text-slate-500 text-xs md:text-sm mt-1 text-center font-medium">{formData.testName}</p>
           </div>
         </div>
       )}
@@ -301,9 +597,20 @@ export default function EditTestPage() {
 
 function Checkbox({ label, checked, onChange, color = "#9575cd" }: { label: string, checked: boolean, onChange: (checked: boolean) => void, color?: string }) {
   return (
-    <label className="flex items-center gap-2 cursor-pointer select-none group">
-        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="w-4 h-4 border-slate-300 rounded cursor-pointer" style={{ accentColor: color, color: color }} />
-        <span className={`text-xs font-medium transition-colors ${checked ? 'font-bold' : 'text-slate-600'}`} style={{ color: checked ? color : undefined }}>{label}</span>
+    <label className="flex items-center gap-1.5 md:gap-2 cursor-pointer select-none group">
+        <input 
+          type="checkbox" 
+          checked={checked} 
+          onChange={(e) => onChange(e.target.checked)} 
+          className="w-3 h-3 md:w-4 md:h-4 border-slate-300 rounded cursor-pointer shrink-0" 
+          style={{ accentColor: color, color: color }} 
+        />
+        <span 
+          className={`text-[9.5px] md:text-xs font-medium transition-colors leading-tight ${checked ? 'font-bold' : 'text-slate-600'}`} 
+          style={{ color: checked ? color : undefined }}
+        >
+          {label}
+        </span>
     </label>
   );
 }

@@ -10,9 +10,11 @@ interface EntryDateTimePickerProps {
   onChange: (date: string) => void;
   label?: string; 
   align?: 'left' | 'right'; 
+  triggerClassName?: string;
+  popupClassName?: string;
 }
 
-export default function EntryDateTimePicker({ date, onChange, label = "Entry:", align = "right" }: EntryDateTimePickerProps) {
+export default function EntryDateTimePicker({ date, onChange, label = "Entry:", align = "right", triggerClassName, popupClassName }: EntryDateTimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [popoverPos, setPopoverPos] = useState<{top: number, left: number} | null>(null);
@@ -125,7 +127,7 @@ export default function EntryDateTimePicker({ date, onChange, label = "Entry:", 
     <div className="relative" ref={containerRef}>
       <div 
         onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
-        className={`flex items-center bg-white border rounded-md shadow-sm h-8 px-2 gap-2 cursor-pointer transition-all group select-none min-w-[160px] ${isOpen ? 'border-[#9575cd] ring-1 ring-[#9575cd]' : 'border-slate-200 hover:border-[#9575cd] hover:shadow'}`}
+        className={triggerClassName || `flex items-center bg-white border rounded-md shadow-sm h-8 px-2 gap-2 cursor-pointer transition-all group select-none min-w-[160px] ${isOpen ? 'border-[#9575cd] ring-1 ring-[#9575cd]' : 'border-slate-200 hover:border-[#9575cd] hover:shadow'}`}
       >
         <Clock size={14} className="text-slate-400 group-hover:text-[#9575cd] transition-colors" />
         <span className="text-[10px] font-bold text-slate-500 group-hover:text-[#9575cd] uppercase tracking-wider whitespace-nowrap">{label}</span>
@@ -137,7 +139,7 @@ export default function EntryDateTimePicker({ date, onChange, label = "Entry:", 
       {isOpen && popoverPos && createPortal(
         <div 
             id={popupId}
-            className="fixed bg-white rounded-xl shadow-2xl border border-slate-200 w-[280px] overflow-hidden animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5"
+            className={`fixed bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5 ${popupClassName || 'w-[280px]'}`}
             style={{ 
                 top: popoverPos.top, 
                 left: popoverPos.left, 

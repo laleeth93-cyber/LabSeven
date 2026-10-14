@@ -98,16 +98,16 @@ export default function CustomizeRegistrationModal({ isOpen, onClose, fields, se
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-5xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white w-[80%] max-w-[800px] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh]">
         
         {/* Header */}
         <div 
-          className="px-6 py-4 flex items-center justify-between border-b border-purple-100 shrink-0"
+          className="px-4 py-1.5 flex items-center justify-between border-b border-purple-100 shrink-0"
           style={{ background: 'linear-gradient(to right, #b3e5fc, #e1bee7)' }}
         >
-          <div className="flex items-center gap-3">
-            <SlidersHorizontal size={18} className="text-[#9575cd]" />
-            <h3 className="font-bold text-slate-700">Customize Registration Fields</h3>
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal size={14} className="text-[#9575cd]" />
+            <h3 className="font-bold text-[13px] text-slate-700">Registration Fields</h3>
           </div>
           <button 
             onClick={onClose}
@@ -118,67 +118,65 @@ export default function CustomizeRegistrationModal({ isOpen, onClose, fields, se
         </div>
 
         {/* Controls */}
-        <div className="p-6 pb-2 space-y-4 shrink-0 bg-white">
-          <p className="text-xs text-slate-500">Select which fields to display in the registration form. Unchecked fields will be hidden.</p>
-          
+        <div className="px-3 py-2 flex flex-col gap-2 shrink-0 bg-white border-b border-slate-100">
           <div className="relative">
             <input 
               type="text" 
               placeholder="Search fields..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#9575cd]/20 text-sm"
+              className="w-full pl-7 pr-2 py-1 rounded-md border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#9575cd]/20 text-[11px]"
             />
-            <Search size={16} className="absolute left-3.5 top-2.5 text-slate-400" />
+            <Search size={12} className="absolute left-2.5 top-1.5 text-slate-400" />
           </div>
 
-          <div className="flex items-center gap-2 px-1">
+          <div className="flex items-center gap-1.5 px-1">
             <input 
               type="checkbox" 
               checked={customizableFields.length > 0 && customizableFields.every(f => f.isVisible)}
               onChange={handleSelectAll}
-              className="w-4 h-4 rounded border-slate-300 text-[#4dd0e1] focus:ring-[#4dd0e1]" 
+              className="w-3 h-3 rounded border-slate-300 text-[#4dd0e1] focus:ring-[#4dd0e1]" 
             />
-            <span className="text-sm font-medium text-slate-600">Select All Fields</span>
+            <span className="text-[10px] font-medium text-slate-600">Select All Fields</span>
           </div>
         </div>
 
         {/* Field Grid */}
-        <div className="flex-1 p-6 overflow-y-auto bg-slate-50/50 min-h-[200px]">
+        <div className="flex-1 px-3 py-2 overflow-y-auto bg-slate-50/50 min-h-[200px]">
            {filteredCategories.map((category) => {
              const categoryFields = getFieldsNc(category);
              if (categoryFields.length === 0) return null;
 
              return (
-               <div key={category} className="mb-6">
-                 <h4 className="text-xs font-bold text-[#9575cd] mb-2 uppercase tracking-wider">{category}</h4>
+               <div key={category} className="mb-4">
+                 <h4 className="text-[10px] font-bold text-[#9575cd] mb-1.5 uppercase tracking-wider">{category}</h4>
                  
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
                    {categoryFields.map((field) => (
                      <div 
                        key={field.id} 
                        onClick={() => toggleField(field.id)}
                        className={`
-                         bg-white border rounded-lg p-2.5 flex items-center justify-between shadow-sm hover:shadow-md transition-all cursor-pointer
+                         bg-white border rounded-[4px] px-1.5 py-1 flex items-center justify-between shadow-sm hover:shadow-md transition-all cursor-pointer
                          ${field.isVisible ? 'border-cyan-200' : 'border-slate-200'}
                        `}
                      >
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2">
                           <input 
                             type="checkbox" 
                             checked={field.isVisible}
                             readOnly
-                            className="w-4 h-4 rounded border-slate-300 text-[#4dd0e1] focus:ring-[#4dd0e1] pointer-events-none" 
+                            className="w-3.5 h-3.5 rounded border-slate-300 text-[#4dd0e1] focus:ring-[#4dd0e1] pointer-events-none" 
                           />
                           
                           {/* Number Badge */}
                           {field.isVisible && (
-                            <div className="w-5 h-5 rounded-full bg-[#4dd0e1] text-white flex items-center justify-center text-[10px] font-bold shrink-0 animate-in zoom-in-50 duration-200">
+                            <div className="w-4 h-4 rounded-full bg-[#4dd0e1] text-white flex items-center justify-center text-[9px] font-bold shrink-0 animate-in zoom-in-50 duration-200">
                               {field.order}
                             </div>
                           )}
                           
-                          <span className={`text-[11px] font-medium transition-colors ${field.isVisible ? 'text-slate-700' : 'text-slate-500'}`}>
+                          <span className={`text-[10px] font-medium transition-colors ${field.isVisible ? 'text-slate-700' : 'text-slate-500'}`}>
                             {field.label}
                           </span>
                         </div>
@@ -199,17 +197,17 @@ export default function CustomizeRegistrationModal({ isOpen, onClose, fields, se
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t bg-white flex justify-end gap-3 shrink-0">
+        <div className="px-4 py-2 border-t bg-white flex justify-end gap-3 shrink-0">
           <button 
             onClick={onClose}
-            className="px-6 py-2 rounded-lg text-white font-medium text-sm shadow-md transition-all hover:opacity-90 active:scale-95"
+            className="px-4 py-1.5 rounded-lg text-white font-medium text-[11px] shadow-md transition-all hover:opacity-90 active:scale-95"
             style={{ background: 'linear-gradient(to right, #ab47bc, #f06292)' }}
           >
             Cancel
           </button>
           <button 
             onClick={onClose}
-            className="px-6 py-2 rounded-lg text-white font-medium text-sm shadow-md transition-all hover:opacity-90 active:scale-95"
+            className="px-4 py-1.5 rounded-lg text-white font-medium text-[11px] shadow-md transition-all hover:opacity-90 active:scale-95"
             style={{ background: 'linear-gradient(to right, #4dd0e1, #29b6f6)' }}
           >
             Apply Changes

@@ -26,45 +26,40 @@ export default async function SuperAdminPage() {
   });
 
   return (
-    <div className="flex flex-col h-full w-full bg-slate-50/50 p-4 sm:p-6 overflow-y-auto custom-scrollbar">
+    <div className="flex flex-col h-full w-full bg-slate-50/50 p-2 sm:p-6 overflow-y-auto custom-scrollbar">
       
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            Master HQ <span className="px-2 py-0.5 bg-fuchsia-100 text-fuchsia-700 text-[10px] uppercase rounded-full border border-fuchsia-200">System Control</span>
-          </h1>
-          <p className="text-sm font-medium text-slate-500 mt-1">Manage tenant lifecycle, subscriptions, and system security.</p>
-        </div>
+      <div className="mb-3 sm:mb-5 flex items-center justify-between gap-1.5 sm:gap-4 w-full">
+        <h1 className="text-base sm:text-2xl font-black text-slate-800 tracking-tight shrink-0">
+          Master HQ
+        </h1>
         
-        <div className="flex items-center gap-3">
-            <GlobalPasswordWidget />
-            <GlobalWipeButton />
-            <GlobalSyncWidget />
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <GlobalPasswordWidget />
+          <GlobalWipeButton />
+          <GlobalSyncWidget />
         </div>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-6 mb-6">
-        <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-            <p className="text-xs font-bold text-slate-500 uppercase">Total Labs</p>
-            <p className="text-2xl font-black text-[#a07be1] mt-1">{labs.length}</p>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-            <p className="text-xs font-bold text-slate-500 uppercase">Active Subs</p>
-            <p className="text-2xl font-black text-emerald-600 mt-1">
-              {labs.filter(l => l.isActive && l.id !== 1).length}
-            </p>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-            <p className="text-xs font-bold text-slate-500 uppercase">Total Bills Generated</p>
-            <p className="text-2xl font-black text-slate-800 mt-1">
-              {labs.reduce((acc, lab) => acc + lab._count.bills, 0)}
-            </p>
-          </div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-2.5 sm:mb-4 max-w-md sm:max-w-lg">
+        <div className="bg-white border border-slate-200/80 rounded-lg sm:rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-xs flex flex-col justify-center">
+          <span className="text-[8.5px] sm:text-[9.5px] font-bold text-slate-400 uppercase tracking-wider truncate">Total Labs</span>
+          <span className="text-sm sm:text-base font-black text-[#a07be1] leading-tight mt-0.5">{labs.length}</span>
+        </div>
+        <div className="bg-white border border-slate-200/80 rounded-lg sm:rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-xs flex flex-col justify-center">
+          <span className="text-[8.5px] sm:text-[9.5px] font-bold text-slate-400 uppercase tracking-wider truncate">Active Subs</span>
+          <span className="text-sm sm:text-base font-black text-emerald-600 leading-tight mt-0.5">
+            {labs.filter(l => l.isActive && l.id !== 1).length}
+          </span>
+        </div>
+        <div className="bg-white border border-slate-200/80 rounded-lg sm:rounded-xl px-2.5 py-1.5 sm:px-3 sm:py-2 shadow-xs flex flex-col justify-center">
+          <span className="text-[8.5px] sm:text-[9.5px] font-bold text-slate-400 uppercase tracking-wider truncate">Total Bills</span>
+          <span className="text-sm sm:text-base font-black text-slate-700 leading-tight mt-0.5">
+            {labs.reduce((acc, lab) => acc + lab._count.bills, 0)}
+          </span>
         </div>
       </div>
 
-      <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col min-h-[500px]">
+      <div className="flex-1 bg-transparent md:bg-white rounded-none md:rounded-xl shadow-none md:shadow-sm border-0 md:border md:border-slate-200 overflow-hidden flex flex-col min-h-0 md:min-h-[500px]">
         <SuperAdminTable labs={labs} />
       </div>
 

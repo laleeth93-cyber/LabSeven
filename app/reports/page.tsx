@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, Table, LayoutTemplate, Stethoscope, Printer, CheckCircle, Activity } from 'lucide-react';
+import { Save, Loader2, Table, LayoutTemplate, Stethoscope, Printer, CheckCircle, Activity, ChevronLeft, Eye, FileText, Settings2 } from 'lucide-react';
 import { getReportSettings, updateReportSettings } from '@/app/actions/reports';
 import MusicBarLoader from '@/app/components/MusicBarLoader'; 
 
@@ -11,6 +11,7 @@ import BodyTab from './components/BodyTab';
 import FooterTab from './components/FooterTab';
 import PrintFitTab from './components/PrintFitTab';
 import LivePreviewPanel from './components/LivePreviewPanel';
+import PrintReportContent from './components/PrintReportContent';
 import ReportDispatchModal from './components/ReportDispatchModal';
 import DeltaReportTab from './components/DeltaReportTab';
 
@@ -75,6 +76,8 @@ export default function ReportsSettingsPage() {
     const [isPending, startTransition] = useTransition();
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Header');
+    const [mobileTab, setMobileTab] = useState('Header');
+    const [mobileZoom, setMobileZoom] = useState<'fit' | 'full'>('fit');
     
     const [printHeaderFooter, setPrintHeaderFooter] = useState(true);
     
@@ -354,6 +357,15 @@ export default function ReportsSettingsPage() {
         { id: 'DeltaReport', label: 'Delta Report (Analytics)', icon: <Activity size={14}/> } 
     ];
 
+    const mobileTabs = [ 
+        { id: 'Header', label: 'Header', icon: <LayoutTemplate size={10}/> }, 
+        { id: 'Body', label: 'Body', icon: <Table size={10}/> }, 
+        { id: 'Footer', label: 'Footer', icon: <Stethoscope size={10}/> },
+        { id: 'PrintFit', label: 'Fit', icon: <Printer size={10}/> },
+        { id: 'DeltaReport', label: 'Delta', icon: <Activity size={10}/> },
+        { id: 'Preview', label: 'Canvas', icon: <Eye size={10}/> }
+    ];
+
     if (isLoading) return (
         <div className="h-full flex items-center justify-center bg-[#f1f5f9]">
             <MusicBarLoader text="Loading Settings..." />
@@ -374,51 +386,260 @@ export default function ReportsSettingsPage() {
               </div>
             )}
 
-            <header className="flex justify-between items-center p-6 pb-4 shrink-0 bg-white border-b border-slate-200 z-10">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Report Template Configuration</h1>
-                    <p className="text-sm text-slate-500 mt-1">Design the anatomy of your printed PDF reports.</p>
-                </div>
-                <button onClick={handleSave} disabled={isPending} className="flex items-center gap-2 bg-[#9575cd] hover:bg-[#7e57c2] text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95 disabled:opacity-70">
-                    {isPending ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} {isPending ? 'Saving...' : 'Save Settings'}
-                </button>
-            </header>
+            {/* ========================================================================= */}
+            {/* DESKTOP RATIO (100% UNTOUCHED ORIGINAL LAYOUT)                            */}
+            {/* ========================================================================= */}
+            <div className="hidden md:flex flex-col flex-1 h-full w-full bg-[#f1f5f9] overflow-hidden">
+                <header className="flex justify-between items-center p-6 pb-4 shrink-0 bg-white border-b border-slate-200 z-10">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Report Template Configuration</h1>
+                        <p className="text-sm text-slate-500 mt-1">Design the anatomy of your printed PDF reports.</p>
+                    </div>
+                    <button onClick={handleSave} disabled={isPending} className="flex items-center gap-2 bg-[#9575cd] hover:bg-[#7e57c2] text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95 disabled:opacity-70">
+                        {isPending ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} {isPending ? 'Saving...' : 'Save Settings'}
+                    </button>
+                </header>
 
-            <div className="bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm px-6">
-                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-                    {tabs.map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-all border-b-[3px] ${activeTab === tab.id ? 'border-[#9575cd] text-[#9575cd] bg-purple-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}>
-                            {tab.icon} {tab.label}
-                        </button>
-                    ))}
+                <div className="bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm px-6">
+                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                        {tabs.map(tab => (
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-all border-b-[3px] ${activeTab === tab.id ? 'border-[#9575cd] text-[#9575cd] bg-purple-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}>
+                                {tab.icon} {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex-1 flex gap-6 p-6 min-h-0">
+                    
+                    {activeTab !== 'DeltaReport' && (
+                        <LivePreviewPanel 
+                            formData={formData}
+                            leftColFields={leftColFields}
+                            rightColFields={rightColFields}
+                            bodySettings={bodySettings}
+                            footerSettings={footerSettings}
+                            paperWidth={paperWidth}
+                            paperHeight={paperHeight}
+                            t={t} b={b} l={l} r={r}
+                            activeImageBase64={activeImageBase64}
+                            isLandscape={isLandscape}
+                            printHeaderFooter={printHeaderFooter}
+                            handleOpenPDFPreview={handleOpenPDFPreview}
+                        />
+                    )}
+
+                    <div className={`${activeTab === 'DeltaReport' ? 'w-full max-w-4xl mx-auto' : 'w-[50%]'} flex flex-col min-h-0 transition-all`}>
+                        {activeTab === 'Header' && ( <HeaderTab formData={formData} handleChange={handleChange} handleToggleSetting={handleToggleSetting} availableFields={availableFields} setAvailableFields={setAvailableFields} leftColFields={leftColFields} setLeftColFields={setLeftColFields} rightColFields={rightColFields} setRightColFields={setRightColFields} searchQuery={searchQuery} setSearchQuery={setSearchQuery} /> )}
+                        {activeTab === 'Body' && ( <BodyTab bodySettings={bodySettings} handleToggleBody={handleToggleBody} handleBodySettingChange={handleBodySettingChange} /> )}
+                        {activeTab === 'Footer' && ( <FooterTab footerSettings={footerSettings} handleToggleFooter={handleToggleFooter} handleFooterSettingChange={handleFooterSettingChange} /> )}
+                        {activeTab === 'PrintFit' && ( <PrintFitTab formData={formData} handleChange={handleChange} handleCustomChange={handleCustomChange} /> )}
+                        {activeTab === 'DeltaReport' && ( <DeltaReportTab deltaSettings={deltaSettings} setDeltaSettings={setDeltaSettings} /> )}
+                    </div>
                 </div>
             </div>
 
-            <div className="flex-1 flex gap-6 p-6 min-h-0">
-                
-                {activeTab !== 'DeltaReport' && (
-                    <LivePreviewPanel 
-                        formData={formData}
-                        leftColFields={leftColFields}
-                        rightColFields={rightColFields}
-                        bodySettings={bodySettings}
-                        footerSettings={footerSettings}
-                        paperWidth={paperWidth}
-                        paperHeight={paperHeight}
-                        t={t} b={b} l={l} r={r}
-                        activeImageBase64={activeImageBase64}
-                        isLandscape={isLandscape}
-                        printHeaderFooter={printHeaderFooter}
-                        handleOpenPDFPreview={handleOpenPDFPreview}
-                    />
-                )}
+            {/* ========================================================================= */}
+            {/* MOBILE RATIO (BUILT SPECIFICALLY FOR MOBILE RATIO)                        */}
+            {/* ========================================================================= */}
+            <div className="flex md:hidden flex-col flex-1 w-full h-full bg-[#f1f5f9] p-2 overflow-hidden">
+                <div className="w-full h-full bg-white rounded-none border-0 shadow-sm overflow-hidden flex flex-col relative">
+                {/* Mobile Tab Switcher Ribbon */}
+                <div className="px-2 py-1 bg-white shrink-0 z-10 overflow-x-auto no-scrollbar flex items-center gap-1">
+                    {mobileTabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setMobileTab(tab.id)}
+                            className={`h-5 px-2 rounded-full text-[8.5px] font-bold shrink-0 flex items-center gap-1 transition-all ${
+                                mobileTab === tab.id
+                                    ? 'bg-[#9575cd] text-white shadow-2xs'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
+                            }`}
+                        >
+                            {tab.icon}
+                            <span>{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
 
-                <div className={`${activeTab === 'DeltaReport' ? 'w-full max-w-4xl mx-auto' : 'w-[50%]'} flex flex-col min-h-0 transition-all`}>
-                    {activeTab === 'Header' && ( <HeaderTab formData={formData} handleChange={handleChange} handleToggleSetting={handleToggleSetting} availableFields={availableFields} setAvailableFields={setAvailableFields} leftColFields={leftColFields} setLeftColFields={setLeftColFields} rightColFields={rightColFields} setRightColFields={setRightColFields} searchQuery={searchQuery} setSearchQuery={setSearchQuery} /> )}
-                    {activeTab === 'Body' && ( <BodyTab bodySettings={bodySettings} handleToggleBody={handleToggleBody} handleBodySettingChange={handleBodySettingChange} /> )}
-                    {activeTab === 'Footer' && ( <FooterTab footerSettings={footerSettings} handleToggleFooter={handleToggleFooter} handleFooterSettingChange={handleFooterSettingChange} /> )}
-                    {activeTab === 'PrintFit' && ( <PrintFitTab formData={formData} handleChange={handleChange} handleCustomChange={handleCustomChange} /> )}
-                    {activeTab === 'DeltaReport' && ( <DeltaReportTab deltaSettings={deltaSettings} setDeltaSettings={setDeltaSettings} /> )}
+                {/* Mobile Tab Content Area */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-2.5 custom-scrollbar bg-white">
+                    {mobileTab === 'Header' && (
+                        <HeaderTab 
+                            formData={formData} 
+                            handleChange={handleChange} 
+                            handleToggleSetting={handleToggleSetting} 
+                            availableFields={availableFields} 
+                            setAvailableFields={setAvailableFields} 
+                            leftColFields={leftColFields} 
+                            setLeftColFields={setLeftColFields} 
+                            rightColFields={rightColFields} 
+                            setRightColFields={setRightColFields} 
+                            searchQuery={searchQuery} 
+                            setSearchQuery={setSearchQuery} 
+                        />
+                    )}
+
+                    {mobileTab === 'Body' && (
+                        <BodyTab 
+                            bodySettings={bodySettings} 
+                            handleToggleBody={handleToggleBody} 
+                            handleBodySettingChange={handleBodySettingChange} 
+                        />
+                    )}
+
+                    {mobileTab === 'Footer' && (
+                        <FooterTab 
+                            footerSettings={footerSettings} 
+                            handleToggleFooter={handleToggleFooter} 
+                            handleFooterSettingChange={handleFooterSettingChange} 
+                        />
+                    )}
+
+                    {mobileTab === 'PrintFit' && (
+                        <PrintFitTab 
+                            formData={formData} 
+                            handleChange={handleChange} 
+                            handleCustomChange={handleCustomChange} 
+                        />
+                    )}
+
+                    {mobileTab === 'DeltaReport' && (
+                        <DeltaReportTab 
+                            deltaSettings={deltaSettings} 
+                            setDeltaSettings={setDeltaSettings} 
+                        />
+                    )}
+
+                    {mobileTab === 'Preview' && (
+                        <div className="w-full bg-white border border-slate-200 shadow-sm rounded-none md:rounded-xl p-2.5 flex flex-col overflow-hidden relative">
+                            {/* Preview Controls Bar */}
+                            <div className="border-b border-slate-100 pb-2 mb-2 shrink-0 flex items-center justify-between gap-1 flex-wrap">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-bold text-slate-800">Print Canvas</span>
+                                    <span className="text-[8.5px] font-bold text-[#9575cd] bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
+                                        {formData.paperSize || 'A4'} • {isLandscape ? 'Landscape' : 'Portrait'}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                    {/* Zoom Mode Toggle */}
+                                    <div className="flex items-center bg-slate-100 rounded p-0.5 border border-slate-200">
+                                        <button
+                                            onClick={() => setMobileZoom('fit')}
+                                            className={`h-5 px-1.5 rounded text-[8.5px] font-bold transition-all flex items-center gap-0.5 ${
+                                                mobileZoom === 'fit' ? 'bg-white text-[#9575cd] shadow-2xs' : 'text-slate-500'
+                                            }`}
+                                        >
+                                            Fit View
+                                        </button>
+                                        <button
+                                            onClick={() => setMobileZoom('full')}
+                                            className={`h-5 px-1.5 rounded text-[8.5px] font-bold transition-all flex items-center gap-0.5 ${
+                                                mobileZoom === 'full' ? 'bg-white text-[#9575cd] shadow-2xs' : 'text-slate-500'
+                                            }`}
+                                        >
+                                            100%
+                                        </button>
+                                    </div>
+
+                                    <button
+                                        onClick={handleOpenPDFPreview}
+                                        className="h-5 px-2 bg-[#9575cd] hover:bg-[#7e57c2] text-white text-[9px] font-bold rounded flex items-center gap-1 shadow-2xs active:scale-95 transition-all"
+                                    >
+                                        <FileText size={10} /> Get PDF
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Canvas Scroll Viewport */}
+                            <div className="w-full overflow-auto bg-slate-200/90 p-2 rounded-lg border border-slate-200 flex justify-center items-start custom-scrollbar max-h-[72vh]">
+                                <div 
+                                    style={
+                                        mobileZoom === 'fit' 
+                                            ? { 
+                                                    transform: `scale(${isLandscape ? 0.32 : 0.44})`, 
+                                                    transformOrigin: 'top center',
+                                                    width: `${paperWidth}px`,
+                                                    height: `${paperHeight * (isLandscape ? 0.32 : 0.44)}px`,
+                                                    marginBottom: `${isLandscape ? 30 : 60}px`
+                                                }
+                                            : {
+                                                    width: `${paperWidth}px`
+                                                }
+                                    }
+                                    className="transition-transform duration-200 shrink-0"
+                                >
+                                    <PrintReportContent 
+                                        formData={formData}
+                                        leftColFields={leftColFields}
+                                        rightColFields={rightColFields}
+                                        bodySettings={bodySettings}
+                                        footerSettings={footerSettings}
+                                        paperWidth={paperWidth}
+                                        paperHeight={paperHeight}
+                                        t={t} b={b} l={l} r={r}
+                                        activeImageBase64={activeImageBase64}
+                                        printHeaderFooter={printHeaderFooter}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Mobile Proper Footer */}
+                <footer className="shrink-0 bg-white p-2 z-[50] pb-safe">
+                    <div className="grid grid-cols-4 gap-1.5 w-full">
+                        <button 
+                            type="button"
+                            onClick={() => router.back()} 
+                            className="h-6 w-full flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-600 font-medium text-[9px] rounded active:scale-95 transition-all gap-0.5"
+                        >
+                            <ChevronLeft size={12} />
+                            <span>Back</span>
+                        </button>
+
+                        {mobileTab !== 'Preview' ? (
+                            <button 
+                                type="button"
+                                onClick={() => setMobileTab('Preview')}
+                                className="h-6 w-full bg-purple-50 hover:bg-purple-100/70 border border-purple-200 text-[#9575cd] rounded text-[9px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all"
+                            >
+                                <Eye size={11} />
+                                <span>Canvas</span>
+                            </button>
+                        ) : (
+                            <button 
+                                type="button"
+                                onClick={() => setMobileTab('Header')}
+                                className="h-6 w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all border border-slate-200"
+                            >
+                                <Settings2 size={11} />
+                                <span>Config</span>
+                            </button>
+                        )}
+
+                        <button 
+                            type="button"
+                            onClick={handleOpenPDFPreview}
+                            className="h-6 w-full text-[9px] font-bold text-[#9575cd] bg-purple-50 hover:bg-purple-100/70 border border-purple-200 rounded flex items-center justify-center gap-1 active:scale-95 transition-all shadow-2xs"
+                        >
+                            <FileText size={11} />
+                            <span>Preview</span>
+                        </button>
+
+                        <button 
+                            type="button"
+                            onClick={handleSave} 
+                            disabled={isPending}
+                            className="h-6 w-full bg-[#9575cd] hover:bg-[#7e57c2] text-white rounded text-[9.5px] font-bold flex items-center justify-center gap-1 shadow-sm active:scale-95 transition-all disabled:opacity-70"
+                        >
+                            {isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                            <span>{isPending ? '...' : 'Save'}</span>
+                        </button>
+                    </div>
+                </footer>
                 </div>
             </div>
 

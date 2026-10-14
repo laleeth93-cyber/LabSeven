@@ -23,7 +23,7 @@ import CultureSensitivityModal from './CultureSensitivityModal';
 import { getFlag, recalculateFormulas } from './ResultEntryUtils';
 import { Loader2, Printer, Activity, CheckCircle, Save, Unlock, AlertCircle } from 'lucide-react';
 
-export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [], entryDateTime, onPrint, onDeltaPrint }: any) {
+export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [], entryDateTime, onPrint, onDeltaPrint, onBackToList }: any) {
 
   const [results, setResults] = useState<any>({});
   const [flags, setFlags] = useState<any>({});
@@ -34,6 +34,7 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
   const [signatureUsers, setSignatureUsers] = useState<any[]>([]);
   const [sig1Id, setSig1Id] = useState<string>("");
   const [sig2Id, setSig2Id] = useState<string>("");
+  const [isSignPopupOpen, setIsSignPopupOpen] = useState(false);
 
   const [isNoteOpen, setIsNoteOpen] = useState(false);
   const [activeNoteItem, setActiveNoteItem] = useState<any>(null);
@@ -325,62 +326,62 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
         {HistoryModal && <HistoryModal show={showHistoryModal} onClose={() => setShowHistoryModal(false)} paramName={selectedHistoryParam} isLoading={isHistoryLoading} data={historyData} />}
         {CultureSensitivityModal && <CultureSensitivityModal isOpen={isCultureModalOpen} onClose={() => setIsCultureModalOpen(false)} onSave={handleSaveCultureData} initialData={activeCultureItem?.initialData} />}
         
-        <div className="w-full bg-white shrink-0 border-b border-slate-200 shadow-sm relative z-10">
-            <div className="w-full px-4 sm:px-6 py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                <div className="shrink-0 pb-1">
+        <div className="hidden md:block w-full bg-white shrink-0 border-b border-slate-100 md:border-slate-200 md:shadow-sm relative z-10">
+            <div className="w-full px-3 md:px-4 sm:px-6 py-2 md:py-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 md:gap-4">
+                <div className="shrink-0 hidden md:block pb-1">
                     <h3 className="text-lg md:text-base font-bold text-slate-800">Result Entry Form</h3>
                     <p className="text-sm md:text-xs text-slate-500">Selected <span className="font-bold text-[#9575cd]">{visibleItems.length}</span> tests</p>
                 </div>
                 
                 {validItems.length > 0 && (
-                    <div className="flex items-end gap-2 lg:gap-1.5 xl:gap-4 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 custom-scrollbar shrink-0 flex-nowrap">
+                    <div className="hidden md:flex flex-col md:flex-row md:items-end gap-2 w-full lg:w-auto shrink-0">
                         
-                        <div className="flex items-end gap-2 xl:gap-3 shrink-0">
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Sig 1</label>
-                                <select value={sig1Id} onChange={handleSig1Change} disabled={allApproved} className="cursor-pointer h-10 lg:h-8 xl:h-9 border border-slate-200 rounded-lg text-sm lg:text-xs xl:text-sm font-semibold text-slate-700 px-2 outline-none focus:ring-2 focus:ring-[#9575cd] bg-slate-50 w-32 lg:w-24 xl:w-36 hover:bg-slate-100 transition-colors">
+                        <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                            <div className="flex flex-col gap-0.5 flex-1 md:flex-none">
+                                <label className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Sig 1</label>
+                                <select value={sig1Id} onChange={handleSig1Change} disabled={allApproved} className="cursor-pointer h-7 md:h-10 lg:h-8 xl:h-9 border border-slate-200 rounded text-[11px] md:text-sm lg:text-xs xl:text-sm font-semibold text-slate-700 px-1.5 md:px-2 outline-none focus:ring-1 md:focus:ring-2 focus:ring-[#9575cd] bg-slate-50 w-full md:w-32 lg:w-24 xl:w-36 hover:bg-slate-100 transition-colors">
                                     <option value="" className="font-normal text-slate-500">-- None --</option>
                                     {signatureUsers.map(u => <option key={u.id} value={String(u.id)} className="font-medium text-slate-800">{u.signName || u.name}</option>)}
                                 </select>
                             </div>
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Sig 2</label>
-                                <select value={sig2Id} onChange={(e) => setSig2Id(e.target.value)} disabled={allApproved} className="cursor-pointer h-10 lg:h-8 xl:h-9 border border-slate-200 rounded-lg text-sm lg:text-xs xl:text-sm font-semibold text-slate-700 px-2 outline-none focus:ring-2 focus:ring-[#9575cd] bg-slate-50 w-32 lg:w-24 xl:w-36 hover:bg-slate-100 transition-colors">
+                            <div className="flex flex-col gap-0.5 flex-1 md:flex-none">
+                                <label className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Sig 2</label>
+                                <select value={sig2Id} onChange={(e) => setSig2Id(e.target.value)} disabled={allApproved} className="cursor-pointer h-7 md:h-10 lg:h-8 xl:h-9 border border-slate-200 rounded text-[11px] md:text-sm lg:text-xs xl:text-sm font-semibold text-slate-700 px-1.5 md:px-2 outline-none focus:ring-1 md:focus:ring-2 focus:ring-[#9575cd] bg-slate-50 w-full md:w-32 lg:w-24 xl:w-36 hover:bg-slate-100 transition-colors">
                                     <option value="" className="font-normal text-slate-500">-- None --</option>
                                     {signatureUsers.filter(u => String(u.id) !== sig1Id).map(u => <option key={u.id} value={String(u.id)} className="font-medium text-slate-800">{u.signName || u.name}</option>)}
                                 </select>
                             </div>
                         </div>
                         
-                        <div className="h-6 lg:h-5 xl:h-6 w-px bg-slate-200 shrink-0 mb-2 lg:mb-1.5 xl:mb-1.5 rounded-full"></div>
+                        <div className="hidden md:block h-6 lg:h-5 xl:h-6 w-px bg-slate-200 shrink-0 mb-2 lg:mb-1.5 xl:mb-1.5 rounded-full"></div>
                         
-                        <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
-                            <button onClick={onPrint} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-3 lg:px-2 xl:px-4 bg-white text-slate-700 hover:text-[#9575cd] border border-slate-200 hover:border-[#9575cd] text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2 transition-colors">
-                                <Printer size={16} />
+                        <div className="hidden md:flex items-center gap-2 w-full md:w-auto shrink-0">
+                            <button onClick={onPrint} className="flex-1 md:flex-none whitespace-nowrap h-7 md:h-10 lg:h-8 xl:h-9 flex items-center justify-center px-2 md:px-3 lg:px-2 xl:px-4 bg-white text-slate-700 hover:text-[#9575cd] border border-slate-200 hover:border-[#9575cd] text-[11px] md:text-sm lg:text-xs xl:text-sm font-bold rounded gap-1.5 xl:gap-2 transition-colors shadow-sm md:shadow-none">
+                                <Printer size={12} className="md:w-4 md:h-4" />
                                 Print
                             </button>
-                            <button onClick={onDeltaPrint} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-3 lg:px-2 xl:px-4 bg-white text-slate-700 hover:text-indigo-500 border border-slate-200 hover:border-indigo-300 text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2 transition-colors">
-                                <Activity size={16} />
+                            <button onClick={onDeltaPrint} className="flex-1 md:flex-none whitespace-nowrap h-7 md:h-10 lg:h-8 xl:h-9 flex items-center justify-center px-2 md:px-3 lg:px-2 xl:px-4 bg-white text-slate-700 hover:text-indigo-500 border border-slate-200 hover:border-indigo-300 text-[11px] md:text-sm lg:text-xs xl:text-sm font-bold rounded gap-1.5 xl:gap-2 transition-colors shadow-sm md:shadow-none">
+                                <Activity size={12} className="md:w-4 md:h-4" />
                                 Delta
                             </button>
                         </div>
 
-                        <div className="h-6 lg:h-5 xl:h-6 w-px bg-slate-200 shrink-0 mb-2 lg:mb-1.5 xl:mb-1.5 rounded-full"></div>
+                        <div className="hidden md:block h-6 lg:h-5 xl:h-6 w-px bg-slate-200 shrink-0 mb-2 lg:mb-1.5 xl:mb-1.5 rounded-full"></div>
                         
-                        <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
+                        <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
                             {allApproved ? (
-                                <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-3 xl:px-5 bg-red-50 text-red-600 border border-red-200 text-sm lg:text-xs xl:text-sm font-bold rounded-lg gap-1.5 xl:gap-2 hover:bg-red-100 transition-colors">
-                                    {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Unlock size={16} />}
+                                <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="w-full md:w-auto whitespace-nowrap h-8 md:h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-3 xl:px-5 bg-red-50 text-red-600 border border-red-200 text-[11px] md:text-sm lg:text-xs xl:text-sm font-bold rounded gap-1.5 xl:gap-2 hover:bg-red-100 transition-colors shadow-sm md:shadow-none">
+                                    {isSaving ? <Loader2 size={12} className="animate-spin md:w-4 md:h-4" /> : <Unlock size={12} className="md:w-4 md:h-4" />}
                                     Unlock
                                 </button>
                             ) : (
                                 <>
-                                    <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-3 xl:px-5 bg-white text-slate-700 hover:text-[#9575cd] border border-slate-200 shadow-sm rounded-lg gap-1.5 transition-colors">
-                                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                    <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="flex-1 md:flex-none whitespace-nowrap h-8 md:h-10 lg:h-8 xl:h-9 flex items-center justify-center px-2 md:px-4 lg:px-3 xl:px-5 bg-white text-slate-700 hover:text-[#9575cd] border border-slate-200 text-[11px] md:text-sm lg:text-xs xl:text-sm font-bold rounded shadow-sm gap-1.5 transition-colors">
+                                        {isSaving ? <Loader2 size={12} className="animate-spin md:w-4 md:h-4" /> : <Save size={12} className="md:w-4 md:h-4" />}
                                         Save All
                                     </button>
-                                    <button onClick={() => handleBulkSubmit('Approved')} disabled={isSaving} className="whitespace-nowrap h-10 lg:h-8 xl:h-9 flex items-center justify-center px-4 lg:px-3 xl:px-5 bg-[#9575cd] hover:bg-[#8565bd] text-white border border-[#9575cd] shadow-sm rounded-lg gap-1.5 transition-colors">
-                                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                                    <button onClick={() => handleBulkSubmit('Approved')} disabled={isSaving} className="flex-1 md:flex-none whitespace-nowrap h-8 md:h-10 lg:h-8 xl:h-9 flex items-center justify-center px-2 md:px-4 lg:px-3 xl:px-5 bg-[#9575cd] hover:bg-[#8565bd] text-white border border-[#9575cd] text-[11px] md:text-sm lg:text-xs xl:text-sm font-bold rounded shadow-sm gap-1.5 transition-colors">
+                                        {isSaving ? <Loader2 size={12} className="animate-spin md:w-4 md:h-4" /> : <CheckCircle size={12} className="md:w-4 md:h-4" />}
                                         Approve All
                                     </button>
                                 </>
@@ -391,7 +392,7 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
             </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto p-0 md:p-4 space-y-0 md:space-y-6 pb-24 md:pb-4 bg-white">
             {validItems.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                     <AlertCircle size={48} className="opacity-20" />
@@ -429,6 +430,63 @@ export default function ResultEntryForm({ bill, onSaveSuccess, filterTestIds = [
                         <CheckCircle className="text-emerald-500" size={32} strokeWidth={2.5} />
                     </div>
                     <h2 className="text-xl font-black text-slate-800 tracking-tight text-center">{successMessage}</h2>
+                </div>
+            </div>
+        )}
+
+        {/* MOBILE FIXED FOOTER */}
+        {validItems.length > 0 && (
+            <div className="md:hidden absolute bottom-0 left-0 right-0 bg-white p-1.5 z-[150] pb-safe">
+                
+                {/* SIGNATURE POPUP */}
+                {isSignPopupOpen && (
+                    <div className="absolute bottom-full right-24 mb-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl p-2.5 animate-in slide-in-from-bottom-2 fade-in duration-200">
+                        <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-0.5">
+                                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">Signature 1</label>
+                                <select value={sig1Id} onChange={handleSig1Change} disabled={allApproved} className="cursor-pointer h-6 border border-slate-200 rounded text-[10px] font-medium text-slate-700 px-1.5 outline-none focus:ring-1 focus:ring-[#9575cd] bg-slate-50 w-full hover:bg-slate-100 transition-colors">
+                                    <option value="" className="font-normal text-slate-500">-- None --</option>
+                                    {signatureUsers.map(u => <option key={u.id} value={String(u.id)} className="font-medium text-slate-800">{u.signName || u.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">Signature 2</label>
+                                <select value={sig2Id} onChange={(e) => setSig2Id(e.target.value)} disabled={allApproved} className="cursor-pointer h-6 border border-slate-200 rounded text-[10px] font-medium text-slate-700 px-1.5 outline-none focus:ring-1 focus:ring-[#9575cd] bg-slate-50 w-full hover:bg-slate-100 transition-colors">
+                                    <option value="" className="font-normal text-slate-500">-- None --</option>
+                                    {signatureUsers.filter(u => String(u.id) !== sig1Id).map(u => <option key={u.id} value={String(u.id)} className="font-medium text-slate-800">{u.signName || u.name}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        {/* Triangle Arrow */}
+                        <div className="absolute -bottom-2 right-10 w-4 h-4 bg-white border-b border-r border-slate-200 transform rotate-45"></div>
+                    </div>
+                )}
+                
+                <div className="flex items-center justify-between gap-1 w-full">
+                    <button onClick={onBackToList} className="h-6 px-2 flex items-center justify-center bg-slate-50 border border-slate-100 text-slate-600 font-medium text-[9px] rounded shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-0.5"><path d="m15 18-6-6 6-6"/></svg> Back
+                    </button>
+                    
+                    <div className="flex items-center justify-end gap-1.5 shrink-0">
+                        {allApproved ? (
+                            <button onClick={() => handleBulkSubmit('Entered')} disabled={isSaving} className="h-6 flex items-center justify-center px-3 bg-red-50 text-red-500 border border-red-100 text-[9px] font-medium rounded gap-1">
+                                {isSaving ? <Loader2 size={10} className="animate-spin" /> : <Unlock size={10} />}
+                                Unlock All
+                            </button>
+                        ) : (
+                            <>
+                                <button onClick={() => setIsSignPopupOpen(!isSignPopupOpen)} className={`h-6 px-2 flex items-center justify-center font-medium text-[9px] rounded transition-colors border ${isSignPopupOpen ? 'bg-slate-200 text-slate-800 border-slate-300' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                                    Sign
+                                </button>
+                                <button onClick={() => { setIsSignPopupOpen(false); handleBulkSubmit('Entered'); }} disabled={isSaving} className="h-6 px-2.5 flex items-center justify-center bg-slate-50 border border-slate-100 text-slate-600 font-medium text-[9px] rounded">
+                                    {isSaving ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} className="mr-0.5" />} Save
+                                </button>
+                                <button onClick={() => { setIsSignPopupOpen(false); handleBulkSubmit('Approved'); }} disabled={isSaving} className="h-6 px-2.5 flex items-center justify-center bg-purple-50 text-[#9575cd] border border-purple-100 font-medium text-[9px] rounded">
+                                    {isSaving ? <Loader2 size={10} className="animate-spin" /> : <CheckCircle size={10} className="mr-0.5" />} Approve
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
         )}

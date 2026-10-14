@@ -9,13 +9,7 @@ export default withAuth(
     const path = req.nextUrl.pathname;
 
     if (token?.isSupportMode) {
-      if (
-        path.startsWith('/list') ||
-        path.startsWith('/results') ||
-        path.startsWith('/registration')
-      ) {
-        return NextResponse.redirect(new URL('/', req.url));
-      }
+      // Support mode now has access to all routes including registration, list, and results.
     }
     return NextResponse.next();
   },

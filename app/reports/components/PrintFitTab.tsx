@@ -17,7 +17,7 @@ export default function PrintFitTab({ formData, handleChange, handleCustomChange
     const r = currentMargins.right;
 
     return (
-        <div className="h-full w-full overflow-y-auto custom-scrollbar pr-2 pb-4">
+        <div className="w-full flex flex-col md:h-full md:overflow-y-auto custom-scrollbar md:pr-2 pb-4">
             <PrintControls 
                 formData={formData}
                 handleChange={handleChange}

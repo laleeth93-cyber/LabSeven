@@ -99,10 +99,7 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
 
   const canSee = (screenNames: string[]) => {
       if (isSupportMode) {
-          const restricted = ['Registration', 'Result Entry', 'Patient List'];
-          if (screenNames.some(name => restricted.includes(name))) {
-              return false;
-          }
+          // Support mode now has access to all routes including registration, list, and results.
       }
 
       if (orgId === 1) return true; 
@@ -126,7 +123,7 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
         .sleek-scrollbar::-webkit-scrollbar-thumb:hover { background: #9575cd; }
       `}} />
 
-      <aside className={`sleek-scrollbar ${isSidebarOpen ? 'w-52' : 'w-[80px]'} transition-all duration-300 flex flex-col shadow-[4px_0_24px_rgba(149,117,205,0.1)] border-r border-[#d1c4e9] h-full overflow-y-auto overflow-x-hidden shrink-0 z-40`} style={{ background: 'linear-gradient(to bottom, #e8eaf6, #f3e5f5)' }}>
+      <aside className={`hidden md:flex sleek-scrollbar ${isSidebarOpen ? 'w-52' : 'w-[80px]'} transition-all duration-300 flex-col shadow-[4px_0_24px_rgba(149,117,205,0.1)] border-r border-[#d1c4e9] h-full overflow-y-auto overflow-x-hidden shrink-0 z-40`} style={{ background: 'linear-gradient(to bottom, #e8eaf6, #f3e5f5)' }}>
         <nav className="flex-1 py-4 flex flex-col justify-between h-full w-full">
           <div className="space-y-1 w-full"> 
             

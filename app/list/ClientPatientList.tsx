@@ -442,27 +442,32 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
             )}
 
             <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden relative">
-                
-                <div className="px-4 md:px-6 pt-4 pb-2 shrink-0 w-full max-w-full z-20">
-                    <ListHeader 
-                        searchQuery={searchQuery} setSearchQuery={setSearchQuery} onDateChange={setDateRange}
-                        activeFilter={activeFilter} setActiveFilter={setActiveFilter} filtersList={filtersList}
-                        advFilters={advFilters} setAdvFilters={setAdvFilters} uniqueDoctors={uniqueDoctors}
-                        viewMode={viewMode} setViewMode={handleSetViewMode}
-                        sortOrder={sortOrder} setSortOrder={setSortOrder}
-                    />
-                </div>
+                <div className="flex flex-1 overflow-hidden pt-1 px-1 pb-2 md:p-4 gap-4 bg-transparent">
+                    <div className="w-full h-full bg-white rounded-none md:rounded-xl shadow-sm border-0 md:border md:border-slate-200 overflow-hidden flex flex-col relative">
+                        
+                        <div className="px-2 md:px-6 pt-0 md:pt-4 pb-0 md:pb-2 shrink-0 w-full max-w-full z-20">
+                            <ListHeader 
+                                searchQuery={searchQuery} setSearchQuery={setSearchQuery} onDateChange={setDateRange}
+                                activeFilter={activeFilter} setActiveFilter={setActiveFilter} filtersList={filtersList}
+                                advFilters={advFilters} setAdvFilters={setAdvFilters} uniqueDoctors={uniqueDoctors}
+                                viewMode={viewMode} setViewMode={handleSetViewMode}
+                                sortOrder={sortOrder} setSortOrder={setSortOrder}
+                            />
+                        </div>
 
-                <div className="flex-1 overflow-hidden flex flex-col relative w-full pt-1">
-                    <ListTable 
-                        bills={paginatedBills} isLoading={isLoading} viewMode={viewMode}
-                        currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={setCurrentPage}
-                        onPrintBill={handlePrintBill} onPrintBarcode={handlePrintBarcode} onOpenReport={handleOpenReport}
-                        onSendWhatsappReport={handleSendWhatsappReport} whatsappManualEnabled={whatsappManualEnabled}
-                        onOpenSmartReport={handleOpenSmartReport} onOpenCultureReport={handleOpenCultureReport}
-                        onOpenClearDue={handleOpenClearDue} onOpenRefund={handleOpenRefund} onOpenAudit={handleOpenAudit}
-                        onEditBill={handleEditBill} onDeleteBill={handleDeleteBill}
-                    />
+                        <div className="flex-1 overflow-hidden flex flex-col relative w-full pt-1 px-2 pb-2 md:px-0 md:pb-0">
+                            <ListTable 
+                                bills={paginatedBills} isLoading={isLoading} viewMode={viewMode}
+                                currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={setCurrentPage}
+                                onPrintBill={handlePrintBill} onPrintBarcode={handlePrintBarcode} onOpenReport={handleOpenReport}
+                                onSendWhatsappReport={handleSendWhatsappReport} whatsappManualEnabled={whatsappManualEnabled}
+                                onOpenSmartReport={handleOpenSmartReport} onOpenCultureReport={handleOpenCultureReport}
+                                onOpenClearDue={handleOpenClearDue} onOpenRefund={handleOpenRefund} onOpenAudit={handleOpenAudit}
+                                onEditBill={handleEditBill} onDeleteBill={handleDeleteBill}
+                            />
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </React.Fragment>

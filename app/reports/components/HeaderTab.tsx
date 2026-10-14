@@ -38,21 +38,19 @@ export default function HeaderTab({
     const filteredAvailableFields = availableFields.filter(f => f.label.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
-        <div className="flex flex-col gap-4 h-full w-full overflow-y-auto custom-scrollbar pr-2 pb-4">
+        <div className="flex flex-col gap-2.5 w-full h-auto md:h-full md:overflow-y-auto custom-scrollbar md:pr-2 pb-2">
             
             {/* Table Styling & Typography */}
-            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-4 flex flex-col shrink-0">
-                <div className="flex items-center gap-2 border-b border-slate-100 pb-2 mb-3">
-                    <Settings2 size={16} className="text-[#9575cd]" />
-                    <div>
-                        <h3 className="font-bold text-slate-800 text-sm">Table Styling & Typography</h3>
-                    </div>
+            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+                <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
+                    <Settings2 size={14} className="text-[#9575cd]" />
+                    <h3 className="font-bold text-slate-800 text-[11px] md:text-sm">Table Styling & Typography</h3>
                 </div>
 
-                <div className="grid grid-cols-4 gap-x-3 gap-y-3">
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase">Table Style</label>
-                        <select name="tableStyle" value={formData.tableStyle} onChange={handleChange} className="w-full text-[11px] p-1.5 border border-slate-300 rounded outline-none focus:border-[#9575cd]">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2.5 gap-y-2">
+                    <div className="flex flex-col gap-0.5">
+                        <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight">Table Style</label>
+                        <select name="tableStyle" value={formData.tableStyle} onChange={handleChange} className="w-full h-6 text-[10px] px-1.5 py-0 bg-white border border-slate-200 rounded outline-none focus:border-[#9575cd]">
                             <option value="none">Plain</option>
                             <option value="split">Split Blocks</option>
                             <option value="horizontal">Horizontal</option>
@@ -60,9 +58,9 @@ export default function HeaderTab({
                             <option value="outer">Outer Border</option>
                         </select>
                     </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase">Font Family</label>
-                        <select name="fontFamily" value={formData.fontFamily || 'font-sans'} onChange={handleChange} className="w-full text-[11px] p-1.5 border border-slate-300 rounded outline-none focus:border-[#9575cd]">
+                    <div className="flex flex-col gap-0.5">
+                        <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight">Font Family</label>
+                        <select name="fontFamily" value={formData.fontFamily || 'font-sans'} onChange={handleChange} className="w-full h-6 text-[10px] px-1.5 py-0 bg-white border border-slate-200 rounded outline-none focus:border-[#9575cd]">
                             <optgroup label="System Basics">
                                 <option value="font-sans">Sans Serif</option>
                                 <option value="font-serif">Serif</option>
@@ -83,44 +81,44 @@ export default function HeaderTab({
                             </optgroup>
                         </select>
                     </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase">Font Size</label>
-                        <select name="fontSize" value={formData.fontSize} onChange={handleChange} className="w-full text-[11px] p-1.5 border border-slate-300 rounded outline-none focus:border-[#9575cd]">
+                    <div className="flex flex-col gap-0.5">
+                        <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight">Font Size</label>
+                        <select name="fontSize" value={formData.fontSize} onChange={handleChange} className="w-full h-6 text-[10px] px-1.5 py-0 bg-white border border-slate-200 rounded outline-none focus:border-[#9575cd]">
                             <option value="text-[10px]">Small (10px)</option>
                             <option value="text-[11px]">Normal (11px)</option>
                             <option value="text-xs">Standard (12px)</option>
                             <option value="text-sm">Large (14px)</option>
                         </select>
                     </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase">Row Padding</label>
-                        <select name="rowPadding" value={formData.rowPadding} onChange={handleChange} className="w-full text-[11px] p-1.5 border border-slate-300 rounded outline-none focus:border-[#9575cd]">
+                    <div className="flex flex-col gap-0.5">
+                        <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight">Row Padding</label>
+                        <select name="rowPadding" value={formData.rowPadding} onChange={handleChange} className="w-full h-6 text-[10px] px-1.5 py-0 bg-white border border-slate-200 rounded outline-none focus:border-[#9575cd]">
                             <option value="py-0.5">Compact</option>
                             <option value="py-1.5">Standard</option>
                             <option value="py-2.5">Relaxed</option>
                         </select>
                     </div>
                     
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase">Left Split</label>
-                        <select name="leftColWidth" value={formData.leftColWidth} onChange={handleChange} className="w-full text-[11px] p-1.5 border border-slate-300 rounded outline-none focus:border-[#9575cd]">
+                    <div className="flex flex-col gap-0.5">
+                        <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight">Left Split</label>
+                        <select name="leftColWidth" value={formData.leftColWidth} onChange={handleChange} className="w-full h-6 text-[10px] px-1.5 py-0 bg-white border border-slate-200 rounded outline-none focus:border-[#9575cd]">
                             <option value="35 65">35% | 65%</option>
                             <option value="40 60">40% | 60%</option>
                             <option value="50 50">50% | 50%</option>
                         </select>
                     </div>
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase">Right Split</label>
-                        <select name="rightColWidth" value={formData.rightColWidth} onChange={handleChange} className="w-full text-[11px] p-1.5 border border-slate-300 rounded outline-none focus:border-[#9575cd]">
+                    <div className="flex flex-col gap-0.5">
+                        <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight">Right Split</label>
+                        <select name="rightColWidth" value={formData.rightColWidth} onChange={handleChange} className="w-full h-6 text-[10px] px-1.5 py-0 bg-white border border-slate-200 rounded outline-none focus:border-[#9575cd]">
                             <option value="35 65">35% | 65%</option>
                             <option value="40 60">40% | 60%</option>
                             <option value="50 50">50% | 50%</option>
                         </select>
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-500 uppercase">Center Gap</label>
-                        <select name="headerColumnGap" value={formData.headerColumnGap || "2"} onChange={handleChange} className="w-full text-[11px] p-1.5 border border-slate-300 rounded outline-none focus:border-[#9575cd]">
+                    <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
+                        <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight">Center Gap</label>
+                        <select name="headerColumnGap" value={formData.headerColumnGap || "2"} onChange={handleChange} className="w-full h-6 text-[10px] px-1.5 py-0 bg-white border border-slate-200 rounded outline-none focus:border-[#9575cd]">
                             <option value="0">None (0)</option>
                             <option value="2">Compact (2)</option>
                             <option value="4">Standard (4)</option>
@@ -132,13 +130,13 @@ export default function HeaderTab({
                         </select>
                     </div>
 
-                    <div className="col-span-4 flex items-center gap-4 pt-1 pl-2">
-                        <label className="flex items-center gap-2 text-[10px] font-bold text-slate-600 cursor-pointer">
-                            <input type="checkbox" checked={formData.labelBold} onChange={() => handleToggleSetting('labelBold')} className="accent-[#9575cd] w-3.5 h-3.5 rounded" /> 
+                    <div className="col-span-2 md:col-span-4 flex items-center gap-3 pt-0.5 pl-1">
+                        <label className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-600 cursor-pointer">
+                            <input type="checkbox" checked={formData.labelBold} onChange={() => handleToggleSetting('labelBold')} className="accent-[#9575cd] w-3 h-3 rounded" /> 
                             Bold Labels
                         </label>
-                        <label className="flex items-center gap-2 text-[10px] font-bold text-slate-600 cursor-pointer">
-                            <input type="checkbox" checked={formData.dataBold} onChange={() => handleToggleSetting('dataBold')} className="accent-[#9575cd] w-3.5 h-3.5 rounded" /> 
+                        <label className="flex items-center gap-1.5 text-[9.5px] font-bold text-slate-600 cursor-pointer">
+                            <input type="checkbox" checked={formData.dataBold} onChange={() => handleToggleSetting('dataBold')} className="accent-[#9575cd] w-3 h-3 rounded" /> 
                             Bold Data
                         </label>
                     </div>
@@ -146,79 +144,85 @@ export default function HeaderTab({
             </div>
 
             {/* Field Builder */}
-            <div className="flex-1 bg-white border border-slate-200 shadow-sm rounded-2xl flex flex-col overflow-hidden min-h-[400px]">
-                <div className="flex items-center gap-2 border-b border-slate-100 p-4 pb-3 bg-slate-50/50 shrink-0">
-                    <LayoutTemplate size={16} className="text-[#9575cd]" />
+            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl flex flex-col md:flex-1 md:overflow-hidden">
+                <div className="flex items-center gap-1.5 border-b border-slate-100 p-2.5 md:p-3 bg-white shrink-0">
+                    <LayoutTemplate size={14} className="text-[#9575cd]" />
                     <div>
-                        <h3 className="font-bold text-slate-800 text-sm">Demographics Field Builder</h3>
-                        <p className="text-[10px] text-slate-500 mt-0.5">Allocate registration fields to the left or right columns.</p>
+                        <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Demographics Field Builder</h3>
+                        <p className="text-[9px] text-slate-400 mt-0.5 leading-none">Allocate registration fields to left or right columns.</p>
                     </div>
                 </div>
 
-                <div className="flex-1 flex gap-4 p-4 overflow-hidden">
-                    <div className="w-[45%] flex flex-col h-full bg-white border border-slate-200 rounded-xl overflow-hidden">
-                        <div className="p-2 border-b border-slate-200 bg-slate-50 shrink-0">
-                            <div className="flex items-center gap-2 bg-white border border-slate-300 rounded-lg px-2 py-1 focus-within:border-[#9575cd]">
-                                <Search size={14} className="text-slate-400" />
+                <div className="flex flex-col md:flex-row gap-2.5 p-2.5 md:flex-1 md:overflow-hidden bg-white">
+                    {/* Available Fields Column */}
+                    <div className="w-full md:w-[45%] flex flex-col h-48 md:h-full bg-white border border-slate-200 rounded-lg overflow-hidden shrink-0">
+                        <div className="p-1.5 border-b border-slate-100 bg-white shrink-0">
+                            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 h-6 focus-within:border-[#9575cd]">
+                                <Search size={12} className="text-slate-400 shrink-0" />
                                 <input 
                                     type="text" 
                                     placeholder="Search fields..." 
-                                    className="w-full text-[11px] outline-none bg-transparent"
+                                    className="w-full text-[10px] outline-none bg-transparent"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-1 bg-slate-50/30">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1 bg-white">
                             {filteredAvailableFields.map(field => (
-                                <div key={field.key} className="group flex flex-col gap-1 p-1.5 bg-white border border-slate-200 rounded-lg shadow-sm hover:border-[#9575cd] transition-colors">
-                                    <span className="text-[11px] font-bold text-slate-700 block truncate">{field.label}</span>
-                                    <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => handleAddField(field, 'left')} className="flex-1 bg-slate-100 hover:bg-[#9575cd] hover:text-white text-slate-600 text-[9px] font-bold py-1 rounded transition-colors text-center">Left Col</button>
-                                        <button onClick={() => handleAddField(field, 'right')} className="flex-1 bg-slate-100 hover:bg-[#9575cd] hover:text-white text-slate-600 text-[9px] font-bold py-1 rounded transition-colors text-center">Right Col</button>
+                                <div key={field.key} className="group flex items-center justify-between gap-1 p-1 px-1.5 bg-white border border-slate-200 rounded hover:border-[#9575cd] transition-colors">
+                                    <span className="text-[10px] font-semibold text-slate-700 truncate">{field.label}</span>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <button onClick={() => handleAddField(field, 'left')} className="h-5 px-1.5 bg-slate-50 hover:bg-[#9575cd] hover:text-white border border-slate-200 text-slate-600 text-[8.5px] font-bold rounded transition-colors text-center">Left</button>
+                                        <button onClick={() => handleAddField(field, 'right')} className="h-5 px-1.5 bg-slate-50 hover:bg-[#9575cd] hover:text-white border border-slate-200 text-slate-600 text-[8.5px] font-bold rounded transition-colors text-center">Right</button>
                                     </div>
                                 </div>
                             ))}
                             {filteredAvailableFields.length === 0 && (
-                                <div className="text-center p-4 text-xs text-slate-400">No fields found.</div>
+                                <div className="text-center p-3 text-[10px] text-slate-400">No fields found.</div>
                             )}
                         </div>
                     </div>
 
-                    <div className="w-[55%] flex flex-col gap-3 h-full">
-                        <div className="flex-1 flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50">
-                            <div className="bg-slate-100 border-b border-slate-200 p-1.5 shrink-0">
-                                <h4 className="text-[10px] font-bold text-slate-700 uppercase tracking-wider text-center">Left Column</h4>
+                    {/* Columns Stack */}
+                    <div className="w-full md:w-[55%] flex flex-col sm:flex-row md:flex-col gap-2 h-auto md:h-full bg-white">
+                        {/* Left Column Box */}
+                        <div className="flex-1 flex flex-col border border-slate-200 rounded-lg overflow-hidden bg-white min-h-[110px] max-h-40 md:max-h-none">
+                            <div className="bg-white border-b border-slate-100 p-1.5 shrink-0 flex items-center justify-between px-2">
+                                <h4 className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Left Column</h4>
+                                <span className="text-[8.5px] font-bold text-[#9575cd] bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200">{leftColFields.length}</span>
                             </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1 bg-white">
                                 {leftColFields.map((field, idx) => (
-                                    <div key={field.key} className="flex justify-between items-center p-1.5 bg-white border border-[#9575cd]/30 shadow-sm rounded-lg">
+                                    <div key={field.key} className="flex justify-between items-center p-1 px-1.5 bg-white border border-[#9575cd]/30 shadow-2xs rounded">
                                         <div className="flex items-center gap-1.5 overflow-hidden">
-                                            <span className="text-[9px] font-bold text-[#9575cd] bg-purple-50 w-4 h-4 flex items-center justify-center rounded shrink-0">{idx + 1}</span>
-                                            <span className="text-[11px] font-semibold text-slate-700 truncate">{field.label}</span>
+                                            <span className="text-[8px] font-bold text-[#9575cd] bg-purple-50 w-3.5 h-3.5 flex items-center justify-center rounded shrink-0">{idx + 1}</span>
+                                            <span className="text-[10px] font-medium text-slate-700 truncate">{field.label}</span>
                                         </div>
-                                        <button onClick={() => handleRemoveField(field, 'left')} className="text-slate-400 hover:text-red-500 transition-colors p-0.5 shrink-0"><Trash2 size={12} /></button>
+                                        <button onClick={() => handleRemoveField(field, 'left')} className="text-slate-400 hover:text-red-500 transition-colors p-0.5 shrink-0"><Trash2 size={11} /></button>
                                     </div>
                                 ))}
-                                {leftColFields.length === 0 && <div className="text-center text-[10px] text-slate-400 italic mt-4">Empty</div>}
+                                {leftColFields.length === 0 && <div className="text-center text-[9px] text-slate-400 italic mt-3">Empty</div>}
                             </div>
                         </div>
 
-                        <div className="flex-1 flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50">
-                            <div className="bg-slate-100 border-b border-slate-200 p-1.5 shrink-0">
-                                <h4 className="text-[10px] font-bold text-slate-700 uppercase tracking-wider text-center">Right Column</h4>
+                        {/* Right Column Box */}
+                        <div className="flex-1 flex flex-col border border-slate-200 rounded-lg overflow-hidden bg-white min-h-[110px] max-h-40 md:max-h-none">
+                            <div className="bg-white border-b border-slate-100 p-1.5 shrink-0 flex items-center justify-between px-2">
+                                <h4 className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Right Column</h4>
+                                <span className="text-[8.5px] font-bold text-[#9575cd] bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200">{rightColFields.length}</span>
                             </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-1.5 flex flex-col gap-1 bg-white">
                                 {rightColFields.map((field, idx) => (
-                                    <div key={field.key} className="flex justify-between items-center p-1.5 bg-white border border-[#9575cd]/30 shadow-sm rounded-lg">
+                                    <div key={field.key} className="flex justify-between items-center p-1 px-1.5 bg-white border border-[#9575cd]/30 shadow-2xs rounded">
                                         <div className="flex items-center gap-1.5 overflow-hidden">
-                                            <span className="text-[9px] font-bold text-[#9575cd] bg-purple-50 w-4 h-4 flex items-center justify-center rounded shrink-0">{idx + 1}</span>
-                                            <span className="text-[11px] font-semibold text-slate-700 truncate">{field.label}</span>
+                                            <span className="text-[8px] font-bold text-[#9575cd] bg-purple-50 w-3.5 h-3.5 flex items-center justify-center rounded shrink-0">{idx + 1}</span>
+                                            <span className="text-[10px] font-medium text-slate-700 truncate">{field.label}</span>
                                         </div>
-                                        <button onClick={() => handleRemoveField(field, 'right')} className="text-slate-400 hover:text-red-500 transition-colors p-0.5 shrink-0"><Trash2 size={12} /></button>
+                                        <button onClick={() => handleRemoveField(field, 'right')} className="text-slate-400 hover:text-red-500 transition-colors p-0.5 shrink-0"><Trash2 size={11} /></button>
                                     </div>
                                 ))}
-                                {rightColFields.length === 0 && <div className="text-center text-[10px] text-slate-400 italic mt-4">Empty</div>}
+                                {rightColFields.length === 0 && <div className="text-center text-[9px] text-slate-400 italic mt-3">Empty</div>}
                             </div>
                         </div>
                     </div>

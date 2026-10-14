@@ -2,26 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --- PROPORTIONAL REM SCALING --- */
-@layer base {
-  /* Default for mobile/tablet */
-  html {
-    font-size: 16px; 
-  }
-
-  /* Desktop Proportional Scaling */
-  @media (min-width: 1024px) {
-    html {
-      /* clamp(MIN, PREFERRED, MAX)
-         - 13px: The absolute smallest the base font will ever get.
-         - 0.833vw: The perfect mathematical proportion for a 1920px screen.
-         - 16px: The maximum size, so it doesn't get massive on 4K monitors.
-      */
-      font-size: clamp(13px, 0.833vw, 16px);
-    }
-  }
-}
-
 /* --- 1. FORCE LIGHT MODE VARIABLES (Crucial Fix) --- */
 :root {
   --foreground-rgb: 0, 0, 0;
@@ -44,28 +24,41 @@ body {
 }
 
 /* --- SCROLLBAR CUSTOMIZATION --- */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Hide completely on mobile for a native app feel */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  * {
+    scrollbar-width: none;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1; /* slate-300 */
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8; /* slate-400 */
-}
-
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+/* Desktop scrollbar */
+@media (min-width: 769px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* slate-400 */
+  }
+  
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
 }
 
 /* --- 2. PRINT STYLES --- */

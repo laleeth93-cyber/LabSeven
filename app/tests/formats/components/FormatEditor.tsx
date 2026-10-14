@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useTransition, useRef } from 'react';
 import { 
-    Save, Loader2, Settings2, Trash2, Plus, FileText, Calculator, Target, CheckCircle, Bug, Search
+    Save, Loader2, Settings2, Trash2, Plus, FileText, Calculator, Target, CheckCircle, Bug, Search, ChevronRight, ChevronDown, X
 } from 'lucide-react';
 import { updateTestConfiguration } from '@/app/actions/test-config';
 import RichTextEditorModal from '@/app/components/RichTextEditorModal';
@@ -39,9 +39,10 @@ interface FormatEditorProps {
     specimens: any[];
     availableParams: any[];
     onSaveComplete: () => void;
+    onBack?: () => void;
 }
 
-export default function FormatEditor({ test, specimens, availableParams = [], onSaveComplete }: FormatEditorProps) {
+export default function FormatEditor({ test, specimens, availableParams = [], onSaveComplete, onBack }: FormatEditorProps) {
     const [isPending, startTransition] = useTransition();
     
     const [tableRows, setTableRows] = useState<any[]>([]); 
@@ -61,11 +62,17 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
     const searchContainerRef = useRef<HTMLDivElement>(null);
+    const mobileSearchContainerRef = useRef<HTMLDivElement>(null);
+    const [showMobileDropdown, setShowMobileDropdown] = useState(false);
+    const [mobileOpenSection, setMobileOpenSection] = useState<'settings' | 'formula' | null>(null);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
                 setShowDropdown(false);
+            }
+            if (mobileSearchContainerRef.current && !mobileSearchContainerRef.current.contains(event.target as Node)) {
+                setShowMobileDropdown(false);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -274,7 +281,8 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
 
     return (
         <>
-            <div className="w-full h-full bg-white rounded-xl shadow-lg shadow-slate-200/40 flex flex-col overflow-hidden border border-slate-200 z-10 animate-in zoom-in-95 duration-200">
+            {/* --- DESKTOP FORMAT EDITOR LAYOUT --- */}
+            <div className="hidden md:flex w-full h-full bg-white rounded-xl shadow-lg shadow-slate-200/40 flex-col overflow-hidden border border-slate-200 z-10 animate-in zoom-in-95 duration-200">
                 
                 {/* HEADER BAR */}
                 <div className="p-6 pb-4 bg-white shrink-0">
@@ -499,6 +507,506 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                             <div className="w-[10%] flex justify-center"><button onClick={handleAddNewRow} className="bg-[#9575cd] text-white p-1 rounded hover:opacity-90"><Plus size={14}/></button></div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* --- MOBILE FORMAT EDITOR LAYOUT --- */}
+            <div className="flex md:hidden w-full h-full bg-white flex-col overflow-hidden relative">
+                {/* 1. Mobile Top Header */}
+                <header className="h-10 px-2.5 bg-white border-b border-slate-100 flex items-center justify-between shrink-0 z-20">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
+                        {onBack && (
+                            <button 
+                                type="button"
+                                onClick={onBack}
+                                className="h-6 px-1.5 flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-600 rounded text-[9.5px] font-bold active:scale-95 transition-all shrink-0"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-0.5"><path d="m15 18-6-6 6-6"/></svg> Tests
+                            </button>
+                        )}
+                        <div className="flex items-center gap-1 min-w-0 truncate">
+                            <span className="text-[11px] font-bold text-slate-800 truncate">{test?.name}</span>
+                            <span className="font-mono text-[8px] bg-slate-50 border border-slate-200 px-1 py-0.5 rounded text-slate-500 shrink-0">{test?.code}</span>
+                            {test?.isCulture && (
+                                <span className="text-[8px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1 rounded shrink-0">Culture</span>
+                            )}
+                        </div>
+                    </div>
+                    {/* Action Icon Buttons: Settings & Formula/Count/Interpretation */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        {/* 1. Report Settings Icon */}
+                        <button 
+                            type="button"
+                            onClick={() => setMobileOpenSection(mobileOpenSection === 'settings' ? null : 'settings')}
+                            className={`h-7 w-7 flex items-center justify-center rounded-lg border transition-all active:scale-95 ${
+                                mobileOpenSection === 'settings' 
+                                    ? 'bg-[#9575cd] text-white border-[#7e57c2] shadow-xs' 
+                                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                            }`}
+                            title="Report Settings (Title, Specimen, Equipment, Captions)"
+                            aria-label="Report Settings"
+                        >
+                            <Settings2 size={13} />
+                        </button>
+
+                        {/* 2. Formula, Count Target & Interpretation Icon */}
+                        <button 
+                            type="button"
+                            onClick={() => setMobileOpenSection(mobileOpenSection === 'formula' ? null : 'formula')}
+                            className={`h-7 w-7 flex items-center justify-center rounded-lg border transition-all active:scale-95 relative ${
+                                mobileOpenSection === 'formula' 
+                                    ? 'bg-[#9575cd] text-white border-[#7e57c2] shadow-xs' 
+                                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200'
+                            }`}
+                            title="Formula, Count Target & Interpretation"
+                            aria-label="Formula, Count Target & Interpretation"
+                        >
+                            <Calculator size={13} />
+                            {(formData.isFormulaNeeded || formData.isCountNeeded || formData.isInterpretationNeeded) && (
+                                <span className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${mobileOpenSection === 'formula' ? 'bg-amber-300' : 'bg-[#9575cd]'}`} />
+                            )}
+                        </button>
+                    </div>
+                </header>
+                {/* 2. Modern Mobile Settings / Formula Modal Sheet */}
+                {mobileOpenSection && (
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-3 animate-in fade-in duration-200">
+                        {/* Backdrop to close on tap outside */}
+                        <div 
+                            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity" 
+                            onClick={() => setMobileOpenSection(null)} 
+                        />
+
+                        {/* Modal Sheet Container */}
+                        <div className="relative z-50 w-full max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200 p-3.5 space-y-2.5 animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200 max-h-[85vh] overflow-y-auto custom-scrollbar">
+                            {mobileOpenSection === 'settings' && (
+                                <>
+                                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-5 h-5 rounded-md bg-purple-50 text-[#9575cd] flex items-center justify-center">
+                                                <Settings2 size={12} />
+                                            </div>
+                                            <span className="text-[11px] font-bold text-slate-800">Report Settings</span>
+                                        </div>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setMobileOpenSection(null)} 
+                                            className="w-5 h-5 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                                        >
+                                            <X size={11} />
+                                        </button>
+                                    </div>
+
+                                    {/* Report Title */}
+                                    <div>
+                                        <label className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 block">Report Title</label>
+                                        <input 
+                                            type="text" 
+                                            value={formData.reportTitle || ''} 
+                                            onChange={e => setFormData({...formData, reportTitle: e.target.value})} 
+                                            className="w-full text-[10px] font-medium border border-slate-200 rounded px-2 h-6 bg-slate-50/60 focus:bg-white outline-none focus:border-[#9575cd] transition-all" 
+                                            placeholder="e.g. Complete Blood Count"
+                                        />
+                                    </div>
+
+                                    {/* Specimen & Equipment */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 block">Specimen</label>
+                                            <select 
+                                                value={formData.specimenId || ''} 
+                                                onChange={e => setFormData({...formData, specimenId: e.target.value})} 
+                                                className="w-full text-[9.5px] font-medium border border-slate-200 rounded px-1.5 h-6 bg-slate-50/60 focus:bg-white outline-none focus:border-[#9575cd]"
+                                            >
+                                                <option value="">Default</option>
+                                                {specimens.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 block">Equipment</label>
+                                            <input 
+                                                type="text" 
+                                                value={formData.labEquiName || ''} 
+                                                onChange={e => setFormData({...formData, labEquiName: e.target.value})} 
+                                                className="w-full text-[9.5px] font-medium border border-slate-200 rounded px-1.5 h-6 bg-slate-50/60 focus:bg-white outline-none focus:border-[#9575cd]" 
+                                                placeholder="Analyzer"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Non-Culture Column Captions */}
+                                    {!test?.isCulture && (
+                                        <div className="pt-1.5 border-t border-slate-100">
+                                            <label className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Column Captions (1 - 5)</label>
+                                            <div className="grid grid-cols-5 gap-1">
+                                                {[1, 2, 3, 4, 5].map(num => (
+                                                    <input 
+                                                        key={num}
+                                                        type="text" 
+                                                        value={formData[`colCaption${num}`] || ''} 
+                                                        onChange={e => setFormData({...formData, [`colCaption${num}`]: e.target.value})} 
+                                                        className="w-full text-[8.5px] font-semibold border border-slate-200 rounded px-0.5 h-6 text-center bg-slate-50/60 focus:bg-white outline-none focus:border-[#9575cd]" 
+                                                        placeholder={`C${num}`}
+                                                        title={`Column ${num}`}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Culture Antibiotic Display Columns */}
+                                    {test?.isCulture && (
+                                        <div className="pt-1 border-t border-rose-100 bg-rose-50/40 p-2 rounded-lg">
+                                            <span className="text-[8.5px] font-bold text-rose-500 uppercase block mb-1">Antibiotic Columns</span>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {['Result', 'Value', 'Interpretation', 'BreakPoint', 'MIC'].map(col => (
+                                                    <label key={col} className="flex items-center gap-1 cursor-pointer select-none bg-white px-1.5 py-0.5 rounded border border-rose-100">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={formData.cultureColumns?.includes(col)} 
+                                                            onChange={(e) => {
+                                                                const current = formData.cultureColumns || [];
+                                                                const newCols = e.target.checked ? [...current, col] : current.filter((c: string) => c !== col);
+                                                                setFormData({...formData, cultureColumns: newCols});
+                                                            }} 
+                                                            className="w-2.5 h-2.5 rounded text-rose-500" 
+                                                        />
+                                                        <span className="text-[8.5px] font-bold text-slate-700">{col}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-1.5 flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMobileOpenSection(null)}
+                                            className="h-6 px-3.5 bg-[#9575cd] hover:bg-[#7e57c2] text-white text-[9px] font-bold rounded shadow-2xs active:scale-95 transition-all"
+                                        >
+                                            Done
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+
+                            {mobileOpenSection === 'formula' && (
+                                <>
+                                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-5 h-5 rounded-md bg-purple-50 text-[#9575cd] flex items-center justify-center">
+                                                <Calculator size={12} />
+                                            </div>
+                                            <span className="text-[11px] font-bold text-slate-800">Calculations & Logic</span>
+                                        </div>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setMobileOpenSection(null)} 
+                                            className="w-5 h-5 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                                        >
+                                            <X size={11} />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        {!test?.isCulture && (
+                                            <>
+                                                {/* Formula */}
+                                                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70 border border-slate-200/80">
+                                                    <div>
+                                                        <span className="text-[10px] font-bold text-slate-700 block">Formula fx</span>
+                                                        <span className="text-[8.5px] text-slate-400 block">Calculations on rows</span>
+                                                    </div>
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={formData.isFormulaNeeded} 
+                                                        onChange={e => setFormData({...formData, isFormulaNeeded: e.target.checked})} 
+                                                        className="w-3.5 h-3.5 rounded" 
+                                                        style={{ accentColor: '#9575cd' }}
+                                                    />
+                                                </div>
+
+                                                {/* Count Target */}
+                                                <div className="p-2 rounded-lg bg-slate-50/70 border border-slate-200/80 space-y-1.5">
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <span className="text-[10px] font-bold text-slate-700 block">Count Target</span>
+                                                            <span className="text-[8.5px] text-slate-400 block">Validate total sum</span>
+                                                        </div>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={formData.isCountNeeded} 
+                                                            onChange={e => setFormData({...formData, isCountNeeded: e.target.checked})} 
+                                                            className="w-3.5 h-3.5 rounded" 
+                                                            style={{ accentColor: '#9575cd' }}
+                                                        />
+                                                    </div>
+
+                                                    {formData.isCountNeeded && (
+                                                        <div className="pt-1.5 border-t border-slate-200/60 flex items-center justify-between">
+                                                            <span className="text-[9px] font-bold text-slate-500">
+                                                                Tgt: <span className="text-[#9575cd] font-mono">{formData.targetCount || '100'}</span>
+                                                            </span>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => setShowCountModal(true)} 
+                                                                className="h-6 px-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded text-[8.5px] font-bold text-purple-700 flex items-center gap-0.5 active:scale-95"
+                                                            >
+                                                                <Target size={10} /> {formData.targetCount ? 'Configure' : 'Set'}
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Interpretation */}
+                                        <div className="p-2 rounded-lg bg-slate-50/70 border border-slate-200/80 space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <span className="text-[10px] font-bold text-slate-700 block">Interpretation</span>
+                                                    <span className="text-[8.5px] text-slate-400 block">Clinical report notes</span>
+                                                </div>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={formData.isInterpretationNeeded} 
+                                                    onChange={e => setFormData({...formData, isInterpretationNeeded: e.target.checked})} 
+                                                    className="w-3.5 h-3.5 rounded" 
+                                                    style={{ accentColor: '#9575cd' }}
+                                                />
+                                            </div>
+
+                                            {formData.isInterpretationNeeded && (
+                                                <div className="pt-1.5 border-t border-slate-200/60 flex items-center justify-between">
+                                                    <span className="text-[9px] font-bold text-slate-500">
+                                                        {formData.interpretation ? <span className="text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded text-[8px] border border-emerald-100 font-semibold">Configured</span> : <span className="text-slate-400 text-[8px]">Empty</span>}
+                                                    </span>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setShowInterpretationModal(true)} 
+                                                        className="h-6 px-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded text-[8.5px] font-bold text-slate-700 flex items-center gap-0.5 active:scale-95"
+                                                    >
+                                                        <FileText size={10} className="text-[#9575cd]" />
+                                                        {formData.interpretation ? 'Edit' : 'Add'}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-1.5 flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => setMobileOpenSection(null)}
+                                            className="h-6 px-3.5 bg-[#9575cd] hover:bg-[#7e57c2] text-white text-[9px] font-bold rounded shadow-2xs active:scale-95 transition-all"
+                                        >
+                                            Done
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* 3. Form Scroll Area */}
+                <div className="flex-1 min-h-0 overflow-y-auto px-2 pt-2 pb-3 space-y-2 custom-scrollbar">
+
+                    {/* Components & Parameters List */}
+                    <div className="bg-slate-50/50 rounded-lg border border-slate-200 p-2 space-y-2">
+                        <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                            <span className="text-[9.5px] font-bold text-slate-700 uppercase flex items-center gap-1">
+                                Parameters ({tableRows.length})
+                            </span>
+                        </div>
+
+                        {tableRows.length === 0 ? (
+                            <div className="p-4 text-center text-slate-400 text-[10px] italic bg-white rounded border border-dashed border-slate-200">
+                                No parameters in this format. Add below.
+                            </div>
+                        ) : (
+                            <div className="space-y-1.5">
+                                {tableRows.map((row, idx) => (
+                                    <div 
+                                        key={row.uiId} 
+                                        className={`p-2 rounded-lg border border-slate-200 bg-white shadow-2xs space-y-1.5 ${row.isCountDependent ? 'border-purple-200 bg-purple-50/20' : ''}`}
+                                    >
+                                        <div className="flex items-center justify-between gap-1.5">
+                                            <div className="flex items-center gap-1 min-w-0 flex-1">
+                                                <select 
+                                                    value={row.isHeading ? 'Sub Title' : (row.isCultureField ? 'Culture Block' : 'Parameter')} 
+                                                    onChange={e => handleRowChange(idx, 'isHeading', e.target.value === 'Sub Title')} 
+                                                    className="text-[9px] font-bold border border-slate-200 rounded px-1 h-5.5 bg-slate-50 outline-none text-slate-700 shrink-0"
+                                                >
+                                                    {row.isCultureField ? <option value="Culture Block">Culture Block</option> : <option value="Parameter">Parameter</option>}
+                                                    <option value="Sub Title">Sub Title</option>
+                                                </select>
+                                                
+                                                <span className={`font-mono text-[8.5px] px-1 py-0.5 rounded border border-slate-200 truncate ${row.isCultureField ? 'bg-rose-50 text-rose-600 font-bold' : 'bg-slate-50 text-slate-600'}`}>
+                                                    {row.code}
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <div className="flex items-center gap-0.5">
+                                                    <span className="text-[8px] font-bold text-slate-400">#</span>
+                                                    <SequenceInput value={row.order} onCommit={v => handleOrderCommit(idx, v)} />
+                                                </div>
+
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => handleRowChange(idx, 'isActive', !row.isActive)} 
+                                                    className={`w-6 h-3.5 rounded-full flex items-center p-0.5 transition-colors ${row.isActive ? 'bg-green-500' : 'bg-slate-300'}`}
+                                                    title={row.isActive ? 'Active' : 'Inactive'}
+                                                >
+                                                    <div className={`w-2.5 h-2.5 bg-white rounded-full shadow-sm transition-transform ${row.isActive ? 'translate-x-2.5' : 'translate-x-0'}`} />
+                                                </button>
+
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setTableRows(p => p.filter((_, i) => i !== idx))} 
+                                                    className="text-slate-300 hover:text-red-500 p-0.5"
+                                                    title="Delete row"
+                                                >
+                                                    <Trash2 size={11} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-50">
+                                            {row.isHeading ? (
+                                                <input 
+                                                    type="text" 
+                                                    value={row.headingText || ''} 
+                                                    onChange={e => handleRowChange(idx, 'headingText', e.target.value)} 
+                                                    className="w-full text-[10px] font-semibold border border-slate-200 rounded px-1.5 h-6 outline-none bg-white focus:border-[#9575cd]" 
+                                                    placeholder="Enter subtitle heading..."
+                                                />
+                                            ) : (
+                                                <div className="flex items-center justify-between w-full">
+                                                    <span className="text-[10.5px] font-bold text-slate-700 truncate">{row.name}</span>
+                                                    <div className="flex items-center gap-1 shrink-0">
+                                                        {row.isCultureField && <span className="bg-rose-100 text-rose-600 text-[7.5px] font-bold px-1 py-0.5 rounded">CULTURE INFO</span>}
+                                                        {row.isCountDependent && <span title="Count Target"><Target size={11} className="text-purple-500" /></span>}
+                                                        {formData.isFormulaNeeded && (
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => { setActiveFormulaRowIndex(idx); setShowFormulaModal(true); }} 
+                                                                disabled={row.isHeading || row.isCultureField} 
+                                                                className={`px-1.5 py-0.5 rounded text-[8.5px] font-bold flex items-center gap-0.5 ${row.formula ? 'text-purple-600 bg-purple-50 border border-purple-200' : 'text-slate-400 bg-slate-50 border border-slate-200'}`}
+                                                            >
+                                                                <Calculator size={9} /> {row.formula ? 'fx' : '+ fx'}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* CARD 3: Add Component Bar */}
+                    <div ref={mobileSearchContainerRef} className="bg-purple-50/60 rounded-lg border border-purple-100 p-2 space-y-1.5">
+                        <span className="text-[9px] font-bold text-[#7e22ce] uppercase block">Add Component</span>
+                        
+                        <div className="flex items-center gap-1.5">
+                            <select 
+                                value={newRowType} 
+                                onChange={e => setNewRowType(e.target.value)} 
+                                className="text-[9.5px] font-bold border border-slate-200 rounded px-1.5 h-6 bg-white outline-none w-24 shrink-0 focus:border-[#9575cd]"
+                            >
+                                <option value="Parameter">Parameter</option>
+                                <option value="Sub Title">Sub Title</option>
+                                {test?.isCulture && <option value="Culture Block">Susceptibility</option>}
+                            </select>
+
+                            <div className="flex-1 min-w-0 relative">
+                                {newRowType === 'Culture Block' ? (
+                                    <span className="text-[9px] font-semibold text-rose-500 bg-rose-50 px-2 h-6 flex items-center rounded truncate border border-rose-100">
+                                        Click Add for Susceptibility Block
+                                    </span>
+                                ) : newRowType === 'Sub Title' ? (
+                                    <input 
+                                        type="text" 
+                                        placeholder="Subtitle text..." 
+                                        value={newRowSubtitle} 
+                                        onChange={e => setNewRowSubtitle(e.target.value)} 
+                                        className="w-full text-[10px] border border-slate-200 rounded px-2 h-6 bg-white outline-none focus:border-[#9575cd]"
+                                    />
+                                ) : (
+                                    <>
+                                        <input 
+                                            type="text" 
+                                            placeholder={selectedItemToAdd ? selectedItemToAdd.name : "Search parameter..."} 
+                                            value={searchQuery} 
+                                            onFocus={() => setShowMobileDropdown(true)}
+                                            onChange={e => { setSearchQuery(e.target.value); if(e.target.value==='') setSelectedItemToAdd(null); setShowMobileDropdown(true); }} 
+                                            className="w-full text-[10px] border border-slate-200 rounded px-2 h-6 bg-white outline-none focus:border-[#9575cd]"
+                                        />
+
+                                        {showMobileDropdown && (
+                                            <div className="absolute bottom-full left-0 mb-1 w-full min-w-[200px] bg-white border border-slate-200 shadow-xl rounded-md z-50 max-h-48 overflow-y-auto custom-scrollbar">
+                                                {filteredItems.length === 0 ? (
+                                                    <div className="p-2 text-[9px] text-slate-400 text-center">No parameters found</div>
+                                                ) : (
+                                                    filteredItems.map(p => (
+                                                        <div 
+                                                            key={p.id} 
+                                                            onMouseDown={() => {
+                                                                setSelectedItemToAdd(p); 
+                                                                setSearchQuery(p.name); 
+                                                                setShowMobileDropdown(false);
+                                                            }} 
+                                                            className="px-2 py-1.5 hover:bg-purple-50 cursor-pointer text-[9.5px] border-b border-slate-50 flex items-center justify-between gap-1"
+                                                        >
+                                                            <span className="truncate font-semibold text-slate-700">{p.name}</span>
+                                                            <span className="font-mono text-[8.5px] text-slate-400 shrink-0">{p.code}</span>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+
+                            <button 
+                                type="button"
+                                onClick={handleAddNewRow} 
+                                className="h-6 px-2.5 bg-[#9575cd] text-white font-bold text-[9.5px] rounded shrink-0 flex items-center gap-0.5 active:scale-95 shadow-2xs hover:bg-[#7e57c2] transition-colors"
+                            >
+                                <Plus size={11} /> Add
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* 3. Mobile Fixed Footer (non-moving, shrink-0) */}
+                <div className="shrink-0 bg-white p-2 z-[50] pb-safe flex items-center justify-between border-t border-slate-100 shadow-sm">
+                    {onBack ? (
+                        <button 
+                            type="button"
+                            onClick={onBack} 
+                            className="h-6 px-2.5 flex items-center justify-center bg-slate-50 border border-slate-100 text-slate-600 font-medium text-[9px] rounded shrink-0 active:scale-95 transition-all"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mr-0.5"><path d="m15 18-6-6 6-6"/></svg> Back to Tests
+                        </button>
+                    ) : <div />}
+
+                    <button 
+                        type="button"
+                        onClick={handleSave} 
+                        disabled={isPending} 
+                        className="h-6 px-3 bg-[#9575cd] hover:bg-[#7e57c2] text-white font-bold text-[10px] rounded shrink-0 shadow-sm flex items-center gap-1 active:scale-95 transition-all disabled:opacity-70"
+                    >
+                        {isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                        <span>{isPending ? 'Saving...' : 'Save Format'}</span>
+                    </button>
                 </div>
             </div>
 

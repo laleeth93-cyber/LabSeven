@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Users, SlidersHorizontal, Search, Loader2, ChevronDown, Calendar, Paperclip, X } from 'lucide-react';
+import { Users, SlidersHorizontal, Search, Loader2, ChevronDown, Calendar, Paperclip, X, AlertCircle } from 'lucide-react';
 import { searchPatients } from '@/app/actions/patient';
 import type { FieldData } from './NewRegistration';
 
@@ -16,11 +16,14 @@ interface Props {
   setCurrentPatientId: (id: string) => void;
   referralsList: any[];
   onCustomizeClick: () => void;
+  mobileTimeline?: React.ReactNode;
+  onNextStep?: () => void;
 }
 
 export default function RegistrationLeftPane({
   fields, formValues, setFormValues, multiSelectValues, setMultiSelectValues,
-  currentPatientId, setCurrentPatientId, referralsList, onCustomizeClick
+  currentPatientId, setCurrentPatientId, referralsList, onCustomizeClick,
+  mobileTimeline, onNextStep
 }: Props) {
   
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
@@ -94,10 +97,29 @@ export default function RegistrationLeftPane({
 
   const visibleFields = fields.filter(f => f.isVisible).sort((a, b) => (a.order || 0) - (b.order || 0));
 
+  const [validationError, setValidationError] = useState('');
+
+  const handleNext = () => {
+    const requiredFields = visibleFields.filter(f => f.required && f.label !== 'Patient ID');
+    const missing = requiredFields.filter(f => {
+      const val = formValues[f.id];
+      if (f.inputType === 'age') return !val || (!val.Y && !val.M && !val.D);
+      if (Array.isArray(val)) return val.length === 0;
+      return !val || String(val).trim() === '';
+    });
+    if (missing.length > 0) {
+      setValidationError(`Please fill: ${missing.map(f => f.label).join(', ')}`);
+      setTimeout(() => setValidationError(''), 3000);
+      return;
+    }
+    setValidationError('');
+    onNextStep?.();
+  };
+
   return (
-    <div className="w-full md:w-[35%] h-full flex flex-col bg-white rounded-[10px] shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden shrink-0 z-10">
-      <div className="p-4 pb-3 bg-white border-b border-slate-100 shrink-0">
-         <div className="flex items-center justify-between mb-3">
+    <div className="w-full md:w-[35%] h-full flex flex-col bg-white md:rounded-[10px] md:shadow-xl md:border md:border-slate-200 overflow-hidden shrink-0 z-10">
+      <div className="pt-2 px-4 pb-1 md:pt-4 md:pb-3 bg-white md:border-b md:border-slate-100 shrink-0">
+         <div className="hidden md:flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className="p-1 rounded bg-cyan-50 text-[#4dd0e1] shadow-sm"><Users size={16} /></div>
               <h2 className="text-base font-bold text-slate-700 tracking-tight">Registration</h2>
@@ -107,31 +129,39 @@ export default function RegistrationLeftPane({
             </button>
          </div>
          
-         <div className="relative w-full">
-            <input 
-              type="text" 
-              value={patientSearchQuery}
-              onChange={(e) => setPatientSearchQuery(e.target.value)}
-              placeholder="Search old patient (Name/Phone)..."
-              className="w-full pl-8 pr-3 py-1.5 rounded-[5px] border border-cyan-200 text-[12px] bg-slate-50 text-slate-700 focus:bg-white focus:outline-none focus:border-[#4dd0e1] transition-all"
-            />
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-cyan-500" />
-            {isSearchingPatient && <Loader2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-500 animate-spin" />}
-            
-            {patientSearchResults.length > 0 && (
-              <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
-                  {patientSearchResults.map(p => (
-                    <div key={p.id} onClick={() => handleSelectPatient(p)} className="px-3 py-2 border-b border-slate-50 hover:bg-cyan-50 cursor-pointer group">
-                        <p className="text-[12px] font-bold text-slate-700 group-hover:text-[#00acc1]">{p.firstName} {p.lastName}</p>
-                        <p className="text-[10px] text-slate-500">{p.patientId} • {p.phone}</p>
-                    </div>
-                  ))}
-              </div>
-            )}
+         <div className="flex gap-2 items-center w-full">
+             <div className="relative flex-1 min-w-0">
+                <input 
+                  type="text" 
+                  value={patientSearchQuery}
+                  onChange={(e) => setPatientSearchQuery(e.target.value)}
+                  placeholder="Search old patient (Name/Phone)..."
+                  className="w-full pl-7 pr-3 py-1 md:py-1.5 rounded-[5px] border border-slate-200 md:border-cyan-200 text-[11px] md:text-[12px] placeholder:text-[9px] md:placeholder:text-[11px] bg-white md:bg-slate-50 text-slate-700 focus:outline-none focus:border-[#9575cd] md:focus:border-[#4dd0e1] transition-all shadow-sm md:shadow-none"
+                />
+                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 md:text-cyan-500" />
+                {isSearchingPatient && <Loader2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-500 animate-spin" />}
+                
+                {patientSearchResults.length > 0 && (
+                  <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
+                      {patientSearchResults.map(p => (
+                        <div key={p.id} onClick={() => handleSelectPatient(p)} className="px-3 py-2 border-b border-slate-50 hover:bg-cyan-50 cursor-pointer group">
+                            <p className="text-[12px] font-bold text-slate-700 group-hover:text-[#00acc1]">{p.firstName} {p.lastName}</p>
+                            <p className="text-[10px] text-slate-500">{p.patientId} • {p.phone}</p>
+                        </div>
+                      ))}
+                  </div>
+                )}
+             </div>
+
+             <button onClick={onCustomizeClick} className="md:hidden shrink-0 flex items-center justify-center w-7 h-7 rounded-[5px] border border-slate-200 bg-white text-slate-600 shadow-sm active:scale-95 transition-all">
+               <SlidersHorizontal size={12} />
+             </button>
          </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+      {mobileTimeline}
+
+      <div className="flex-1 overflow-y-auto pt-2 px-4 pb-20 md:p-4 custom-scrollbar">
          <div className="flex flex-wrap gap-x-3 gap-y-3 items-end pb-8"> 
             {visibleFields.map((field) => {
               const isReferralNameField = field.category === 'Referral' && !field.label.toLowerCase().includes('type');
@@ -151,13 +181,17 @@ export default function RegistrationLeftPane({
               }
 
               return (
-                <div key={field.id} className="flex-none relative" style={{ width: currentWidth }}>
+                <div key={field.id} className="flex-none relative w-[var(--desktop-width)]" style={{ '--desktop-width': currentWidth } as React.CSSProperties}>
                   <label htmlFor={`field-${field.id}`} className="block text-[10px] font-bold text-slate-600 mb-1 truncate">
                     {field.label} {field.required && <span className="text-red-400">*</span>}
                   </label>
 
                   {field.label === 'Patient ID' ? (
-                    <div className="py-0.5"><span className="text-sm font-bold text-[#e65100] tracking-wide font-mono bg-orange-50 px-2 py-0.5 rounded border border-orange-100">{currentPatientId}</span></div>
+                    <div className="w-full px-1 py-1 rounded border border-transparent flex items-center min-h-[26px]">
+                        {/* Plain text on mobile, orange badge on desktop */}
+                        <span className="md:hidden text-[12px] font-bold text-slate-700 font-mono">{currentPatientId}</span>
+                        <span className="hidden md:inline text-sm font-bold text-[#e65100] tracking-wide font-mono bg-orange-50 px-2 py-0.5 rounded border border-orange-100">{currentPatientId}</span>
+                    </div>
                   ) : (
                     <>
                       {isReferralNameField ? (
@@ -245,6 +279,20 @@ export default function RegistrationLeftPane({
                 </div>
               );
             })}
+         </div>
+      </div>
+
+      <div className="md:hidden bg-white shrink-0 w-full z-20">
+         {validationError && (
+           <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border-t border-red-100">
+             <AlertCircle size={12} className="text-red-500 shrink-0" />
+             <p className="text-[10px] font-bold text-red-600 truncate">{validationError}</p>
+           </div>
+         )}
+         <div className="p-1.5 flex justify-end">
+           <button onClick={handleNext} className="px-3 py-1 text-white rounded-md font-bold text-[10px] active:scale-95 transition-all flex items-center gap-1 shadow-sm shadow-purple-200" style={{ background: 'linear-gradient(135deg, #9575cd, #7e57c2)' }}>
+             Next <ChevronDown className="rotate-[-90deg]" size={10} />
+           </button>
          </div>
       </div>
     </div>

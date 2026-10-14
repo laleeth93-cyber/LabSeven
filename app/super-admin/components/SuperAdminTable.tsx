@@ -112,22 +112,24 @@ export default function SuperAdminTable({ labs }: { labs: LabData[] }) {
   };
 
   return (
-    <div className="w-full flex flex-col gap-4 h-full">
-      <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-300 shadow-sm overflow-x-auto shrink-0">
-        <div className="flex items-center gap-2 min-w-max">
-            <Filter size={16} className="text-slate-400" />
-            <span className="text-sm font-bold text-slate-600 mr-2">Lifecycle Views:</span>
-            <div className="flex bg-slate-100 p-1 rounded-md gap-1">
-                <button onClick={() => setFilterMode("ALL")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "ALL" ? "bg-white shadow-sm text-[#a07be1]" : "text-slate-500 hover:text-slate-700"}`}>All Accounts</button>
-                <button onClick={() => setFilterMode("TRIAL")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "TRIAL" ? "bg-white shadow-sm text-amber-600" : "text-slate-500 hover:text-slate-700"}`}>Free Trials</button>
-                <button onClick={() => setFilterMode("SUBSCRIBED")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "SUBSCRIBED" ? "bg-white shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"}`}>Subscribers</button>
-                <button onClick={() => setFilterMode("NEAR_EXPIRY")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "NEAR_EXPIRY" ? "bg-white shadow-sm text-orange-500" : "text-slate-500 hover:text-slate-700"}`}>Near Expiry (5 Days)</button>
-                <button onClick={() => setFilterMode("EXPIRED")} className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${filterMode === "EXPIRED" ? "bg-white shadow-sm text-red-600" : "text-slate-500 hover:text-slate-700"}`}>Expired</button>
+    <div className="w-full flex flex-col gap-2.5 md:gap-4 h-full">
+      <div className="flex justify-between items-center bg-transparent md:bg-white p-0 md:p-2.5 rounded-none md:rounded-lg border-0 md:border md:border-slate-300 shadow-none md:shadow-sm overflow-x-auto shrink-0 custom-scrollbar">
+        <div className="flex items-center gap-1.5 md:gap-2 min-w-max">
+            <Filter size={13} className="md:w-4 md:h-4 text-slate-400 shrink-0 ml-0.5" />
+            <div className="flex bg-slate-200/70 md:bg-slate-100 p-0.5 md:p-1 rounded-md gap-0.5 md:gap-1">
+                <button onClick={() => setFilterMode("ALL")} className={`px-2.5 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-bold rounded transition-colors whitespace-nowrap select-none ${filterMode === "ALL" ? "bg-white shadow-sm text-[#a07be1]" : "text-slate-500 hover:text-slate-700"}`}>All Accounts</button>
+                <button onClick={() => setFilterMode("TRIAL")} className={`px-2.5 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-bold rounded transition-colors whitespace-nowrap select-none ${filterMode === "TRIAL" ? "bg-white shadow-sm text-amber-600" : "text-slate-500 hover:text-slate-700"}`}>Free Trials</button>
+                <button onClick={() => setFilterMode("SUBSCRIBED")} className={`px-2.5 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-bold rounded transition-colors whitespace-nowrap select-none ${filterMode === "SUBSCRIBED" ? "bg-white shadow-sm text-emerald-600" : "text-slate-500 hover:text-slate-700"}`}>Subscribers</button>
+                <button onClick={() => setFilterMode("NEAR_EXPIRY")} className={`px-2.5 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-bold rounded transition-colors whitespace-nowrap select-none ${filterMode === "NEAR_EXPIRY" ? "bg-white shadow-sm text-orange-500" : "text-slate-500 hover:text-slate-700"}`}>
+                  <span className="md:hidden">Near Expiry</span>
+                  <span className="hidden md:inline">Near Expiry (5 Days)</span>
+                </button>
+                <button onClick={() => setFilterMode("EXPIRED")} className={`px-2.5 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-bold rounded transition-colors whitespace-nowrap select-none ${filterMode === "EXPIRED" ? "bg-white shadow-sm text-red-600" : "text-slate-500 hover:text-slate-700"}`}>Expired</button>
             </div>
         </div>
       </div>
 
-      <div className="w-full bg-white border border-slate-300 shadow-sm overflow-x-auto h-full min-h-[400px] custom-scrollbar relative rounded-b-lg">
+      <div className="hidden md:block w-full bg-white border border-slate-300 shadow-sm overflow-x-auto h-full min-h-[400px] custom-scrollbar relative rounded-b-lg">
         <table className="w-full border-collapse text-[12px] text-left whitespace-nowrap min-w-max">
           <thead className="sticky top-0 z-20 shadow-md outline outline-1 outline-[#a07be1]">
             <tr className="bg-[#a07be1] text-white">
@@ -220,6 +222,96 @@ export default function SuperAdminTable({ labs }: { labs: LabData[] }) {
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="md:hidden flex-1 min-h-0 overflow-y-auto space-y-2 p-0 md:p-1.5 pb-3 custom-scrollbar">
+        {filteredLabs.length === 0 ? (
+          <div className="rounded-lg border border-slate-200 bg-white p-6 text-center text-xs text-slate-500">
+            No laboratories match this view.
+          </div>
+        ) : filteredLabs.map((lab) => {
+          const lifecycle = getLabLifecycle(lab);
+          const isExpired = lifecycle.status === "EXPIRED";
+          const isNearExpiry = lifecycle.expDate && (lifecycle.expDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24) <= 5 && !isExpired && lifecycle.status !== "HQ";
+
+          return (
+            <article key={lab.id} className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-xs">
+              <div className="flex min-w-0 items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 className="truncate text-xs font-bold text-slate-800">{lab.name}</h2>
+                  <p className="mt-0.5 font-mono text-[9px] text-slate-500">
+                    {lifecycle.status === "HQ" ? "HQ-0001" : `ORG-${lab.id.toString().padStart(4, '0')}`}
+                  </p>
+                </div>
+                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[8.5px] font-bold ${isExpired ? 'bg-red-50 text-red-700' : isNearExpiry ? 'bg-orange-50 text-orange-700' : lifecycle.status === 'HQ' ? 'bg-slate-800 text-white' : 'bg-emerald-50 text-emerald-700'}`}>
+                  {lifecycle.status === "TRIAL_UPGRADED" ? `Trial · ${lifecycle.upcomingPlan}` : lifecycle.label}
+                </span>
+              </div>
+
+              <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 border-t border-slate-100 pt-1.5">
+                <div className="min-w-0">
+                  <p className="text-[8px] font-bold uppercase text-slate-400">Email</p>
+                  <p className="break-all text-[9.5px] text-slate-700 truncate">{lab.email || "N/A"}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[8px] font-bold uppercase text-slate-400">Phone</p>
+                  <p className="break-all text-[9.5px] text-slate-700">{lab.phone || "N/A"}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[8px] font-bold uppercase text-slate-400">Bills</p>
+                  <p className="text-[9.5px] font-bold text-slate-700">{lab._count.bills}</p>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[8px] font-bold uppercase text-slate-400">Expires</p>
+                  <p className="text-[9.5px] text-slate-700">{lifecycle.status === "HQ" ? "Lifetime" : lifecycle.expDate?.toLocaleDateString('en-GB') || "-"}</p>
+                </div>
+              </div>
+
+              <div className="mt-2 grid grid-cols-4 gap-1 border-t border-slate-100 pt-1.5">
+                <button
+                  disabled={lifecycle.status === "HQ" || sensitivityLoading === lab.id}
+                  onClick={() => handleToggleSensitivity(lab.id, lab.hasSensitivity)}
+                  className="flex h-6 min-w-0 items-center justify-center gap-1 rounded border border-slate-200 text-[8.5px] font-semibold text-slate-600 disabled:opacity-50 active:scale-95 transition-all select-none px-1"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  title={`Sensitivity ${lab.hasSensitivity ? "On" : "Off"}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${lab.hasSensitivity ? 'bg-violet-500' : 'bg-slate-300'}`} />
+                  <span className="truncate">Sens {lab.hasSensitivity ? "On" : "Off"}</span>
+                </button>
+                <button
+                  disabled={lifecycle.status === "HQ"}
+                  onClick={() => handleOpenRenewal(lab)}
+                  className="flex h-6 min-w-0 items-center justify-center gap-0.5 rounded border border-violet-200 bg-violet-50 text-[8.5px] font-semibold text-violet-700 disabled:opacity-50 active:scale-95 transition-all select-none px-1"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  title="Manage Plan"
+                >
+                  <CalendarPlus size={10} className="shrink-0" />
+                  <span className="truncate">Manage Plan</span>
+                </button>
+                <button
+                  disabled={lifecycle.status === "HQ" || loadingId === lab.id}
+                  onClick={() => handleToggleStatus(lab.id, lab.isActive)}
+                  className={`flex h-6 min-w-0 items-center justify-center gap-0.5 rounded border text-[8.5px] font-semibold disabled:opacity-50 active:scale-95 transition-all select-none px-1 ${lab.isActive ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-orange-200 bg-orange-50 text-orange-700'}`}
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  title={lab.isActive ? "Active (click to disable)" : "Disabled (click to activate)"}
+                >
+                  <Power size={10} className="shrink-0" />
+                  <span className="truncate">{lab.isActive ? "Active" : "Disabled"}</span>
+                </button>
+                <button
+                  disabled={lifecycle.status === "HQ" || loadingId === lab.id}
+                  onClick={() => handleDelete(lab.id, lab.name)}
+                  className="flex h-6 min-w-0 items-center justify-center gap-0.5 rounded border border-red-200 bg-red-50 text-[8.5px] font-semibold text-red-700 disabled:opacity-50 active:scale-95 transition-all select-none px-1"
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
+                  title="Delete Laboratory"
+                >
+                  <Trash2 size={10} className="shrink-0" />
+                  <span className="truncate">Delete</span>
+                </button>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       {/* RENEWAL MODAL */}

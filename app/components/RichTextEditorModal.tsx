@@ -29,10 +29,10 @@ export default function RichTextEditorModal({ isOpen, onClose, onSave, initialCo
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-4">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-2 sm:p-4">
       
       {/* Modal Container */}
-      <div className="bg-white w-full max-w-4xl h-[600px] rounded-lg shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden">
+      <div className="bg-white w-full max-w-[calc(100vw-16px)] sm:max-w-4xl max-h-[92vh] h-[600px] rounded-lg shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden">
         
         {/* Header - Styled like Billing Modal */}
         <div className="px-6 py-4 flex items-center justify-between shrink-0" style={{ background: 'linear-gradient(to right, #b3e5fc, #e1bee7)' }}>

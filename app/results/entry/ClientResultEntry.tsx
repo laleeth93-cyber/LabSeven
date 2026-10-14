@@ -8,7 +8,7 @@ import ResultEntryForm from './components/ResultEntryForm';
 import DateRangeFilter from './components/DateRangeFilter';
 import EntryDateTimePicker from './components/EntryDateTimePicker'; 
 import MusicBarLoader from '@/app/components/MusicBarLoader';
-
+import { List } from 'lucide-react';
 import { usePermissions } from '@/app/context/PermissionContext';
 
 import PatientReportModal from '@/app/list/components/PatientReportModal';
@@ -57,7 +57,6 @@ export default function ClientResultEntry({
 
   const bills = fetchRes?.success && fetchRes?.data ? fetchRes.data : [];
 
-  const [isMobileWorklistOpen, setIsMobileWorklistOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
@@ -69,7 +68,7 @@ export default function ClientResultEntry({
   const [isSmartReportModalOpen, setIsSmartReportModalOpen] = useState(false);
 
   const [isBillLoading, setIsBillLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('Pending'); 
+  const [activeTab, setActiveTab] = useState('All'); 
   const [searchTerm, setSearchTerm] = useState('');
   
   const [dateRange, setDateRange] = useState<{ from: Date | null; to: Date | null; label: string }>(() => {
@@ -176,7 +175,6 @@ export default function ClientResultEntry({
 
   const handleSelectBill = (id: number) => {
       setSelectedBillId(id);
-      setIsMobileWorklistOpen(false); 
   };
 
   const filteredBills = useMemo(() => {
@@ -228,6 +226,22 @@ export default function ClientResultEntry({
     ];
   }, [bills]);
 
+  const currentPatientIndex = useMemo(() => filteredBills.findIndex((b: any) => b.id === selectedBillId), [filteredBills, selectedBillId]);
+  const isFirstPatient = currentPatientIndex <= 0;
+  const isLastPatient = currentPatientIndex === -1 || currentPatientIndex >= filteredBills.length - 1;
+
+  const handlePrevPatient = () => {
+      if (!isFirstPatient) {
+          setSelectedBillId(filteredBills[currentPatientIndex - 1].id);
+      }
+  };
+
+  const handleNextPatient = () => {
+      if (!isLastPatient) {
+          setSelectedBillId(filteredBills[currentPatientIndex + 1].id);
+      }
+  };
+
   if (!permsLoaded) return <div className="h-screen flex items-center justify-center bg-[#f1f5f9]"><MusicBarLoader text="Authenticating..." /></div>;
   if (!canSee('Result Entry')) return <div className="h-screen w-full flex flex-col items-center justify-center bg-[#f1f5f9] p-6 text-center"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-300 mb-4"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><h2 className="text-xl font-bold text-slate-700">Access Restricted</h2><p className="text-slate-500 mt-2 text-sm max-w-sm">You do not have permission to view the Result Entry module.</p></div>;
 
@@ -266,87 +280,46 @@ export default function ClientResultEntry({
         </div>
       </header>
 
-      <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shadow-sm shrink-0 z-20">
-          <div className="flex items-center gap-4 w-full">
-              <button onClick={() => setIsMobileFiltersOpen(true)} className="p-2.5 text-slate-500 bg-slate-50 border border-slate-200 rounded-lg shadow-sm hover:bg-slate-100 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-              </button>
-              <div className="flex flex-col flex-1 overflow-hidden">
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Result Entry Form</span>
-                  <h1 className="text-base font-bold text-slate-800 truncate">
-                      {selectedBillData ? `${selectedBillData.patient.firstName} ${selectedBillData.patient.lastName}` : "Ready for Input"}
-                  </h1>
-              </div>
-          </div>
-      </header>
 
-      {isMobileFiltersOpen && (
-          <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-[2px] flex items-end md:hidden">
-              <div className="bg-white w-full rounded-t-2xl p-5 flex flex-col gap-5 animate-in slide-in-from-bottom-full duration-200 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                      <h2 className="font-bold text-slate-800 text-lg flex items-center gap-2">Filters & Search</h2>
-                      <button onClick={() => setIsMobileFiltersOpen(false)} className="p-2 text-slate-400 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      </button>
-                  </div>
-                  <div className="relative">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                      <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search patient..." className="w-full pl-11 pr-4 h-12 bg-slate-50 border border-slate-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#9575cd] focus:bg-white" />
-                  </div>
-                  <div>
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Status</span>
-                      <div className="grid grid-cols-2 gap-3">
-                          {tabs.map(tab => (
-                              <button key={tab.label} onClick={() => { setActiveTab(tab.label); setIsMobileFiltersOpen(false); }} className={`px-4 py-3 text-sm font-bold rounded-xl border transition-all ${activeTab === tab.label ? 'bg-purple-50 border-[#9575cd] text-[#9575cd]' : 'bg-white border-slate-200 text-slate-600'}`}>
-                                  {tab.label} <span className="text-slate-400 font-normal">({tab.count})</span>
-                              </button>
-                          ))}
-                      </div>
-                  </div>
-                  <div className="flex flex-col gap-4 pt-4 border-t border-slate-100">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Date Filters</span>
-                      <DateRangeFilter onFilterChange={setDateRange} />
-                      <EntryDateTimePicker date={entryDateTime} onChange={handleManualDateChange} align="left" />
-                  </div>
-                  <button onClick={() => setIsMobileFiltersOpen(false)} className="w-full py-4 text-base bg-slate-800 text-white font-bold rounded-xl mt-3 shadow-md">Apply Filters</button>
-              </div>
-          </div>
-      )}
 
-      {isMobileWorklistOpen && (
-          <div className="fixed inset-0 z-[60] bg-white flex flex-col md:hidden animate-in slide-in-from-bottom-8 fade-in duration-200">
-              <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50 shrink-0 shadow-sm">
-                  <h2 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#9575cd]"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                      Select Patient
-                  </h2>
-                  <button onClick={() => setIsMobileWorklistOpen(false)} className="p-2 text-slate-500 hover:bg-slate-200 bg-white border border-slate-200 shadow-sm rounded-lg transition-colors">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-              </div>
-              <div className="flex-1 overflow-hidden bg-white">
-                  <WorklistPanel 
-                      bills={filteredBills} 
-                      onSelect={handleSelectBill} 
-                      activeTab={activeTab} 
-                  />
-              </div>
-          </div>
-      )}
 
-      {!isMobileWorklistOpen && (
-          <button 
-              onClick={() => setIsMobileWorklistOpen(true)} 
-              className="md:hidden fixed bottom-6 right-6 z-40 bg-[#9575cd] hover:bg-[#8565bd] text-white p-4 rounded-full shadow-[0_8px_30px_rgb(149,117,205,0.4)] flex items-center justify-center transition-transform active:scale-95 border-2 border-white"
-          >
-              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-              {!selectedBillId && <span className="font-bold pr-2 pl-2 text-base">Pick Patient</span>}
-          </button>
-      )}
 
       <div className="flex flex-1 overflow-hidden p-2 md:p-4 gap-4 bg-transparent">
         {!selectedBillId ? (
-            <div className="w-full h-full bg-white md:rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col relative">
+            <div className="w-full h-full bg-white rounded-none md:rounded-xl shadow-sm border-0 md:border md:border-slate-200 overflow-hidden flex flex-col relative">
+                {/* Mobile Header Inside Card */}
+                <header className="md:hidden flex flex-col gap-1.5 px-3 py-2 shrink-0 z-20 bg-white">
+                    <div className="relative w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                        </svg>
+                        <input 
+                            type="text" 
+                            value={searchTerm} 
+                            onChange={(e) => setSearchTerm(e.target.value)} 
+                            placeholder="Search patient..." 
+                            className="w-full pl-7 pr-2 h-6 bg-white border border-slate-200 rounded text-[11px] font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#9575cd] transition-all" 
+                        />
+                    </div>
+                    <div className="flex items-center gap-1.5 w-full">
+                        <div className="flex-1">
+                            <select 
+                                value={activeTab} 
+                                onChange={(e) => setActiveTab(e.target.value)} 
+                                className="w-full h-6 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-700 px-1.5 outline-none focus:ring-1 focus:ring-[#9575cd] appearance-none"
+                                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.25rem center', paddingRight: '1.25rem' }}
+                            >
+                                {tabs.map(tab => (
+                                    <option key={tab.label} value={tab.label}>{tab.label} ({tab.count})</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex-1">
+                            <DateRangeFilter onFilterChange={setDateRange} buttonClassName="w-full h-6 bg-white hover:bg-slate-50 border border-slate-200 rounded text-[10px] font-bold text-slate-700 px-1.5 flex justify-between items-center transition-colors shadow-sm" />
+                        </div>
+                    </div>
+                </header>
+
                 <WorklistPanel 
                     bills={filteredBills} 
                     onSelect={(id: number) => setSelectedBillId(id)} 
@@ -355,10 +328,39 @@ export default function ClientResultEntry({
             </div>
         ) : (
             <>
-                <div className={`w-full ${isSidebarOpen ? 'lg:w-[70%]' : ''} h-full bg-white md:rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col relative transition-all duration-300`}>
+                <div className={`w-full ${isSidebarOpen ? 'lg:w-[70%]' : ''} h-full bg-white md:rounded-xl md:shadow-sm md:border md:border-slate-200 overflow-hidden flex flex-col relative transition-all duration-300`}>
+                    {/* Mobile Header Inside Card */}
+                    <header className="md:hidden flex items-center justify-between px-2 py-2 shrink-0 z-20 bg-white">
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                            <button onClick={handlePrevPatient} disabled={isFirstPatient} className="shrink-0 p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                            </button>
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                {selectedBillData && (
+                                    <>
+                                        <h1 className="text-[11px] font-bold text-[#9575cd] truncate">
+                                            {selectedBillData.patient.firstName} {selectedBillData.patient.lastName}
+                                        </h1>
+                                        <span className="text-slate-300 text-[10px] shrink-0">|</span>
+                                        <span className="text-[10px] text-slate-500 font-normal shrink-0">
+                                            {selectedBillData.patient.age || 0}{selectedBillData.patient.ageUnit || 'Y'}/{selectedBillData.patient.gender?.charAt(0) || 'U'}
+                                        </span>
+                                        <span className="text-slate-300 text-[10px] shrink-0">|</span>
+                                        <span className="text-[10px] text-slate-500 font-normal shrink-0">
+                                            {String(selectedBillData.billNumber).slice(-6)}
+                                        </span>
+                                    </>
+                                )}
+                            </div>
+                            <button onClick={handleNextPatient} disabled={isLastPatient} className="shrink-0 p-1 text-slate-400 hover:text-slate-600 disabled:opacity-30">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                            </button>
+                        </div>
+                    </header>
+
                     <div className="flex flex-col h-full overflow-hidden">
                         
-                        <div className="p-3 md:p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 md:gap-3 shrink-0">
+                        <div className="hidden md:flex p-3 md:p-4 bg-white md:bg-slate-50 border-b-0 md:border-b border-slate-200 flex-col sm:flex-row sm:items-center justify-between gap-4 md:gap-3 shrink-0">
                             <button onClick={handleBackToList} className="flex items-center justify-center sm:justify-start gap-2 text-base md:text-sm font-bold text-slate-700 bg-white border border-slate-300 px-5 py-2.5 md:py-2 rounded-lg shadow-sm hover:bg-slate-100 transition-colors shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                                 Back to List
@@ -386,7 +388,7 @@ export default function ClientResultEntry({
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto bg-slate-50/50">
+                        <div className="flex-1 overflow-y-auto bg-white md:bg-slate-50/50">
                             {isBillLoading ? (
                                 <div className="h-full flex items-center justify-center"><MusicBarLoader text="Loading Test Data..." /></div>
                             ) : (
@@ -397,6 +399,7 @@ export default function ClientResultEntry({
                                     entryDateTime={entryDateTime} 
                                     onPrint={() => setIsReportModalOpen(true)}
                                     onDeltaPrint={() => setIsSmartReportModalOpen(true)}
+                                    onBackToList={handleBackToList}
                                 />
                             )}
                         </div>

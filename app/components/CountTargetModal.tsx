@@ -56,8 +56,8 @@ export default function CountTargetModal({ isOpen, onClose, onSave, initialTarge
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col border border-slate-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-[calc(100vw-16px)] sm:max-w-md max-h-[92vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center gap-3">

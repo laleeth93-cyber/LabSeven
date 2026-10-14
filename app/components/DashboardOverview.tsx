@@ -63,8 +63,8 @@ function ChartWidget({ title, icon: Icon, fetcher, renderChart, alignPopover = "
     }, [dateRange, fetcher]);
 
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col h-full relative group">
-            <div className="flex flex-col xl:flex-row justify-between xl:items-center mb-6 shrink-0 gap-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-3 md:p-5 shadow-sm flex flex-col h-full relative group">
+            <div className="flex flex-col xl:flex-row justify-between xl:items-center mb-4 md:mb-6 shrink-0 gap-3">
                 {/* 🚨 FIX: Added whitespace-nowrap to guarantee the title stays on one line */}
                 <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 whitespace-nowrap">
                     <Icon size={16} className="text-[#9575cd] shrink-0"/> {title}
@@ -150,8 +150,8 @@ function SpecificReferralWidget({ initialRefs, initialRefData, globalDateRange }
     const filteredRefs = referrals.filter(r => r.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col h-full relative group">
-            <div className="flex flex-col xl:flex-row justify-between xl:items-center mb-6 shrink-0 gap-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-3 md:p-5 shadow-sm flex flex-col h-full relative group">
+            <div className="flex flex-col xl:flex-row justify-between xl:items-center mb-4 md:mb-6 shrink-0 gap-3">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                     <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2 whitespace-nowrap">
                         <Users size={16} className="text-[#9575cd] shrink-0"/> Specific Referral Performance:
@@ -246,16 +246,16 @@ export default function DashboardOverview({ initialData }: { initialData: any })
     }, []);
 
     const KPICard = ({ title, value, icon: Icon, colorClass, bgClass, isLoading = kpiLoading, extraContent }: any) => (
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col relative overflow-hidden group hover:shadow-md transition-all h-full">
+        <div className="bg-white border border-slate-200 rounded-2xl p-2 md:p-5 shadow-sm flex flex-col relative overflow-hidden group hover:shadow-md transition-all h-full">
             <div className={`absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-10 transition-transform group-hover:scale-150 ${bgClass}`}></div>
             <div className="flex justify-between items-start mb-2 relative z-10">
-                <div className={`p-2 rounded-xl ${bgClass} ${colorClass} bg-opacity-20`}><Icon size={20} /></div>
+                <div className={`p-1 md:p-2 rounded-lg md:rounded-xl ${bgClass} ${colorClass} bg-opacity-20`}><Icon className="h-4 w-4 md:h-5 md:w-5" /></div>
             </div>
             <div className="relative z-10 flex-1">
-                <h3 className="text-3xl font-black text-slate-800 tracking-tight mt-1">
+                <h3 className="text-lg md:text-3xl font-black text-slate-800 tracking-tight mt-1">
                     {isLoading ? <Loader2 className="animate-spin text-slate-300" size={24}/> : value}
                 </h3>
-                <p className="text-sm font-bold text-slate-500 mt-1 mb-1">{title}</p>
+                <p className="text-[10px] md:text-sm font-bold text-slate-500 mt-1 mb-1">{title}</p>
                 {extraContent && <div>{extraContent}</div>}
             </div>
         </div>
@@ -279,7 +279,7 @@ export default function DashboardOverview({ initialData }: { initialData: any })
             </div>
 
             {/* KPI CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 mb-6 relative z-10">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-2 md:gap-4 mb-6 relative z-10">
                 <KPICard title="Bills Generated" value={kpiData?.totalBills || 0} icon={FileText} colorClass="text-indigo-600" bgClass="bg-indigo-500" />
                 <KPICard title="Total Revenue" value={`₹${(kpiData?.totalRevenue || 0).toLocaleString('en-IN')}`} icon={TrendingUp} colorClass="text-emerald-600" bgClass="bg-emerald-500" />
                 <KPICard title="Patient Visits" value={kpiData?.totalPatients || 0} icon={Users} colorClass="text-blue-600" bgClass="bg-blue-500" />

@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Building2, Save, Upload, Loader2, Image as ImageIcon, MapPin, Phone, Mail, Globe, Info, Hash, CheckCircle, LayoutTemplate, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Building2, Save, Upload, Loader2, Image as ImageIcon, MapPin, Phone, Mail, Globe, Info, Hash, CheckCircle, LayoutTemplate, SlidersHorizontal, Trash2, ChevronLeft } from 'lucide-react';
 import { getLabProfile, updateLabProfile } from '@/app/actions/lab-profile';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 
 export default function LabProfilePage() {
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     
@@ -81,7 +83,7 @@ export default function LabProfilePage() {
     }
 
     return (
-        <div className="h-full w-full bg-[#f1f5f9] p-4 md:p-6 overflow-y-auto font-sans relative">
+        <div className="h-full w-full font-sans relative overflow-hidden flex flex-col">
             
             {showSuccessPopup && (
               <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
@@ -93,6 +95,11 @@ export default function LabProfilePage() {
                 </div>
               </div>
             )}
+
+            {/* ========================================================================= */}
+            {/* DESKTOP RATIO (100% UNTOUCHED ORIGINAL LAYOUT)                            */}
+            {/* ========================================================================= */}
+            <div className="hidden md:block h-full w-full bg-[#f1f5f9] p-4 md:p-6 overflow-y-auto font-sans relative">
 
             <div className="max-w-5xl mx-auto space-y-6 relative z-10">
                 
@@ -379,6 +386,293 @@ export default function LabProfilePage() {
                     </div>
                 </div>
             </div>
+            </div>
+
+            {/* ========================================================================= */}
+            {/* MOBILE RATIO (BUILT SPECIFICALLY FOR MOBILE VIEWPORT)                      */}
+            {/* ========================================================================= */}
+            <div className="flex md:hidden flex-col flex-1 w-full h-full bg-[#f1f5f9] p-2 overflow-hidden font-sans">
+                <div className="w-full h-full bg-white rounded-none border-0 shadow-sm overflow-hidden flex flex-col relative">
+                    
+                    {/* Mobile Content Area (All profile sections displayed continuously) */}
+                    <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar bg-white">
+                        
+                        {/* GENERAL INFO SECTION */}
+                        <div className="p-2 bg-white rounded-lg border border-slate-200 shadow-2xs space-y-2">
+                            <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100">
+                                <Building2 size={12} className="text-[#9575cd]" />
+                                <span className="text-[10px] font-bold text-slate-800">Laboratory Details</span>
+                            </div>
+
+                            <div>
+                                <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight mb-0.5 block">
+                                    Lab Name <span className="text-rose-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <Building2 size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input 
+                                        type="text" 
+                                        value={settings.name || ''} 
+                                        onChange={(e) => setSettings({...settings, name: e.target.value})} 
+                                        placeholder="e.g. SmartLab Diagnostics" 
+                                        className="w-full h-6 pl-6 pr-2 border border-slate-200 rounded text-[10px] font-bold focus:border-[#9575cd] outline-none bg-white text-slate-800 placeholder:text-slate-400" 
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight mb-0.5 block">
+                                    Tagline / Slogan
+                                </label>
+                                <div className="relative">
+                                    <Hash size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input 
+                                        type="text" 
+                                        value={settings.tagline || ''} 
+                                        onChange={(e) => setSettings({...settings, tagline: e.target.value})} 
+                                        placeholder="e.g. Accuracy you can trust" 
+                                        className="w-full h-6 pl-6 pr-2 border border-slate-200 rounded text-[10px] focus:border-[#9575cd] outline-none bg-white text-slate-700 placeholder:text-slate-400" 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* CONTACT & LOCATION SECTION */}
+                        <div className="p-2 bg-white rounded-lg border border-slate-200 shadow-2xs space-y-2">
+                            <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100">
+                                <MapPin size={12} className="text-[#9575cd]" />
+                                <span className="text-[10px] font-bold text-slate-800">Contact & Location</span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-1.5">
+                                <div>
+                                    <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight mb-0.5 block">Phone Number</label>
+                                    <div className="relative">
+                                        <Phone size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input 
+                                            type="text" 
+                                            value={settings.phone || ''} 
+                                            onChange={(e) => setSettings({...settings, phone: e.target.value})} 
+                                            placeholder="+91 98765 43210" 
+                                            className="w-full h-6 pl-6 pr-2 border border-slate-200 rounded text-[10px] font-mono focus:border-[#9575cd] outline-none bg-white text-slate-700" 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight mb-0.5 block">Email Address</label>
+                                    <div className="relative">
+                                        <Mail size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input 
+                                            type="email" 
+                                            value={settings.email || ''} 
+                                            onChange={(e) => setSettings({...settings, email: e.target.value})} 
+                                            placeholder="contact@lab.com" 
+                                            className="w-full h-6 pl-6 pr-2 border border-slate-200 rounded text-[10px] focus:border-[#9575cd] outline-none bg-white text-slate-700" 
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight mb-0.5 block">Website URL</label>
+                                <div className="relative">
+                                    <Globe size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input 
+                                        type="text" 
+                                        value={settings.website || ''} 
+                                        onChange={(e) => setSettings({...settings, website: e.target.value})} 
+                                        placeholder="www.smartlab.com" 
+                                        className="w-full h-6 pl-6 pr-2 border border-slate-200 rounded text-[10px] focus:border-[#9575cd] outline-none bg-white text-slate-700" 
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[8.5px] font-bold text-slate-500 uppercase tracking-tight mb-0.5 block">Physical Address</label>
+                                <div className="relative">
+                                    <MapPin size={11} className="absolute left-2 top-2 text-slate-400" />
+                                    <textarea 
+                                        value={settings.address || ''} 
+                                        onChange={(e) => setSettings({...settings, address: e.target.value})} 
+                                        placeholder="Full address of the laboratory..." 
+                                        rows={2} 
+                                        className="w-full pl-6 pr-2 py-1 border border-slate-200 rounded text-[10px] focus:border-[#9575cd] outline-none bg-white text-slate-700 resize-none" 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* LOGO SECTION */}
+                        <div className="p-2 bg-white rounded-lg border border-slate-200 shadow-2xs space-y-2">
+                            <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                                <div className="flex items-center gap-1.5">
+                                    <ImageIcon size={12} className="text-[#9575cd]" />
+                                    <span className="text-[10px] font-bold text-slate-800">Lab Logo</span>
+                                </div>
+                                <span className="text-[8px] text-slate-400">Square icon</span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="w-16 h-16 shrink-0 border border-dashed border-slate-300 rounded-lg flex items-center justify-center bg-slate-50 overflow-hidden relative group">
+                                    {isUploadingLogo ? (
+                                        <Loader2 size={16} className="text-[#9575cd] animate-spin" />
+                                    ) : settings.logoUrl ? (
+                                        <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
+                                    ) : (
+                                        <Upload size={16} className="text-slate-300" />
+                                    )}
+                                </div>
+
+                                <div className="flex-1 flex flex-col gap-1.5">
+                                    <label className="h-6 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded text-[9px] font-bold text-slate-700 flex items-center justify-center gap-1 cursor-pointer active:scale-95 transition-all shadow-2xs">
+                                        <Upload size={10} />
+                                        <span>{settings.logoUrl ? 'Change Logo' : 'Upload Logo'}</span>
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'logoUrl')} disabled={isUploadingLogo} />
+                                    </label>
+
+                                    {settings.logoUrl && !isUploadingLogo && (
+                                        <button 
+                                            type="button"
+                                            onClick={() => setSettings({...settings, logoUrl: null})} 
+                                            className="h-5 text-[8.5px] text-rose-500 font-bold hover:bg-rose-50 rounded flex items-center justify-center gap-1 transition-colors"
+                                        >
+                                            <Trash2 size={10} />
+                                            <span>Remove</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* LETTERHEAD BANNER SECTION */}
+                        <div className="p-2 bg-white rounded-lg border border-slate-200 shadow-2xs space-y-2">
+                            <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                                <div className="flex items-center gap-1.5">
+                                    <LayoutTemplate size={12} className="text-[#9575cd]" />
+                                    <span className="text-[10px] font-bold text-slate-800">Invoice Letterhead</span>
+                                </div>
+                                <span className="text-[8px] text-slate-400">Wide banner</span>
+                            </div>
+
+                            <div className="w-full aspect-[3/1] max-h-24 border border-dashed border-slate-300 rounded-lg flex items-center justify-center bg-slate-50 overflow-hidden relative">
+                                {isUploadingLetterhead ? (
+                                    <div className="flex items-center gap-1.5">
+                                        <Loader2 size={16} className="text-[#9575cd] animate-spin" />
+                                        <span className="text-[9px] font-bold text-slate-500">Uploading banner...</span>
+                                    </div>
+                                ) : settings.letterheadUrl ? (
+                                    <img src={settings.letterheadUrl} alt="Letterhead" className="w-full h-full object-contain p-1" />
+                                ) : (
+                                    <div className="flex flex-col items-center gap-0.5 text-slate-400">
+                                        <Upload size={16} />
+                                        <span className="text-[8.5px] font-medium">No letterhead uploaded</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                                <label className="h-6 flex-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded text-[9px] font-bold text-slate-700 flex items-center justify-center gap-1 cursor-pointer active:scale-95 transition-all shadow-2xs">
+                                        <Upload size={10} />
+                                        <span>{settings.letterheadUrl ? 'Change Banner' : 'Upload Banner'}</span>
+                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'letterheadUrl')} disabled={isUploadingLetterhead} />
+                                </label>
+
+                                {settings.letterheadUrl && !isUploadingLetterhead && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => setSettings({...settings, letterheadUrl: null})} 
+                                        className="h-6 px-2 text-[8.5px] text-rose-500 font-bold hover:bg-rose-50 border border-slate-200 rounded flex items-center justify-center gap-1 transition-colors"
+                                    >
+                                        <Trash2 size={10} />
+                                        <span>Remove</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Dimensions & Margins */}
+                            {settings.letterheadUrl && (
+                                <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                                    <span className="text-[9px] font-bold text-slate-700 flex items-center gap-1">
+                                        <SlidersHorizontal size={10} className="text-[#9575cd]" />
+                                        <span>Dimensions & Margins (px)</span>
+                                    </span>
+
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        <div>
+                                            <label className="text-[8px] font-bold text-slate-400 block mb-0.5">Width</label>
+                                            <input type="number" placeholder="100%" value={settings.lhWidth || ''} onChange={e => setSettings({...settings, lhWidth: e.target.value})} className="w-full h-6 px-2 border border-slate-200 rounded text-[10px] outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[8px] font-bold text-slate-400 block mb-0.5">Height</label>
+                                            <input type="number" placeholder="Auto" value={settings.lhHeight || ''} onChange={e => setSettings({...settings, lhHeight: e.target.value})} className="w-full h-6 px-2 border border-slate-200 rounded text-[10px] outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-4 gap-1">
+                                        <div>
+                                            <label className="text-[7.5px] font-bold text-slate-400 block mb-0.5">Top</label>
+                                            <input type="number" placeholder="0" value={settings.lhMt || ''} onChange={e => setSettings({...settings, lhMt: e.target.value})} className="w-full h-6 px-1 text-center border border-slate-200 rounded text-[10px] outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[7.5px] font-bold text-slate-400 block mb-0.5">Bottom</label>
+                                            <input type="number" placeholder="20" value={settings.lhMb || ''} onChange={e => setSettings({...settings, lhMb: e.target.value})} className="w-full h-6 px-1 text-center border border-slate-200 rounded text-[10px] outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[7.5px] font-bold text-slate-400 block mb-0.5">Left</label>
+                                            <input type="number" placeholder="0" value={settings.lhMl || ''} onChange={e => setSettings({...settings, lhMl: e.target.value})} className="w-full h-6 px-1 text-center border border-slate-200 rounded text-[10px] outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[7.5px] font-bold text-slate-400 block mb-0.5">Right</label>
+                                            <input type="number" placeholder="0" value={settings.lhMr || ''} onChange={e => setSettings({...settings, lhMr: e.target.value})} className="w-full h-6 px-1 text-center border border-slate-200 rounded text-[10px] outline-none focus:border-[#9575cd]" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="p-1.5 rounded bg-blue-50/70 border border-blue-100 flex items-start gap-1">
+                                <Info size={11} className="text-blue-500 shrink-0 mt-0.5" />
+                                <p className="text-[8px] text-blue-700 leading-tight">
+                                    If an Invoice Letterhead is set, it will replace the Logo and text header on printed invoices.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Mobile Footer (No grey divider lines) */}
+                    <footer className="shrink-0 bg-white p-2 z-[50] pb-safe">
+                        <div className="flex items-center gap-1.5 w-full">
+                            <button 
+                                type="button"
+                                onClick={() => router.back()} 
+                                className="h-6 flex-1 flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-600 font-medium text-[9px] rounded active:scale-95 transition-all gap-0.5"
+                            >
+                                <ChevronLeft size={12} />
+                                <span>Back</span>
+                            </button>
+
+                            <button 
+                                type="button"
+                                onClick={handleSave}
+                                disabled={isSaving || isUploadingLogo || isUploadingLetterhead}
+                                className="h-6 flex-1 bg-[#9575cd] hover:bg-[#7e57c2] text-white rounded text-[9.5px] font-bold flex items-center justify-center gap-1 shadow-sm active:scale-95 transition-all disabled:opacity-60"
+                            >
+                                {isSaving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                                <span>{isSaving ? 'Saving...' : 'Save Profile'}</span>
+                            </button>
+                        </div>
+                    </footer>
+                </div>
+            </div>
+
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
         </div>
     );
 }

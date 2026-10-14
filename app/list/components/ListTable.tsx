@@ -37,10 +37,15 @@ export default function ListTable({
             onClick={disabled ? undefined : onClick} 
             title={tooltip}
             disabled={disabled}
-            className={`p-1.5 rounded border transition-all shadow-sm flex items-center justify-center flex-1 w-full gap-1.5 ${disabled ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed' : `border-transparent hover:border-slate-200 bg-white ${colorClass}`}`}
+            className={`
+                p-0.5 md:p-1 rounded md:border transition-all flex items-center justify-center flex-1 w-full gap-1
+                ${disabled 
+                    ? 'text-slate-300 md:bg-slate-50 md:border-slate-100 md:shadow-sm cursor-not-allowed' 
+                    : `bg-transparent md:bg-white md:shadow-sm md:border-transparent md:hover:border-slate-200 ${colorClass}`
+                }
+            `}
         >
-            <Icon size={16} />
-            {label && <span className="text-[10px] font-bold hidden xl:inline">{label}</span>}
+            <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
         </button>
     );
 
@@ -75,7 +80,7 @@ export default function ListTable({
     }
 
     return (
-        <div className="flex flex-col h-full relative w-full overflow-hidden bg-slate-50/50">
+        <div className="flex flex-col h-full relative w-full overflow-hidden bg-white md:bg-slate-50/50">
             
             <div className="flex-1 overflow-x-auto overflow-y-auto w-full custom-scrollbar">
                 
@@ -184,7 +189,7 @@ export default function ListTable({
                     </table>
                 ) : (
                     /* --- GRID VIEW --- */
-                    <div className="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                    <div className="p-2 md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
                         {bills.map(bill => {
                             const items = bill.items || [];
                             const refDetails = getReferralDetails(bill.patient);
@@ -192,35 +197,75 @@ export default function ListTable({
                             const hasPrintableRoutine = items.some((i: any) => i.test?.isCulture !== true && i.test?.isCulture !== 'true' && i.status !== 'Pending');
 
                             return (
-                                <div key={bill.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+                                <div key={bill.id} className="bg-white rounded-lg md:rounded-2xl shadow-sm border border-slate-100 md:border-slate-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
                                     
                                     {/* Header */}
-                                    <div className="bg-slate-50 border-b border-slate-100 p-3 px-4 flex justify-between items-center">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold text-slate-500">{new Date(bill.date).toLocaleDateString('en-GB')}</span>
+                                    <div className="bg-transparent md:bg-slate-50 border-b-0 md:border-b border-slate-100 pt-2.5 px-2.5 pb-0 md:p-3 md:px-4 flex justify-between items-center">
+                                        <div className="flex items-center gap-1.5 md:gap-2">
+                                            <span className="text-[10px] md:text-xs font-bold text-slate-500">{new Date(bill.date).toLocaleDateString('en-GB')}</span>
                                         </div>
-                                        <div className="text-[11px] font-mono font-bold text-[#9575cd] bg-purple-50 px-2 py-0.5 rounded border border-purple-100 shadow-sm">
-                                            {bill.billNumber}
+                                        <div className="text-[9px] md:text-[11px] font-mono font-bold text-[#9575cd] bg-slate-50 md:bg-purple-50 px-1.5 py-0.5 md:px-2 rounded border border-slate-200 md:border-purple-100 shadow-sm md:shadow-sm">
+                                            #{String(bill.billNumber).slice(-6)}
                                         </div>
                                     </div>
 
                                     {/* Body */}
-                                    <div className="p-4 flex-1 flex flex-col gap-4">
+                                    <div className="p-2 md:p-4 flex-1 flex flex-col gap-2 md:gap-4">
                                         
                                         {/* Patient Info */}
-                                        <div className="flex items-start gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0 font-bold border border-slate-200">
+                                        <div className="flex items-start gap-2 md:gap-3 w-full overflow-hidden">
+                                            <div className="w-7 h-7 md:w-10 md:h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0 font-bold border border-slate-200 text-[10px] md:text-sm">
                                                 {bill.patient.firstName?.charAt(0)}{bill.patient.lastName?.charAt(0)}
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="font-bold text-slate-800 leading-tight">{bill.patient.designation} {bill.patient.firstName} {bill.patient.lastName}</span>
-                                                <span className="text-[11px] text-slate-500 mt-0.5">{bill.patient.ageY}Y {bill.patient.ageM}M / {bill.patient.gender} | ID: {bill.patient.patientId}</span>
-                                                <span className="text-[11px] font-medium text-[#9575cd] mt-0.5">Ref: {refDetails.doc === 'Self' ? 'Self' : refDetails.doc}</span>
+                                            <div className="flex flex-col min-w-0 flex-1">
+                                                {/* Mobile: Name + Age/Sex inline */}
+                                                <div className="flex items-center gap-1 md:hidden w-full overflow-hidden">
+                                                    <span className="font-bold text-[11px] text-slate-800 truncate">
+                                                        {bill.patient.designation} {bill.patient.firstName} {bill.patient.lastName},
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-600 font-medium shrink-0">
+                                                        {bill.patient.ageY}Y/{bill.patient.gender?.charAt(0)}
+                                                    </span>
+                                                </div>
+                                                {/* Desktop: Name only */}
+                                                <span className="hidden md:block font-bold text-[13px] text-slate-800 leading-tight truncate">
+                                                    {bill.patient.designation} {bill.patient.firstName} {bill.patient.lastName}
+                                                </span>
+
+                                                {/* Mobile: ID + Ref inline */}
+                                                <div className="flex items-center gap-1 md:hidden mt-0.5 text-[9px] w-full overflow-hidden">
+                                                    <span className="text-slate-500 shrink-0">ID: {bill.patient.patientId}</span>
+                                                    <span className="text-slate-300 shrink-0">|</span>
+                                                    <span className="font-medium text-[#9575cd] truncate">Ref: {refDetails.doc === 'Self' ? 'Self' : refDetails.doc}</span>
+                                                </div>
+                                                
+                                                {/* Desktop: Details */}
+                                                <span className="hidden md:block text-[11px] text-slate-500 mt-0.5 truncate">
+                                                    {bill.patient.ageY}Y {bill.patient.ageM}M / {bill.patient.gender} | ID: {bill.patient.patientId}
+                                                </span>
+                                                <span className="hidden md:block text-[11px] font-medium text-[#9575cd] mt-0.5 truncate">
+                                                    Ref: {refDetails.doc === 'Self' ? 'Self' : refDetails.doc}
+                                                </span>
                                             </div>
                                         </div>
 
                                         {/* Financials Summary */}
-                                        <div className="flex items-center justify-between bg-slate-50 rounded-lg p-2.5 border border-slate-100">
+                                        {/* Mobile View */}
+                                        <div className="md:hidden flex items-center justify-between bg-transparent border-0 py-0.5">
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-[9px] uppercase font-bold text-slate-400">Net:</span>
+                                                <span className="text-[11px] font-black text-slate-800">₹{bill.netAmount}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                {bill.dueAmount > 0 ? (
+                                                    <span className="text-[10px] font-black text-red-500">Due: ₹{bill.dueAmount}</span>
+                                                ) : (
+                                                    <span className="text-[10px] font-black text-emerald-500 flex items-center gap-0.5"><CheckCircle className="w-3 h-3 shrink-0" strokeWidth={2.5}/> Paid</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {/* Desktop View */}
+                                        <div className="hidden md:flex items-center justify-between bg-slate-50/80 rounded-lg p-2.5 border border-slate-100">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] uppercase font-bold text-slate-400">Net Amount</span>
                                                 <span className="text-sm font-black text-slate-800">₹{bill.netAmount}</span>
@@ -230,27 +275,27 @@ export default function ListTable({
                                                 {bill.dueAmount > 0 ? (
                                                     <span className="text-xs font-black text-red-500">Due: ₹{bill.dueAmount}</span>
                                                 ) : (
-                                                    <span className="text-xs font-black text-emerald-500 flex items-center gap-1"><CheckCircle size={12}/> Paid</span>
+                                                    <span className="text-xs font-black text-emerald-500 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Paid</span>
                                                 )}
                                             </div>
                                         </div>
 
                                         {/* Tests Pills */}
-                                        <div className="flex flex-wrap gap-1.5 mt-1">
+                                        <div className="flex flex-wrap gap-1 md:gap-1.5 mt-0.5 md:mt-1">
                                             {items.slice(0, 4).map((item: any, idx: number) => {
                                                 let sCode = 'P'; let sColor = 'bg-amber-100 text-amber-700 border-amber-200';
                                                 if (item.status === 'Entered') { sCode = 'E'; sColor = 'bg-blue-100 text-blue-700 border-blue-200'; }
                                                 else if (item.status === 'Approved') { sCode = 'A'; sColor = 'bg-green-100 text-green-700 border-green-200'; }
                                                 else if (item.status === 'Printed') { sCode = 'Pr'; sColor = 'bg-indigo-100 text-indigo-700 border-indigo-200'; }
                                                 return (
-                                                    <div key={idx} className="flex items-center text-[9px] bg-white border border-slate-200 rounded shadow-sm overflow-hidden flex-1 min-w-[45%]">
-                                                        <span className="px-1.5 py-0.5 text-slate-600 font-medium truncate flex-1">{item.test.name}</span>
-                                                        <span className={`px-1.5 py-0.5 font-bold border-l ${sColor} shrink-0`}>{sCode}</span>
+                                                    <div key={idx} className="flex items-center text-[8px] md:text-[9px] bg-white border border-slate-200 rounded shadow-sm overflow-hidden flex-1 min-w-[45%]">
+                                                        <span className="px-1 md:px-1.5 py-0.5 text-slate-600 font-medium truncate flex-1">{item.test.name}</span>
+                                                        <span className={`px-1 md:px-1.5 py-0.5 font-bold border-l ${sColor} shrink-0`}>{sCode}</span>
                                                     </div>
                                                 );
                                             })}
                                             {items.length > 4 && (
-                                                <div className="flex items-center justify-center text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200 rounded px-2">
+                                                <div className="flex items-center justify-center text-[8px] md:text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200 rounded px-1.5 md:px-2">
                                                     +{items.length - 4} more
                                                 </div>
                                             )}
@@ -258,21 +303,17 @@ export default function ListTable({
                                     </div>
 
                                     {/* Action Grid */}
-                                    <div className="p-2 border-t border-slate-100 bg-slate-50/50 flex flex-wrap gap-1">
-                                        <div className="w-full flex gap-1 mb-1">
-                                            <ActionButton icon={FileText} label="Report" onClick={() => onOpenReport(bill)} disabled={!hasPrintableRoutine} colorClass="text-purple-600 hover:bg-purple-50 border-purple-100" />
-                                            {whatsappManualEnabled && <ActionButton icon={Send} label="WA" onClick={() => onSendWhatsappReport(bill)} disabled={!hasPrintableRoutine} colorClass="text-emerald-600 hover:bg-emerald-50 border-emerald-100" />}
-                                            <ActionButton icon={Printer} label="Invoice" onClick={() => onPrintBill(bill)} colorClass="text-blue-600 hover:bg-blue-50 border-blue-100" />
-                                            <ActionButton icon={CreditCard} onClick={() => onPrintBarcode(bill)} tooltip="Barcode" colorClass="text-indigo-600 hover:bg-indigo-50 border-indigo-100" />
-                                            <ActionButton icon={Zap} onClick={() => onOpenSmartReport(bill)} tooltip="Smart Report" colorClass="text-amber-500 hover:bg-amber-50 border-amber-100" />
-                                        </div>
-                                        <div className="w-full flex gap-1">
-                                            <ActionButton icon={DollarSign} onClick={() => onOpenClearDue(bill)} tooltip="Clear Due" colorClass="text-emerald-600 hover:bg-emerald-50 border-emerald-100" disabled={bill.dueAmount <= 0} />
-                                            <ActionButton icon={RefreshCcw} onClick={() => onOpenRefund(bill)} tooltip="Refund" colorClass="text-orange-600 hover:bg-orange-50 border-orange-100" disabled={bill.paidAmount <= 0} />
-                                            {hasCultureTest && onOpenCultureReport && <ActionButton icon={Activity} onClick={() => onOpenCultureReport(bill)} tooltip="Culture Report" colorClass="text-rose-500 hover:bg-rose-50 border-rose-100" />}
-                                            <ActionButton icon={Edit} onClick={() => onEditBill(bill)} tooltip="Edit Details" colorClass="text-teal-600 hover:bg-teal-50 border-teal-100" />
-                                            <ActionButton icon={Trash2} onClick={() => onDeleteBill(bill)} tooltip="Delete Bill" colorClass="text-rose-600 hover:bg-rose-50 border-rose-100" />
-                                        </div>
+                                    <div className="pt-1 pb-2 md:p-2 border-t border-slate-100 bg-transparent md:bg-slate-50/50 flex flex-row justify-between md:grid md:grid-cols-5 gap-0.5 md:gap-1.5 px-2 md:px-2">
+                                        <ActionButton icon={FileText} label="Report" onClick={() => onOpenReport(bill)} disabled={!hasPrintableRoutine} colorClass="text-purple-600 md:hover:bg-purple-50 md:border-purple-100" />
+                                        {whatsappManualEnabled && <ActionButton icon={Send} label="WA" onClick={() => onSendWhatsappReport(bill)} disabled={!hasPrintableRoutine} colorClass="text-emerald-600 md:hover:bg-emerald-50 md:border-emerald-100" />}
+                                        <ActionButton icon={Printer} label="Invoice" onClick={() => onPrintBill(bill)} colorClass="text-blue-600 md:hover:bg-blue-50 md:border-blue-100" />
+                                        <ActionButton icon={CreditCard} onClick={() => onPrintBarcode(bill)} tooltip="Barcode" colorClass="text-indigo-600 md:hover:bg-indigo-50 md:border-indigo-100" />
+                                        <ActionButton icon={Zap} onClick={() => onOpenSmartReport(bill)} tooltip="Smart Report" colorClass="text-amber-500 md:hover:bg-amber-50 md:border-amber-100" />
+                                        <ActionButton icon={DollarSign} onClick={() => onOpenClearDue(bill)} tooltip="Clear Due" colorClass="text-emerald-600 md:hover:bg-emerald-50 md:border-emerald-100" disabled={bill.dueAmount <= 0} />
+                                        <ActionButton icon={RefreshCcw} onClick={() => onOpenRefund(bill)} tooltip="Refund" colorClass="text-orange-600 md:hover:bg-orange-50 md:border-orange-100" disabled={bill.paidAmount <= 0} />
+                                        {hasCultureTest && onOpenCultureReport && <ActionButton icon={Activity} onClick={() => onOpenCultureReport(bill)} tooltip="Culture Report" colorClass="text-rose-500 md:hover:bg-rose-50 md:border-rose-100" />}
+                                        <ActionButton icon={Edit} onClick={() => onEditBill(bill)} tooltip="Edit Details" colorClass="text-teal-600 md:hover:bg-teal-50 md:border-teal-100" />
+                                        <ActionButton icon={Trash2} onClick={() => onDeleteBill(bill)} tooltip="Delete Bill" colorClass="text-rose-600 md:hover:bg-rose-50 md:border-rose-100" />
                                     </div>
 
                                 </div>
@@ -282,8 +323,9 @@ export default function ListTable({
                 )}
             </div>
 
-            <div className="bg-white border-t border-slate-200 px-4 md:px-6 py-3 flex flex-col xl:flex-row items-center justify-between shrink-0 gap-4 w-full">
-                <div className="flex items-center gap-3 shrink-0 overflow-x-auto w-full xl:w-auto pb-1 xl:pb-0 custom-scrollbar">
+            <div className="bg-white border-t-0 md:border-t border-slate-200 px-2 md:px-6 pt-1.5 pb-0.5 md:py-3 flex flex-col xl:flex-row items-center justify-between shrink-0 gap-2 md:gap-4 w-full">
+                
+                <div className="hidden md:flex items-center gap-3 shrink-0 overflow-x-auto w-full xl:w-auto pb-1 xl:pb-0 custom-scrollbar">
                     <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap"><Info size={14} className="text-[#9575cd]" /> Status:</div>
                     <div className="flex items-center gap-3 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600"><span className="w-4 h-4 flex items-center justify-center rounded bg-amber-100 text-amber-700 font-bold border border-amber-200 text-[9px]">P</span>Pending</div>
@@ -293,19 +335,19 @@ export default function ListTable({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 shrink-0 w-full xl:w-auto justify-between xl:justify-end">
-                    <div className="text-[11px] md:text-xs font-medium text-slate-500 whitespace-nowrap">
+                <div className="flex items-center gap-3 md:gap-4 shrink-0 w-full xl:w-auto justify-between xl:justify-end">
+                    <div className="text-[9px] md:text-[11px] font-medium text-slate-500 whitespace-nowrap">
                         Showing <span className="font-bold text-slate-700">{totalItems === 0 ? 0 : ((currentPage - 1) * 10) + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * 10, totalItems)}</span> of <span className="font-bold text-slate-700">{totalItems}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 md:gap-2">
                         <button 
                             onClick={() => onPageChange?.(currentPage - 1)} 
                             disabled={currentPage === 1}
                             className="p-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                         >
-                            <ChevronLeft size={16} />
+                            <ChevronLeft className="w-3 h-3 md:w-4 md:h-4" />
                         </button>
-                        <span className="text-[11px] md:text-xs font-bold text-slate-700 min-w-[70px] text-center whitespace-nowrap">
+                        <span className="text-[9px] md:text-[11px] font-bold text-slate-700 min-w-[60px] md:min-w-[70px] text-center whitespace-nowrap">
                             Page {currentPage} / {totalPages || 1}
                         </span>
                         <button 
@@ -313,7 +355,7 @@ export default function ListTable({
                             disabled={currentPage === totalPages || totalPages === 0}
                             className="p-1 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                         >
-                            <ChevronRight size={16} />
+                            <ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
                         </button>
                     </div>
                 </div>

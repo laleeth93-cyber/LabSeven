@@ -13,6 +13,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { localDB } from '@/lib/local-db/db'; 
 import { useNetworkStatus } from '@/lib/hooks/useNetworkStatus'; 
 import SupportModal from '@/app/components/SupportModal';
+import PWAInstallButton from '@/app/components/PWAInstallButton';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -126,17 +127,17 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
   const displayName = session?.user?.name || session?.user?.email?.split('@')[0] || "User";
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 shadow-sm border-b shrink-0 z-[100] relative select-none" style={{ background: 'linear-gradient(to right, #b3e5fc, #e1bee7)' }}>
-      <div className="flex items-center gap-4 min-w-fit">
-        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-lg bg-white/20 transition hover:bg-white/40" style={{ color: '#9575cd' }}>
+    <header className="h-12 md:h-16 flex items-center justify-between pl-0 pr-2 md:px-6 shadow-sm border-b shrink-0 z-[100] relative select-none" style={{ background: 'linear-gradient(to right, #b3e5fc, #e1bee7)' }}>
+      <div className="flex items-center gap-0 md:gap-4 min-w-fit">
+        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="hidden md:block p-2 rounded-lg bg-white/20 transition hover:bg-white/40" style={{ color: '#9575cd' }}>
           <Menu size={20} />
         </button>
-        <div className="flex items-center">
-          <img src="/logo.png.png" alt="Software Logo" className="h-14 w-auto object-contain drop-shadow-sm scale-[1.35] origin-left ml-3" />
+        <div className="flex items-center -ml-[40px] md:ml-0">
+          <img src="/logo.png.png" alt="Software Logo" className="h-9 md:h-14 w-auto object-contain drop-shadow-sm scale-[1.35] origin-left ml-0 md:ml-3" />
         </div>
       </div>
 
-      <div className="flex-1 max-w-xs relative flex justify-center w-full mx-auto" ref={searchContainerRef}>
+      <div className="hidden md:flex flex-1 max-w-xs relative justify-center w-full mx-auto" ref={searchContainerRef}>
         <div className="relative flex items-center w-full">
             <input 
               type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => { if (searchQuery.length >= 2) setShowDropdown(true); }}
@@ -214,19 +215,7 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
         <div className="h-8 w-[1px] bg-slate-400/30 hidden lg:block mx-1"></div>
         
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden sm:flex items-center">
-            {!isOnline ? (
-              <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-100 text-rose-600 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm" title="You are offline"><CloudOff size={14} className="animate-pulse" /> Offline</div>
-            ) : pendingCount > 0 ? (
-              <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-100 text-amber-600 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm" title="Syncing data to server..."><CloudUpload size={14} className="animate-bounce" /> Syncing ({pendingCount})</div>
-            ) : (
-              <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 text-emerald-600 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm" title="All data is synced"><Cloud size={14} /> Synced</div>
-            )}
-          </div>
-
-          <button onClick={handleSpeedBoost} disabled={isPreloading} className="p-2 rounded-lg bg-amber-100/50 hover:bg-amber-200 transition-colors cursor-pointer disabled:opacity-50 hidden sm:block" style={{ color: '#d97706' }}>
-            {isPreloading ? <Loader2 size={20} className="animate-spin" /> : <Zap size={20} />}
-          </button>
+          <PWAInstallButton />
 
           {/* 🚨 REPLACED ROUTER.PUSH WITH NEXT.JS LINK FOR BACKGROUND LOADING */}
           <Link href="/settings" className="p-2 rounded-lg bg-purple-200/30 hover:bg-purple-200/50 transition-colors cursor-pointer hidden sm:block flex items-center justify-center" style={{ color: '#9575cd' }} title="Account Settings">
@@ -243,11 +232,11 @@ export default function Header({ isSidebarOpen, setIsSidebarOpen }: HeaderProps)
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white font-bold shadow-sm" style={{ background: '#f06292' }}>3</span>
           </div>
 
-          <button onClick={handleLogout} disabled={isLoggingOut} className="group bg-white/90 rounded-full p-1 flex items-center shadow-sm border border-slate-200 transition-all duration-300 hover:border-red-200 hover:bg-red-50/50 ml-1">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs z-20 shadow-sm transition-transform group-hover:scale-105 shrink-0" style={{ background: isLoggingOut ? '#ef4444' : 'linear-gradient(to bottom right, #9575cd, #f062a4)' }}>
-              {isLoggingOut ? <Loader2 size={14} className="animate-spin" /> : <Power size={14} />}
+          <button onClick={handleLogout} disabled={isLoggingOut} className="group bg-white/80 rounded-full p-0.5 pr-2 md:p-1 flex items-center shadow-sm border border-slate-200/70 transition-all duration-300 hover:border-red-200 hover:bg-red-50 ml-1">
+            <div className="w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-white shadow-sm transition-transform group-hover:scale-110 shrink-0" style={{ background: isLoggingOut ? '#ef4444' : 'linear-gradient(to bottom right, #a78bfa, #f472b6)' }}>
+              {isLoggingOut ? <Loader2 size={12} className="animate-spin md:w-[14px] md:h-[14px]" /> : <Power size={12} className="md:w-[14px] md:h-[14px]" />}
             </div>
-            <span className="mx-3 text-xs font-bold text-slate-700 transition-all duration-300 group-hover:text-red-500 hidden sm:block truncate max-w-[120px]">{isLoggingOut ? "Wait..." : displayName}</span>
+            <span className="mx-1.5 md:mx-2 text-[10px] md:text-[11px] font-bold text-slate-600 transition-all duration-300 group-hover:text-red-500 block truncate max-w-[55px] md:max-w-[100px]">{isLoggingOut ? "Wait..." : displayName}</span>
           </button>
         </div>
       </div>

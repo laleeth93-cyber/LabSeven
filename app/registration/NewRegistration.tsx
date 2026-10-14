@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, CheckCircle, Type, X, User, Receipt, WifiOff } from 'lucide-react';
+import { Loader2, CheckCircle, Type, X, User, IndianRupee, WifiOff, TestTube } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid'; 
 
 import { registerPatient, getNextPatientId } from '@/app/actions/patient'; 
@@ -47,7 +47,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   // ==========================================
   // MOBILE UI & SHARED STATES
   // ==========================================
-  const [activeMobileTab, setActiveMobileTab] = useState<'patient' | 'billing'>('patient');
+  const [activeMobileTab, setActiveMobileTab] = useState<'details' | 'tests' | 'billing'>('details');
   const [formValues, setFormValues] = useState<Record<string, any>>({});
   const [multiSelectValues, setMultiSelectValues] = useState<Record<number, string[]>>({ 29: ['Hard Copy'] });
   const [currentPatientId, setCurrentPatientId] = useState('');
@@ -269,7 +269,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
     });
 
     if (missingFields.length > 0) {
-        setActiveMobileTab('patient');
+        setActiveMobileTab('details');
         return alert(`Please fill required registration fields:\n- ${missingFields.join('\n- ')}`);
     }
     if (billItems.length === 0) {
@@ -422,7 +422,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   };
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 duration-500 bg-slate-50 md:bg-transparent">
+    <div className="w-full h-full flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 duration-500 bg-white md:bg-transparent">
       
       {!isOnline && (
         <div className="bg-amber-100 border-b border-amber-200 text-amber-800 px-4 py-2 text-xs font-bold flex items-center justify-center gap-2 z-50 shadow-sm">
@@ -431,20 +431,75 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         </div>
       )}
 
-      <div className="md:hidden flex px-2 pt-2 bg-white border-b border-slate-200 shrink-0 gap-2 mb-2">
-         <button onClick={() => setActiveMobileTab('patient')} className={`flex-1 py-2.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors ${activeMobileTab === 'patient' ? 'border-[#9575cd] text-[#9575cd]' : 'border-transparent text-slate-500'}`}><User size={16} /> Patient Details</button>
-         <button onClick={() => setActiveMobileTab('billing')} className={`flex-1 py-2.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors ${activeMobileTab === 'billing' ? 'border-[#9575cd] text-[#9575cd]' : 'border-transparent text-slate-500'}`}><Receipt size={16} /> Billing {billItems.length > 0 && (<span className="bg-rose-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full ml-1">{billItems.length}</span>)}</button>
-      </div>
+      <div className="flex flex-1 overflow-hidden p-0 flex-col md:flex-row gap-0 md:gap-4 relative">
+          
+          {(() => {
+            const timeline = (
+              <div className="md:hidden w-full bg-white px-4 py-1.5 flex items-center justify-between shrink-0 relative z-20">
+                  {/* Patient step */}
+                  <div onClick={() => setActiveMobileTab('details')} className="flex flex-col items-center cursor-pointer z-10 w-[45px]">
+                      <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
+                        ${activeMobileTab === 'details' ? 'bg-[#9575cd] text-white scale-110' : 'bg-emerald-500 text-white'}`}>
+                         {activeMobileTab === 'details' ? <User size={11} /> : <CheckCircle size={11} />}
+                      </div>
+                      <span className={`text-[10px] font-medium mt-0.5 transition-colors ${activeMobileTab === 'details' ? 'text-[#9575cd]' : 'text-emerald-500'}`}>Patient</span>
+                  </div>
+                  
+                  <div className="flex-1 h-[1px] bg-slate-100 mx-1 relative rounded-full overflow-hidden z-0">
+                       <div className={`absolute left-0 top-0 h-full bg-[#9575cd] transition-all duration-500 ${activeMobileTab !== 'details' ? 'w-full' : 'w-0'}`}></div>
+                  </div>
 
-      <div className="flex flex-1 overflow-hidden p-2 md:p-0 flex-col md:flex-row gap-0 md:gap-4 relative">
-          
-          <div className={`${activeMobileTab === 'patient' ? 'block w-full h-full' : 'hidden'} md:contents`}>
-            <RegistrationLeftPane fields={fields} formValues={formValues} setFormValues={setFormValues} multiSelectValues={multiSelectValues} setMultiSelectValues={setMultiSelectValues} currentPatientId={currentPatientId} setCurrentPatientId={setCurrentPatientId} referralsList={referralsList} onCustomizeClick={onCustomizeClick} />
-          </div>
-          
-          <div className={`${activeMobileTab === 'billing' ? 'block w-full h-full' : 'hidden'} md:contents`}>
-            <BillingRightPane currentBillNumber={currentBillNumber} billingDate={billingDate} handleManualDateChange={handleManualDateChange} onQuotationClick={onQuotationClick} handleOpenNotes={handleOpenNotes} billItems={billItems} setBillItems={setBillItems} discountPercent={discountPercent} setDiscountPercent={setDiscountPercent} discountAmount={discountAmount} setDiscountAmount={setDiscountAmount} discountBy={discountBy} setDiscountBy={setDiscountBy} discountReason={discountReason} setDiscountReason={setDiscountReason} isDuePayment={isDuePayment} setIsDuePayment={setIsDuePayment} advancePaid={advancePaid} setAdvancePaid={setAdvancePaid} selectedModes={selectedModes} setSelectedModes={setSelectedModes} paymentDetails={paymentDetails} setPaymentDetails={setPaymentDetails} subTotal={subTotal} finalDiscount={finalDiscount} netAmount={netAmount} dueAmount={dueAmount} handleSaveAndGenerate={handleSaveAndGenerate} isSaving={isSaving} />
-          </div>
+                  {/* Tests step */}
+                  <div onClick={() => setActiveMobileTab('tests')} className="flex flex-col items-center cursor-pointer z-10 w-[45px]">
+                      <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
+                        ${activeMobileTab === 'tests' ? 'bg-[#9575cd] text-white scale-110' : activeMobileTab === 'billing' ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-300'}`}>
+                         {activeMobileTab === 'billing' ? <CheckCircle size={11} /> : <TestTube size={11} />}
+                      </div>
+                      <span className={`text-[10px] font-medium mt-0.5 transition-colors ${activeMobileTab === 'tests' ? 'text-[#9575cd]' : activeMobileTab === 'billing' ? 'text-emerald-500' : 'text-slate-400'}`}>Tests</span>
+                  </div>
+
+                  <div className="flex-1 h-[1px] bg-slate-100 mx-1 relative rounded-full overflow-hidden z-0">
+                       <div className={`absolute left-0 top-0 h-full bg-[#9575cd] transition-all duration-500 ${activeMobileTab === 'billing' ? 'w-full' : 'w-0'}`}></div>
+                  </div>
+
+                  {/* Billing step */}
+                  <div onClick={() => {
+                      if (billItems.length === 0) {
+                          alert("Please add at least one test before proceeding to billing.");
+                          return;
+                      }
+                      setActiveMobileTab('billing');
+                  }} className="flex flex-col items-center cursor-pointer z-10 w-[45px]">
+                      <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
+                        ${activeMobileTab === 'billing' ? 'bg-[#9575cd] text-white scale-110' : 'bg-white text-slate-400 border border-slate-300'}`}>
+                         <IndianRupee size={11} />
+                      </div>
+                      <span className={`text-[10px] font-medium mt-0.5 transition-colors ${activeMobileTab === 'billing' ? 'text-[#9575cd]' : 'text-slate-400'}`}>Billing</span>
+                  </div>
+              </div>
+            );
+
+            return (
+              <>
+                <div className={`${activeMobileTab === 'details' ? 'block w-full h-full' : 'hidden'} md:contents`}>
+                  <RegistrationLeftPane fields={fields} formValues={formValues} setFormValues={setFormValues} multiSelectValues={multiSelectValues} setMultiSelectValues={setMultiSelectValues} currentPatientId={currentPatientId} setCurrentPatientId={setCurrentPatientId} referralsList={referralsList} onCustomizeClick={onCustomizeClick} mobileTimeline={timeline} onNextStep={() => setActiveMobileTab('tests')} />
+                </div>
+                
+                <div className={`${activeMobileTab === 'tests' || activeMobileTab === 'billing' ? 'block w-full h-full' : 'hidden'} md:contents`}>
+                  <BillingRightPane currentBillNumber={currentBillNumber} billingDate={billingDate} handleManualDateChange={handleManualDateChange} onQuotationClick={onQuotationClick} handleOpenNotes={handleOpenNotes} billItems={billItems} setBillItems={setBillItems} discountPercent={discountPercent} setDiscountPercent={setDiscountPercent} discountAmount={discountAmount} setDiscountAmount={setDiscountAmount} discountBy={discountBy} setDiscountBy={setDiscountBy} discountReason={discountReason} setDiscountReason={setDiscountReason} isDuePayment={isDuePayment} setIsDuePayment={setIsDuePayment} advancePaid={advancePaid} setAdvancePaid={setAdvancePaid} selectedModes={selectedModes} setSelectedModes={setSelectedModes} paymentDetails={paymentDetails} setPaymentDetails={setPaymentDetails} subTotal={subTotal} finalDiscount={finalDiscount} netAmount={netAmount} dueAmount={dueAmount} handleSaveAndGenerate={handleSaveAndGenerate} isSaving={isSaving} mobileTimeline={timeline} mobileView={activeMobileTab === 'billing' ? 'billing' : 'tests'} onNextStep={() => {
+                      if (billItems.length === 0) {
+                          alert("Please add at least one test before proceeding to billing.");
+                          return;
+                      }
+                      setActiveMobileTab('billing');
+                  }} onPrevStep={() => setActiveMobileTab(activeMobileTab === 'billing' ? 'tests' : 'details')}
+                    patientName={[fields.find(f => f.label === 'First Name'), fields.find(f => f.label === 'Middle Name'), fields.find(f => f.label === 'Last Name')].filter(Boolean).map(f => formValues[f!.id]).filter(Boolean).join(' ') || Object.values(formValues).find(v => typeof v === 'string' && v.trim().length > 1)}
+                    patientAge={(() => { const af = fields.find(f => f.inputType === 'age'); if (!af) return ''; const a = formValues[af.id]; if (!a) return ''; if (typeof a === 'object') return [a.Y && `${a.Y}Y`, a.M && `${a.M}M`].filter(Boolean).join(' '); return String(a); })()}
+                  />
+                </div>
+              </>
+            );
+          })()}
       </div>
 
       {showSuccessPopup && (
@@ -464,17 +519,21 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
       )}
 
       {isNotesEditorOpen && (
-          <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-4">
-            <div className="bg-white w-full max-w-4xl h-[600px] max-h-[90vh] rounded-lg shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden">
-              <div className="px-6 py-4 flex items-center justify-between shrink-0 border-b border-purple-100" style={{ background: 'linear-gradient(to right, #f3e5f5, #e1bee7)' }}>
-                <div className="flex items-center gap-2"><div className="p-1.5 bg-white/50 rounded text-[#9575cd]"><Type size={18} /></div><h3 className="font-bold text-slate-800 text-base">Add Bill Note</h3></div>
-                <button onClick={() => setIsNotesEditorOpen(false)} className="p-1 rounded-full hover:bg-white/50 text-slate-600 transition-colors"><X size={20} /></button>
+          <div className="fixed inset-0 z-[500] flex items-end md:items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-0 md:p-4">
+            <div className="bg-white w-full max-w-4xl h-[95vh] md:h-[600px] max-h-[100vh] md:max-h-[90vh] rounded-t-2xl md:rounded-lg shadow-2xl flex flex-col md:animate-in md:zoom-in-95 animate-in slide-in-from-bottom-full duration-300 md:duration-200 overflow-hidden">
+              
+              <div className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between shrink-0 border-b border-purple-100" style={{ background: 'linear-gradient(to right, #f3e5f5, #e1bee7)' }}>
+                <div className="flex items-center gap-2"><div className="p-1 md:p-1.5 bg-white/50 rounded text-[#9575cd]"><Type size={16} className="md:w-[18px] md:h-[18px]" /></div><h3 className="font-bold text-slate-800 text-[13px] md:text-base">Add Bill Note</h3></div>
+                <button onClick={() => setIsNotesEditorOpen(false)} className="p-1 rounded-full hover:bg-white/50 text-slate-600 transition-colors"><X size={18} className="md:w-5 md:h-5" /></button>
               </div>
+              
               <div className="flex-1 bg-white relative flex flex-col min-h-0"><RichTextEditor value={tempNotesContent} onChange={setTempNotesContent} placeholder="Start typing your note here..." /></div>
-              <div className="p-4 px-6 border-t border-slate-200 bg-slate-50 flex justify-end gap-3 shrink-0">
-                <button onClick={() => setIsNotesEditorOpen(false)} className="px-6 py-2 rounded text-slate-600 font-bold text-sm bg-white border border-slate-300 hover:bg-slate-100 transition-colors">Cancel</button>
-                <button onClick={handleSaveNotes} className="px-6 py-2 rounded text-white font-bold text-sm shadow-md transition-all active:scale-95" style={{ background: 'linear-gradient(to right, #ba68c8, #f06292)' }}>Save Note</button>
+              
+              <div className="p-3 px-4 md:p-4 md:px-6 border-t border-slate-200 bg-slate-50 flex justify-end gap-2 md:gap-3 shrink-0">
+                <button onClick={() => setIsNotesEditorOpen(false)} className="flex-1 md:flex-none px-4 py-1.5 md:px-6 md:py-2 rounded md:rounded text-slate-600 font-bold text-[11px] md:text-sm bg-white border border-slate-300 hover:bg-slate-100 transition-colors">Cancel</button>
+                <button onClick={handleSaveNotes} className="flex-1 md:flex-none px-4 py-1.5 md:px-6 md:py-2 rounded md:rounded text-white font-bold text-[11px] md:text-sm shadow-md transition-all active:scale-95" style={{ background: 'linear-gradient(to right, #ba68c8, #f06292)' }}>Save Note</button>
               </div>
+              
             </div>
           </div>
       )}

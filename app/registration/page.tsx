@@ -119,7 +119,7 @@ export default function RegistrationPage() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col p-6 overflow-hidden bg-slate-50">
+    <div className="w-full h-full flex flex-col p-2 md:p-6 overflow-hidden bg-slate-50">
       <div className="w-full h-full flex flex-col mx-auto overflow-hidden">
         <NewRegistration 
             fields={registrationFields}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Inter } from 'next/font/google';
 import "./globals.css";
 import ClientLayout from "./components/layout/ClientLayout"; 
 import ExpirationBanner from "@/app/components/ExpirationBanner";
@@ -8,9 +9,12 @@ import { PermissionProvider } from "@/app/context/PermissionContext";
 import { Toaster } from "react-hot-toast";
 import { Suspense } from "react"; 
 
+const inter = Inter({ subsets: ['latin'], display: 'swap' }); 
+
 export const metadata: Metadata = {
   title: "Lab Seven",
   description: "Laboratory Management System",
+  manifest: "/manifest.json",
   // 🚨 UPDATED: Explicitly telling the browser this is a 512x512 high-res image
   icons: {
     icon: [
@@ -19,6 +23,11 @@ export const metadata: Metadata = {
     apple: [
       { url: '/favicon.png', sizes: '512x512', type: 'image/png' }
     ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Lab Seven",
   },
 };
 
@@ -29,7 +38,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 antialiased flex flex-col h-screen overflow-hidden">
+      <body className={`${inter.className} bg-gray-50 antialiased flex flex-col h-screen overflow-hidden`}>
         
         <NextAuthProvider>
             {/* WRAP THE APP IN THE PERMISSION PROVIDER */}

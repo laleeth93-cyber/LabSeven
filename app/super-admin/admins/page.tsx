@@ -1,4 +1,3 @@
-// --- BLOCK app/super-admin/admins/page.tsx OPEN ---
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import AdminsManager from "./components/AdminsManager";
@@ -19,9 +18,10 @@ export default async function SuperAdminsPage() {
   });
 
   return (
-    <div className="flex flex-col h-full w-full bg-slate-50/50 p-4 sm:p-6 overflow-y-auto custom-scrollbar">
+    <div className="flex flex-col h-full w-full bg-slate-50/50 p-2 sm:p-6 overflow-y-auto custom-scrollbar">
       
-      <div className="mb-6">
+      {/* Desktop Header */}
+      <div className="mb-6 hidden md:block">
         <h1 className="text-2xl font-black text-slate-800 tracking-tight">Admin Accounts</h1>
         <p className="text-sm font-medium text-slate-500 mt-1">Manage personnel who have access to the Master System.</p>
       </div>
@@ -33,4 +33,3 @@ export default async function SuperAdminsPage() {
     </div>
   );
 }
-// --- BLOCK app/super-admin/admins/page.tsx CLOSE ---
