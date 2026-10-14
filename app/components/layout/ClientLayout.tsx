@@ -18,6 +18,28 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   // Activate the Global Sync Listener
   useNetworkStatus(); 
 
+  // 🚨 VIEWPORT RESET LISTENER:
+  // When navigating between pages (especially after login where the mobile keyboard was active),
+  // blur any active elements, reset window scroll to 0, and trigger a resize event so
+  // mobile browsers recalculate their viewport height properly without requiring a phone lock/unlock.
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (document.activeElement instanceof HTMLElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        document.activeElement.blur();
+      }
+      window.scrollTo(0, 0);
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+      window.dispatchEvent(new Event('resize'));
+
+      const timer = setTimeout(() => {
+        window.scrollTo(0, 0);
+        window.dispatchEvent(new Event('resize'));
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname]);
+
   // 🚨 THE FIX: We must tell the layout to treat /verify as a public auth page
   const isAuthPage = 
     pathname === '/login' || 
@@ -52,7 +74,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           setActiveView={setActiveView} 
         />
         
-        <main className="flex-1 overflow-auto p-0 md:p-4 bg-white md:bg-[#f8fafc] relative md:pb-4">
+        <main className="flex-1 min-h-0 h-full flex flex-col overflow-hidden md:overflow-auto p-0 md:p-4 bg-white md:bg-[#f8fafc] relative md:pb-4">
           {children}
         </main>
       </div>

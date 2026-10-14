@@ -16,6 +16,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  interactiveWidget: "resizes-content",
 }; 
 
 export const metadata: Metadata = {
@@ -45,7 +46,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className={`${inter.className} bg-gray-50 antialiased flex flex-col h-full h-screen h-[100dvh] overflow-hidden`}>
+      <body className={`${inter.className} bg-gray-50 antialiased flex flex-col h-full min-h-screen overflow-hidden`}>
         
         <NextAuthProvider>
             {/* WRAP THE APP IN THE PERMISSION PROVIDER */}

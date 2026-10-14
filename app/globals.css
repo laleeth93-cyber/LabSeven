@@ -12,6 +12,13 @@
 /* We removed the "@media (prefers-color-scheme: dark)" block 
    to prevent white text on white backgrounds */
 
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-end-rgb));
@@ -20,6 +27,9 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 

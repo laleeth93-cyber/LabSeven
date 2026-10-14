@@ -28,6 +28,15 @@ export default function LoginForm({ isActive }: { isActive: boolean }) {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 🚨 1. IMMEDIATELY blur active element to dismiss mobile virtual keyboard
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    if (typeof window !== 'undefined') {
+      window.scrollTo(0, 0);
+    }
+
     setIsLoading(true); setError(""); setMessage("Verifying credentials...");
 
     try {
@@ -42,8 +51,17 @@ export default function LoginForm({ isActive }: { isActive: boolean }) {
         setMessage(""); setIsLoading(false); return;
       }
 
+      // 🚨 2. Ensure keyboard is completely dismissed and scroll is reset
+      if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      if (typeof window !== 'undefined') {
+        window.scrollTo(0, 0);
+      }
+
       setMessage("Success! Loading dashboard...");
-      router.push("/"); router.refresh();
+      // Full navigation guarantees a clean viewport with no residual keyboard shrink
+      window.location.href = "/";
     } catch (err) {
       setError("A network error occurred."); setMessage(""); setIsLoading(false);
     }

@@ -388,7 +388,7 @@ export default function ClientResultEntry({
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto bg-white md:bg-slate-50/50">
+                        <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-white md:bg-slate-50/50">
                             {isBillLoading ? (
                                 <div className="h-full flex items-center justify-center"><MusicBarLoader text="Loading Test Data..." /></div>
                             ) : (
