@@ -89,6 +89,8 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
         const savedView = localStorage.getItem('patientListViewPref');
         if (savedView === 'list' || savedView === 'grid') {
             setViewMode(savedView);
+        } else if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setViewMode('grid');
         }
 
         const fetchSignature = async () => {
