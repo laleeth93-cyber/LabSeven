@@ -23,14 +23,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     pathname === '/login' || 
     pathname === '/register' || 
     pathname === '/reset' || 
-    pathname.startsWith('/verify') ||  // <-- This stops the Sidebar from loading and kicking you out!
-    pathname.startsWith('/reports/print');
+    pathname?.startsWith('/verify') || 
+    pathname?.startsWith('/reports/print');
 
   if (isAuthPage) {
     return <>{children}</>;
   }
-
-  const isHomePage = pathname === '/';
 
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden bg-slate-50 font-sans">
@@ -47,7 +45,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       />
       
       {/* 2. LOWER SECTION: Contains Sidebar and Main content */}
-      <div className="flex flex-1 overflow-hidden min-h-0">
+      <div className="flex flex-1 overflow-hidden min-h-0 mb-[calc(46px+env(safe-area-inset-bottom,0px))] md:mb-0">
         <Sidebar 
           isSidebarOpen={isSidebarOpen} 
           activeView={activeView} 
@@ -58,7 +56,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           {children}
         </main>
       </div>
-      {!isHomePage && <MobileTabBar />}
+      <MobileTabBar />
     </div>
   );
 }

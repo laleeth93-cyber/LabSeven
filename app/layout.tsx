@@ -44,8 +44,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-gray-50 antialiased flex flex-col h-screen overflow-hidden`}>
+    <html lang="en" className="h-full">
+      <body className={`${inter.className} bg-gray-50 antialiased flex flex-col h-full h-screen h-[100dvh] overflow-hidden`}>
         
         <NextAuthProvider>
             {/* WRAP THE APP IN THE PERMISSION PROVIDER */}
@@ -76,7 +76,7 @@ export default function RootLayout({
                 <KeepAlive />
                 <ExpirationBanner />
 
-                <div className="flex-1 min-h-0 relative w-full">
+                <div className="flex-1 min-h-0 relative w-full h-full flex flex-col">
                     <Suspense fallback={
                     <div className="flex h-full items-center justify-center bg-gray-50 text-gray-400 font-medium">
                         Loading Lab Seven...

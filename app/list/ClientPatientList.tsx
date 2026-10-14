@@ -352,13 +352,13 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
     };
 
     if (!permsLoaded) return (
-        <div className="h-screen w-full flex items-center justify-center bg-slate-50">
+        <div className="h-full w-full flex items-center justify-center bg-slate-50">
             <MusicBarLoader text="Authenticating..." />
         </div>
     );
 
     if (!canSee('Patient List')) return (
-        <div className="w-full h-screen flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 p-6 text-center">
             <Lock className="text-slate-300 mb-4" size={48} />
             <h2 className="text-xl font-bold text-slate-700">Access Restricted</h2>
             <p className="text-slate-500 mt-2 text-sm max-w-sm">You do not have permission to view the Patient List.</p>

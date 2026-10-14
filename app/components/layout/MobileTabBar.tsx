@@ -63,11 +63,12 @@ export default function MobileTabBar() {
     .map((w: string) => w[0].toUpperCase())
     .join('') || 'U';
 
-  const isHomeActive = pathname === '/' || pathname === '/dashboard';
-  const isListActive = pathname.startsWith('/list');
-  const isRegActive = pathname.startsWith('/registration');
-  const isEntryActive = pathname.startsWith('/results');
-  const isProfileActive = isProfileOpen || pathname.startsWith('/lab-profile') || pathname.startsWith('/settings') || pathname.startsWith('/profile');
+  const currentPath = pathname || '';
+  const isHomeActive = currentPath === '/' || currentPath === '/dashboard';
+  const isListActive = currentPath.startsWith('/list');
+  const isRegActive = currentPath.startsWith('/registration');
+  const isEntryActive = currentPath.startsWith('/results');
+  const isProfileActive = isProfileOpen || currentPath.startsWith('/lab-profile') || currentPath.startsWith('/settings') || currentPath.startsWith('/profile');
 
   const canSeeAuth = orgId === 1 || displayRole.toLowerCase().includes('admin');
 
@@ -76,7 +77,7 @@ export default function MobileTabBar() {
       {/* --- LIGHT COMPACT MOBILE FOOTER --- */}
       <nav 
         aria-label="Mobile Navigation Footer"
-        className="shrink-0 md:hidden w-full bg-white/95 backdrop-blur-md border-t border-slate-100 shadow-[0_-2px_10px_rgba(0,0,0,0.03)] z-40 select-none"
+        className="fixed bottom-0 left-0 right-0 z-50 md:hidden w-full bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] select-none"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', WebkitTapHighlightColor: 'transparent' }}
       >
         <div className="grid grid-cols-5 items-center h-[46px] px-1 max-w-md mx-auto">
