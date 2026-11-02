@@ -6,7 +6,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 const prisma = new PrismaClient();
 
 // 🚨 FIX: Added _cacheBuster to permanently prevent Next.js from serving stale data
-export async function getPublicDocumentData(identifier: string, _cacheBuster?: string) {
+export async function getPublicDocumentData(identifier: string, _cacheBuster?: string, orgId?: string | number) {
     noStore(); 
 
     try {
@@ -15,14 +15,30 @@ export async function getPublicDocumentData(identifier: string, _cacheBuster?: s
         }
 
         const numId = Number(identifier);
+        const parsedOrgId = orgId ? Number(orgId) : undefined;
+        const validOrgId = parsedOrgId && !isNaN(parsedOrgId) ? parsedOrgId : undefined;
 
-        const bill = await prisma.bill.findFirst({
-            where: {
+        let whereCondition: any;
+        if (validOrgId) {
+            whereCondition = {
+                organizationId: validOrgId,
                 OR: [
-                    { id: isNaN(numId) ? -1 : numId },
+                    ...(!isNaN(numId) ? [{ id: numId }] : []),
                     { billNumber: identifier }
                 ]
-            },
+            };
+        } else {
+            whereCondition = {
+                OR: [
+                    ...(!isNaN(numId) ? [{ id: numId }] : []),
+                    { billNumber: identifier }
+                ]
+            };
+        }
+
+        const bill = await prisma.bill.findFirst({
+            where: whereCondition,
+            orderBy: { id: 'desc' },
             include: {
                 patient: true,
                 organization: true,
@@ -77,11 +93,13 @@ export async function getPublicDocumentData(identifier: string, _cacheBuster?: s
         }
 
         const labProfile = await prisma.labProfile.findFirst({
-            where: { organizationId: bill.organizationId }
+            where: { organizationId: bill.organizationId },
+            orderBy: { updatedAt: 'desc' }
         });
 
         const reportSettings = await prisma.reportSettings.findFirst({
-            where: { organizationId: bill.organizationId }
+            where: { organizationId: bill.organizationId },
+            orderBy: { id: 'desc' }
         });
 
         return {

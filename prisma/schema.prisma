@@ -8,26 +8,40 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum GlobalSyncItemType {
+  Test
+  Parameter
+  Format
+}
+
+enum GlobalSyncStatus {
+  PendingReview
+  Approved
+  Rejected
+  Published
+  Removed
+}
+
 model Organization {
-  id                        Int                        @id @default(autoincrement())
-  name                      String
-  email                     String?                    @unique
-  phone                     String?
-  address                   String?
-  plan                      String                     @default("Free Trial")
-  isActive                  Boolean                    @default(true)
-  createdAt                 DateTime                   @default(now())
-  updatedAt                 DateTime                   @default(now()) @updatedAt
-  subscriptionEndsAt        DateTime?
-  hasSensitivity            Boolean                    @default(false)
-  whatsappReportAuto        Boolean                    @default(false)
-  whatsappReportManual      Boolean                    @default(true)
-  whatsappInvoiceAuto       Boolean                    @default(false)
-  whatsappInvoiceManual     Boolean                    @default(true)
-  whatsappAdminAlertAuto    Boolean                    @default(false)
-  whatsappAdminAlertManual  Boolean                    @default(true)
-  whatsappLimit             Int                        @default(0)
-  supportKeyHash            String?
+  id                       Int       @id @default(autoincrement())
+  name                     String
+  email                    String?   @unique
+  phone                    String?
+  address                  String?
+  plan                     String    @default("Free Trial")
+  isActive                 Boolean   @default(true)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @default(now()) @updatedAt
+  subscriptionEndsAt       DateTime?
+  hasSensitivity           Boolean   @default(false)
+  whatsappReportAuto       Boolean   @default(false)
+  whatsappReportManual     Boolean   @default(true)
+  whatsappInvoiceAuto      Boolean   @default(false)
+  whatsappInvoiceManual    Boolean   @default(true)
+  whatsappAdminAlertAuto   Boolean   @default(false)
+  whatsappAdminAlertManual Boolean   @default(true)
+  whatsappLimit            Int       @default(0)
+  supportKeyHash           String?
 
   antibiotics               Antibiotic[]
   antibioticClasses         AntibioticClass[]
@@ -60,6 +74,9 @@ model Organization {
   whatsappLogs              WhatsAppLog[]
   whatsappQueues            WhatsAppQueue[]
   whatsappAuditLogs         WhatsAppAuditLog[]
+  globalSyncSubmissions     GlobalSyncSubmission[]
+  localTestFormats          LabFormat[]
+  globalSyncLogs            GlobalSyncLog[]
 }
 
 model Patient {
@@ -145,18 +162,19 @@ model BillItem {
 }
 
 model TestResult {
-  id             Int          @id @default(autoincrement())
-  organizationId Int
-  billItemId     Int
-  parameterId    Int?
-  resultValue    String?
-  flag           String?
-  remarks        String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @default(now()) @updatedAt
-  billItem       BillItem     @relation(fields: [billItemId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  parameter      Parameter?   @relation(fields: [parameterId], references: [id])
+  id                 Int          @id @default(autoincrement())
+  organizationId     Int
+  billItemId         Int
+  parameterId        Int?
+  resultValue        String?
+  flag               String?
+  remarks            String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @default(now()) @updatedAt
+  definitionSnapshot Json?
+  billItem           BillItem     @relation(fields: [billItemId], references: [id], onDelete: Cascade)
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parameter          Parameter?   @relation(fields: [parameterId], references: [id])
 
   @@index([organizationId])
   @@index([billItemId])
@@ -254,6 +272,7 @@ model Test {
   createdAt              DateTime        @default(now())
   updatedAt              DateTime        @default(now()) @updatedAt
   showTestNameOnReport   Boolean         @default(false)
+  globalTestId           String?
   billItems              BillItem[]
   packageTests           PackageTest[]   @relation("PackageToTests")
   partOfPackages         PackageTest[]   @relation("TestInPackages")
@@ -264,8 +283,11 @@ model Test {
   specimen               Specimen?       @relation(fields: [specimenId], references: [id])
   vacutainer             Vacutainer?     @relation(fields: [vacutainerId], references: [id])
   parameters             TestParameter[]
+  globalTest             GlobalTest?     @relation(fields: [globalTestId], references: [id], onDelete: SetNull)
+  localFormats           LabFormat[]
 
   @@unique([organizationId, code])
+  @@unique([organizationId, globalTestId])
 }
 
 model PackageTest {
@@ -296,49 +318,164 @@ model TestParameter {
 }
 
 model Parameter {
-  id              Int              @id @default(autoincrement())
-  organizationId  Int
-  name            String
-  displayName     String?
-  code            String?
-  department      String?          @default("HEMATOLOGY")
-  price           Float?           @default(0)
-  unit            String?
-  method          String?
-  inputType       String           @default("Numerical")
-  decimals        Int?             @default(2)
-  resultAlignment String?          @default("Beside")
-  isMultiValue    Boolean          @default(false)
-  options         String[]
-  reportTitle     String?
-  colCaption1     String?
-  colCaption2     String?
-  colCaption3     String?
-  colCaption4     String?
-  colCaption5     String?
-  isFormula       Boolean          @default(false)
-  billingOnly     Boolean          @default(false)
-  gender          String?          @default("Both")
-  minAge          Int?             @default(0)
-  maxAge          Int?             @default(100)
-  ageUnit         String?          @default("Years")
-  minVal          Float?
-  maxVal          Float?
-  criticalLow     Float?
-  criticalHigh    Float?
-  lowMessage      String?
-  highMessage     String?
-  panicMessage    String?
-  interpretation  String?
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @default(now()) @updatedAt
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  ranges          ParameterRange[]
-  tests           TestParameter[]
-  results         TestResult[]
+  id                Int              @id @default(autoincrement())
+  organizationId    Int
+  name              String
+  displayName       String?
+  code              String?
+  department        String?          @default("HEMATOLOGY")
+  price             Float?           @default(0)
+  unit              String?
+  method            String?
+  inputType         String           @default("Numerical")
+  decimals          Int?             @default(2)
+  resultAlignment   String?          @default("Beside")
+  isMultiValue      Boolean          @default(false)
+  options           String[]
+  reportTitle       String?
+  colCaption1       String?
+  colCaption2       String?
+  colCaption3       String?
+  colCaption4       String?
+  colCaption5       String?
+  isFormula         Boolean          @default(false)
+  billingOnly       Boolean          @default(false)
+  gender            String?          @default("Both")
+  minAge            Int?             @default(0)
+  maxAge            Int?             @default(100)
+  ageUnit           String?          @default("Years")
+  minVal            Float?
+  maxVal            Float?
+  criticalLow       Float?
+  criticalHigh      Float?
+  lowMessage        String?
+  highMessage       String?
+  panicMessage      String?
+  interpretation    String?
+  isActive          Boolean          @default(true)
+  globalParameterId String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @default(now()) @updatedAt
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ranges            ParameterRange[]
+  tests             TestParameter[]
+  results           TestResult[]
+  globalParameter   GlobalParameter? @relation(fields: [globalParameterId], references: [id], onDelete: SetNull)
 
   @@unique([organizationId, code])
+  @@unique([organizationId, globalParameterId])
+}
+
+model GlobalTest {
+  id         String            @id @default(cuid())
+  code       String
+  name       String
+  category   String?
+  payload    Json
+  isActive   Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  tests      Test[]
+  parameters GlobalParameter[]
+  formats    GlobalFormat[]
+
+  @@unique([code])
+  @@index([name])
+}
+
+model GlobalParameter {
+  id           String      @id @default(cuid())
+  code         String?
+  name         String
+  unit         String?
+  inputType    String
+  globalTestId String?
+  payload      Json
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  globalTest   GlobalTest? @relation(fields: [globalTestId], references: [id], onDelete: SetNull)
+  parameters   Parameter[]
+
+  @@unique([code])
+  @@index([name])
+  @@index([globalTestId])
+}
+
+model GlobalFormat {
+  id           String      @id @default(cuid())
+  name         String
+  globalTestId String?
+  version      Int         @default(1)
+  payload      Json
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  globalTest   GlobalTest? @relation(fields: [globalTestId], references: [id], onDelete: SetNull)
+  labFormats   LabFormat[]
+
+  @@unique([globalTestId, name, version])
+}
+
+model LabFormat {
+  id             Int           @id @default(autoincrement())
+  organizationId Int
+  testId         Int?
+  name           String
+  version        Int           @default(1)
+  globalFormatId String?
+  payload        Json
+  createdAt      DateTime      @default(now())
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  test           Test?         @relation(fields: [testId], references: [id], onDelete: SetNull)
+  globalFormat   GlobalFormat? @relation(fields: [globalFormatId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, testId, name, version])
+  @@unique([organizationId, globalFormatId])
+  @@index([organizationId, createdAt])
+}
+
+model GlobalSyncSubmission {
+  id                      String             @id @default(cuid())
+  sourceOrganizationId    Int
+  itemType                GlobalSyncItemType
+  sourceRecordId          Int
+  sourceParentTestId      Int?
+  targetGlobalTestId      String?
+  targetGlobalParameterId String?
+  name                    String
+  payload                 Json
+  status                  GlobalSyncStatus   @default(PendingReview)
+  duplicateWarning        String?
+  sourceCreatedAt         DateTime
+  createdAt               DateTime           @default(now())
+  reviewedAt              DateTime?
+  publishedAt             DateTime?
+  organization            Organization       @relation(fields: [sourceOrganizationId], references: [id], onDelete: Restrict)
+
+  @@unique([sourceOrganizationId, itemType, sourceRecordId])
+  @@index([status, createdAt])
+  @@index([itemType, name])
+}
+
+model GlobalSyncLog {
+  id             Int                 @id @default(autoincrement())
+  organizationId Int
+  action         String
+  itemType       GlobalSyncItemType?
+  submissionId   String?
+  details        Json?
+  createdAt      DateTime            @default(now())
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, createdAt])
+  @@index([submissionId])
+}
+
+model GlobalSyncConfig {
+  id                  Int      @id @default(1)
+  newRecordsSince     DateTime @default(now())
+  legacyBootstrapDone Boolean  @default(false)
 }
 
 model ParameterRange {

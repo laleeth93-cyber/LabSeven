@@ -5,6 +5,17 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/server-auth'; 
 
+async function parametersBelongToOrganization(parameters: any[], organizationId: number) {
+  const ids = parameters
+    .map((parameter) => Number(parameter.parameterId))
+    .filter((id) => Number.isInteger(id) && id > 0);
+  if (ids.length !== parameters.length) return false;
+  const count = await prisma.parameter.count({
+    where: { organizationId, id: { in: Array.from(new Set(ids)) } }
+  });
+  return count === new Set(ids).size;
+}
+
 export async function generateTestCode(type: string = 'Test') {
   try {
     const { orgId } = await requireAuth(); 
@@ -109,7 +120,8 @@ export async function getTestById(id: number) {
         parameters: {
           include: { parameter: true },
           orderBy: { order: 'asc' }
-        }
+        },
+        localFormats: { orderBy: [{ createdAt: 'desc' }, { version: 'desc' }] }
       }
     });
     if (!data) return { success: false, message: "Test not found" };
@@ -122,6 +134,9 @@ export async function getTestById(id: number) {
 export async function createTest(data: any) {
   try {
     const { orgId } = await requireAuth(); 
+    if (!await parametersBelongToOrganization(data.parameters || [], orgId)) {
+      return { success: false, message: "One or more parameters do not belong to your laboratory." };
+    }
     const actualType = data.testType || data.type || 'Test';
     let code = data.code || await generateTestCode(actualType);
     const prefix = actualType === 'Package' ? 'PKG' : 'TST';
@@ -199,6 +214,9 @@ export async function createTest(data: any) {
 export async function updateTest(id: number, data: any) {
   try {
     const { orgId } = await requireAuth(); 
+    if (data.parameters && !await parametersBelongToOrganization(data.parameters, orgId)) {
+      return { success: false, message: "One or more parameters do not belong to your laboratory." };
+    }
     
     const existing = await prisma.test.findFirst({ where: { id: id, organizationId: orgId } });
     if (!existing) return { success: false, message: "Test not found." };

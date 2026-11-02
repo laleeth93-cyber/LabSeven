@@ -336,6 +336,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
       const ageString = `${dbPatientData.age.Y || 0} Y / ${dbPatientData.gender}`;
 
       const finalInvoiceData = {
+        organizationId: orgId,
         billId: currentBillNumber, billDate: new Date(billingDate).toLocaleString('en-GB'),
         patientName: fullName, ageGender: ageString, referredBy: dbPatientData.refDoctor || 'Self',
         paymentType: selectedModes.join(', '), items: billItems.map(item => ({ id: item.id, name: item.name, price: item.price })),
@@ -378,6 +379,8 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
 
       setInvoiceData((prev: any) => ({
           ...prev,
+          id: billResult.id,
+          organizationId: billResult.organizationId || orgId,
           billId: billResult.billNumber || currentBillNumber
       }));
 

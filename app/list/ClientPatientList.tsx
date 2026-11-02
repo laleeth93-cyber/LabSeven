@@ -247,6 +247,8 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
         const ageString = `${bill.patient?.ageY || 0} Y / ${bill.patient?.gender || 'Unknown'}`;
         
         setInvoiceData({
+            id: bill.id,
+            organizationId: bill.organizationId,
             billId: bill.billNumber || 'INV-0000',
             billDate: new Date(bill.date || Date.now()).toLocaleString('en-GB'),
             patientName: fullName || 'Unknown Patient',

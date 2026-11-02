@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/server-auth'; 
 
@@ -133,6 +134,23 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
     try {
       const { orgId } = await requireAuth(); 
       const billItemIds = Array.from(new Set(results.map(r => r.billItemId)));
+      const billItems = await prisma.billItem.findMany({
+          where: { organizationId: orgId, id: { in: billItemIds } },
+          include: {
+              test: {
+                  include: {
+                      parameters: {
+                          orderBy: { order: 'asc' },
+                          include: { parameter: { include: { ranges: true } } }
+                      }
+                  }
+              }
+          }
+      });
+      if (billItems.length !== billItemIds.length) {
+          throw new Error("One or more bill items do not belong to your laboratory.");
+      }
+      const billItemMap = new Map(billItems.map(item => [item.id, item]));
       const existingResults = await prisma.testResult.findMany({
           where: { organizationId: orgId, billItemId: { in: billItemIds } }
       });
@@ -153,9 +171,50 @@ export async function saveTestResults(billId: number, results: TestResultItem[],
             data: { resultValue: res.value, flag: res.flag, updatedAt: new Date() }
           }));
         } else {
+          const billItem = billItemMap.get(res.billItemId);
+          const selectedParameter = billItem?.test.parameters.find(
+              entry => entry.parameterId === paramIdToUse
+          )?.parameter;
           transactions.push(prisma.testResult.create({
             data: {
-              organizationId: orgId, billItemId: res.billItemId, parameterId: paramIdToUse, resultValue: res.value, flag: res.flag
+              organizationId: orgId,
+              billItemId: res.billItemId,
+              parameterId: paramIdToUse,
+              resultValue: res.value,
+              flag: res.flag,
+              definitionSnapshot: JSON.parse(JSON.stringify({
+                  test: {
+                      code: billItem?.test.code,
+                      name: billItem?.test.name,
+                      type: billItem?.test.type,
+                      template: billItem?.test.template,
+                      reportTitle: billItem?.test.reportTitle,
+                  },
+                  parameter: selectedParameter ? {
+                      code: selectedParameter.code,
+                      name: selectedParameter.name,
+                      displayName: selectedParameter.displayName,
+                      unit: selectedParameter.unit,
+                      inputType: selectedParameter.inputType,
+                      ranges: selectedParameter.ranges.map(range => ({
+                          gender: range.gender,
+                          minAge: range.minAge,
+                          maxAge: range.maxAge,
+                          minAgeUnit: range.minAgeUnit,
+                          maxAgeUnit: range.maxAgeUnit,
+                          normalOperator: range.normalOperator,
+                          lowRange: range.lowRange,
+                          highRange: range.highRange,
+                          normalRange: range.normalRange,
+                          normalValue: range.normalValue,
+                          abnormalValue: range.abnormalValue,
+                          criticalOperator: range.criticalOperator,
+                          criticalLow: range.criticalLow,
+                          criticalHigh: range.criticalHigh,
+                          criticalValue: range.criticalValue,
+                      })),
+                  } : null,
+              })) as Prisma.InputJsonValue
             }
           }));
         }

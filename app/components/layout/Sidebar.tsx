@@ -65,6 +65,7 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
   }, [session]);
 
   const currentView = 
+    pathname.includes('/super-admin/central-library') ? 'super-admin-central-library' :
     pathname.includes('/super-admin/admins') ? 'super-admin-admins' :
     pathname.includes('/super-admin') ? 'super-admin' :
     pathname.includes('/results') ? 'entry' : 
@@ -225,6 +226,19 @@ export default function Sidebar({ isSidebarOpen, activeView, setActiveView }: Si
                   <span className={`text-[12px] tracking-wide whitespace-normal leading-snug ${currentView === 'super-admin' ? 'font-bold' : 'font-bold text-fuchsia-600'}`}>Master HQ</span>
                 ) : (
                   <span className={`text-[9px] tracking-tight text-center leading-[1.15] whitespace-normal w-full ${currentView === 'super-admin' ? 'font-bold' : 'font-bold text-fuchsia-600'}`}>Master</span>
+                )}
+              </Link>
+
+              <Link href="/super-admin/central-library" prefetch={false} onClick={() => setActiveView('super-admin-central-library')} className={getResponsiveLiClass(currentView === 'super-admin-central-library', false)}>
+                {currentView === 'super-admin-central-library' ? (
+                    <Database size={isSidebarOpen ? 18 : 20} color="#ffffff" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+                ) : (
+                    <Database size={isSidebarOpen ? 18 : 20} color="#d946ef" strokeWidth={2} className="flex-shrink-0 transition-transform group-hover:scale-110 duration-300" />
+                )}
+                {isSidebarOpen ? (
+                  <span className={`text-[12px] tracking-wide whitespace-normal leading-snug ${currentView === 'super-admin-central-library' ? 'font-bold' : 'font-bold text-fuchsia-600'}`}>Central Library</span>
+                ) : (
+                  <span className={`text-[9px] tracking-tight text-center leading-[1.15] whitespace-normal w-full ${currentView === 'super-admin-central-library' ? 'font-bold' : 'font-bold text-fuchsia-600'}`}>Library</span>
                 )}
               </Link>
 

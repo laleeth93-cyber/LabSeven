@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useTransition, useRef } from 'reac
 import { 
     Save, Loader2, Settings2, Trash2, Plus, FileText, Calculator, Target, CheckCircle, Bug, Search, ChevronRight, ChevronDown, X
 } from 'lucide-react';
-import { updateTestConfiguration } from '@/app/actions/test-config';
+import { createLocalFormatVersion, updateTestConfiguration } from '@/app/actions/test-config';
 import RichTextEditorModal from '@/app/components/RichTextEditorModal';
 import FormulaModal from '@/app/components/FormulaModal';
 import CountTargetModal from '@/app/components/CountTargetModal';
@@ -60,6 +60,7 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
     const [activeFormulaRowIndex, setActiveFormulaRowIndex] = useState<number | null>(null);
 
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+    const [libraryFormatId, setLibraryFormatId] = useState('');
 
     const searchContainerRef = useRef<HTMLDivElement>(null);
     const mobileSearchContainerRef = useRef<HTMLDivElement>(null);
@@ -147,6 +148,37 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
             setNewRowSubtitle('');
         }
     }, [test]);
+
+    const handleSaveLibraryVersion = () => {
+        if (!test?.id) return;
+        const name = prompt("Name this new report format version:");
+        if (!name?.trim()) return;
+        const payload = {
+            ...formData,
+            cultureColumns: JSON.stringify(formData.cultureColumns || []),
+            parameters: tableRows.map(row => ({
+                parameterId: row.parameterId,
+                order: row.order,
+                isHeading: row.isHeading,
+                headingText: row.headingText,
+                isActive: row.isActive,
+                formula: row.formula,
+                isCountDependent: row.isCountDependent,
+                isCultureField: row.isCultureField,
+                code: row.code,
+                name: row.name,
+            })),
+        };
+        startTransition(async () => {
+            const result = await createLocalFormatVersion(test.id, name.trim(), payload);
+            if (result.success) {
+                alert("New format version saved to your laboratory library.");
+                onSaveComplete();
+            } else {
+                alert(result.message || "Could not save this format version.");
+            }
+        });
+    };
 
     const handleSave = () => {
         if (!test?.id) return;
@@ -279,6 +311,50 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
     const nameColWidth = formData.isFormulaNeeded ? "w-[20%]" : "w-[30%]";
     const searchColWidth = formData.isFormulaNeeded ? "w-[35%]" : "w-[45%]";
 
+    const applyLibraryFormat = (formatId: string) => {
+        setLibraryFormatId(formatId);
+        if (!formatId) return;
+        const libraryFormat = (test?.localFormats || []).find((item: any) => String(item.id) === formatId);
+        if (!libraryFormat) return;
+        const payload = libraryFormat.payload || {};
+        const rows = Array.isArray(payload.parameters) ? payload.parameters : [];
+        const mappedRows: any[] = [];
+        for (const row of rows) {
+            let parameter = null;
+            if (row.parameterGlobalId) {
+                parameter = (test?.parameters || []).find(
+                    (testParameter: any) => testParameter.parameter?.globalParameterId === row.parameterGlobalId
+                )?.parameter;
+                if (!parameter) {
+                    parameter = availableParams.find(
+                        (item: any) => item.globalParameterId === row.parameterGlobalId
+                    ) || null;
+                }
+                if (!parameter) {
+                    alert(`This format requires a parameter that is not available in your laboratory: ${row.name || row.parameterGlobalId}`);
+                    return;
+                }
+            } else if (row.parameterId && !libraryFormat.globalFormatId) {
+                parameter = availableParams.find((item: any) => item.id === row.parameterId) || null;
+            }
+            mappedRows.push({
+                uiId: Math.random().toString(36).slice(2, 11),
+                parameterId: parameter?.id ?? null,
+                isCultureField: Boolean(row.isCultureField),
+                code: parameter?.code || row.code || (row.isCultureField ? 'CULT-INFO' : '-'),
+                name: parameter?.name || row.name || (row.isCultureField ? 'Susceptibility Info' : 'Subtitle'),
+                isActive: row.isActive ?? true,
+                order: row.order || mappedRows.length + 1,
+                isHeading: Boolean(row.isHeading),
+                headingText: row.headingText || '',
+                formula: row.formula || '',
+                isCountDependent: Boolean(row.isCountDependent),
+            });
+        }
+        setFormData((current: any) => ({ ...current, ...payload, specimenId: current.specimenId || '' }));
+        setTableRows(mappedRows);
+    };
+
     return (
         <>
             {/* --- DESKTOP FORMAT EDITOR LAYOUT --- */}
@@ -298,10 +374,21 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{test?.code} • {test?.name}</p>
                             </div>
                         </div>
-                        <button onClick={handleSave} disabled={isPending} className="flex items-center gap-2 px-5 py-1.5 rounded-[5px] text-white font-medium text-[12px] shadow-md hover:opacity-90 bg-[#9575cd]">
-                            {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} className="opacity-80" />}
-                            {isPending ? 'Saving...' : 'Save Format'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {(test?.localFormats || []).length > 0 && (
+                                <select value={libraryFormatId} onChange={e => applyLibraryFormat(e.target.value)} className="max-w-40 rounded border border-slate-200 bg-white px-2 py-1.5 text-[10px] font-semibold text-slate-600">
+                                    <option value="">Use saved library format…</option>
+                                    {test.localFormats.map((format: any) => <option key={format.id} value={String(format.id)}>{format.name} v{format.version}</option>)}
+                                </select>
+                            )}
+                            <button onClick={handleSaveLibraryVersion} disabled={isPending} className="rounded-[5px] border border-purple-200 px-3 py-1.5 text-[10px] font-bold text-purple-700 hover:bg-purple-50 disabled:opacity-50">
+                                Save as Library Format
+                            </button>
+                            <button onClick={handleSave} disabled={isPending} className="flex items-center gap-2 px-5 py-1.5 rounded-[5px] text-white font-medium text-[12px] shadow-md hover:opacity-90 bg-[#9575cd]">
+                                {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} className="opacity-80" />}
+                                {isPending ? 'Saving...' : 'Save Format'}
+                            </button>
+                        </div>
                     </div>
                     <div className="h-[0.5px] w-full bg-purple-100"></div>
                 </div>

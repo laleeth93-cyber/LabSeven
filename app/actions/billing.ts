@@ -96,6 +96,8 @@ export async function createBill(data: any) {
       }
     });
 
+    let savedBillId = existingBill ? existingBill.id : 0;
+
     if (existingBill) {
       // --- SMART UPDATE LOGIC ---
       // 1. Find which test IDs are already on the bill
@@ -113,7 +115,7 @@ export async function createBill(data: any) {
       );
 
       // ➡️ UPDATE EXISTING BILL
-      await prisma.bill.update({
+      const updatedBill = await prisma.bill.update({
         where: { id: existingBill.id },
         data: {
           patientId: patientDbId, 
@@ -152,7 +154,7 @@ export async function createBill(data: any) {
       
     } else {
       // ➡️ CREATE NEW BILL
-      await prisma.bill.create({
+      const newBill = await prisma.bill.create({
         data: {
           organizationId: orgId, 
           billNumber: billNumber,
@@ -184,12 +186,13 @@ export async function createBill(data: any) {
           })
         }
       });
+      savedBillId = newBill.id;
     }
 
     revalidatePath('/list');
     revalidatePath('/');
 
-    return { success: true, billNumber: billNumber };
+    return { success: true, billNumber: billNumber, id: savedBillId, organizationId: orgId };
   } catch (error: any) {
     console.error("Create/Update Bill Error:", error);
     return { success: false, message: error.message || "Unknown database error occurred" };

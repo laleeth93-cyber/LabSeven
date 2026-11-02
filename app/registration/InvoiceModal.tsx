@@ -18,6 +18,8 @@ import { toast } from 'react-hot-toast';
 
 export interface InvoiceItem { id: number; name: string; price: number; }
 export interface InvoiceData {
+  id?: number;
+  organizationId?: number;
   billId: string; billDate: string; patientName: string; ageGender: string;
   referredBy: string; paymentType: string; items: InvoiceItem[];
   subTotal: number; discount: number; totalAmount: number;
@@ -82,14 +84,18 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data, autoSendWh
         });
         setBarcodeUrl(canvas.toDataURL());
 
-        const verificationUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://labseven.in'}/verify/${data.billId}?type=invoice`;
+        const targetOrgId = data.organizationId || orgId;
+        const verificationTarget = data.id || data.billId;
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://labseven.in';
+        const orgQuery = targetOrgId ? `&org=${targetOrgId}` : '';
+        const verificationUrl = `${origin}/verify/${verificationTarget}?type=invoice${orgQuery}`;
         QRCode.toDataURL(verificationUrl, { margin: 0, width: 64, color: { dark: '#000000', light: '#ffffff' } })
             .then(url => setQrUrl(url))
             .catch(err => console.error("QR Error:", err));
 
       } catch (e) { console.error(e); }
     }
-  }, [data]);
+  }, [data, orgId]);
 
   useEffect(() => {
     if (isOpen && data?.note) {

@@ -27,8 +27,9 @@ function VerifyDocumentContent() {
                 const identifier = Array.isArray(params.id) ? params.id[0] : params.id;
                 const isSmartReport = searchParams.get('type') === 'smart';
                 const isInvoice = searchParams.get('type') === 'invoice';
+                const orgQuery = searchParams.get('org');
                 
-                const res = await getPublicDocumentData(identifier, Date.now().toString());
+                const res = await getPublicDocumentData(identifier, Date.now().toString(), orgQuery || undefined);
                 
                 if (!res.success) {
                     setError(res.message || "Invalid verification link or document not found.");
