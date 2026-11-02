@@ -8,7 +8,7 @@ const styles = StyleSheet.create({
   brandColumn: { flexDirection: 'row', alignItems: 'center', width: '60%' },
   brandName: { fontSize: 24, fontWeight: 'black', textTransform: 'uppercase', color: '#0f172a', lineHeight: 1 },
   brandSub: { fontSize: 8, fontWeight: 'bold', textTransform: 'uppercase', color: '#64748b', letterSpacing: 2, marginTop: 4 },
-  contactColumn: { width: '40%', alignItems: 'flex-end' },
+  contactColumn: { width: '45%', alignItems: 'flex-end' },
   addressLine: { fontSize: 8, color: '#64748b', marginBottom: 2, textAlign: 'right' },
   grid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   col: { width: '48%' },
@@ -119,6 +119,7 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
                         </>
                     )}
                     <Text style={styles.addressLine}>Ph: {profile?.phone || '+91 98765 43210'}</Text>
+                    {profile?.email && <Text style={styles.addressLine}>{profile.email}</Text>}
                 </View>
             </View>
         )}
@@ -141,7 +142,7 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
         <View style={styles.table}>
             <View style={styles.tableHeader}>
                 <Text style={[styles.th, styles.col1]}>TEST DESCRIPTION</Text>
-                <Text style={[styles.th, styles.col2]}>AMOUNT (Rs)</Text>
+                <Text style={[styles.th, styles.col2]}>AMOUNT (₹)</Text>
             </View>
             {data.items.map((item, index) => (
                 <View key={index} style={styles.tableRow}>
@@ -183,7 +184,7 @@ export const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
                 )}
                 <View style={styles.netAmountRow}>
                     <Text style={styles.netLabel}>Net Amount</Text>
-                    <Text style={styles.netValue}>Rs. {Number(data.totalAmount || 0).toFixed(2)}</Text>
+                    <Text style={styles.netValue}>₹ {Number(data.totalAmount || 0).toFixed(2)}</Text>
                 </View>
                 <View style={[styles.badgeRow, { backgroundColor: '#f0fdf4' }]}> 
                     <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#16a34a' }}>Paid Amount</Text>

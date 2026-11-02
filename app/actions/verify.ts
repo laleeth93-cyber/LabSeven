@@ -102,12 +102,52 @@ export async function getPublicDocumentData(identifier: string, _cacheBuster?: s
             orderBy: { id: 'desc' }
         });
 
+        // Retrieve digital signature user for the invoice / document
+        let signUser: any = bill.approvedBy1;
+        if (!signUser) {
+            signUser = await prisma.user.findFirst({
+                where: {
+                    organizationId: bill.organizationId,
+                    isDefaultSignature: true
+                }
+            });
+        }
+        if (!signUser) {
+            signUser = await prisma.user.findFirst({
+                where: {
+                    organizationId: bill.organizationId,
+                    signatureUrl: { not: null }
+                }
+            });
+        }
+        if (!signUser) {
+            signUser = await prisma.user.findFirst({
+                where: {
+                    organizationId: bill.organizationId
+                },
+                orderBy: { id: 'asc' }
+            });
+        }
+
+        let authorSign = null;
+        if (signUser) {
+            let designation = signUser.designation || '';
+            if (signUser.degree) designation += (designation ? ` | ${signUser.degree}` : signUser.degree);
+            if (signUser.regNumber) designation += (designation ? ` | Reg: ${signUser.regNumber}` : `Reg: ${signUser.regNumber}`);
+            authorSign = {
+                name: signUser.signName || signUser.name,
+                designation: designation,
+                signatureUrl: (signUser.signatureUrl && signUser.signatureUrl !== 'null' && signUser.signatureUrl !== 'undefined') ? signUser.signatureUrl : null
+            };
+        }
+
         return {
             success: true,
             data: {
                 bill,
                 labProfile,
-                reportSettings
+                reportSettings,
+                authorSign
             }
         };
 
