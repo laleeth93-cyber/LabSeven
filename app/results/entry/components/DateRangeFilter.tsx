@@ -216,9 +216,32 @@ export default function DateRangeFilter({ onFilterChange, buttonClassName, align
 
   const finalButtonClass = buttonClassName || "flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 transition-all h-8 group min-w-[140px]";
 
-  const alignmentClass = align === 'start' 
+  const [adjustedAlign, setAdjustedAlign] = useState<'start' | 'end' | 'center'>(align);
+
+  useEffect(() => {
+    setAdjustedAlign(align);
+  }, [align]);
+
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const popupWidth = activePreset === 'Date Range' ? 590 : 450;
+      const spaceRight = window.innerWidth - rect.left;
+      const spaceLeft = rect.right;
+
+      if (align === 'end' && spaceLeft < popupWidth && spaceRight > spaceLeft) {
+        setAdjustedAlign('start');
+      } else if (align === 'start' && spaceRight < popupWidth && spaceLeft > spaceRight) {
+        setAdjustedAlign('end');
+      } else {
+        setAdjustedAlign(align);
+      }
+    }
+  }, [isOpen, align, activePreset]);
+
+  const alignmentClass = adjustedAlign === 'start' 
     ? 'md:left-0 md:right-auto md:translate-x-0' 
-    : align === 'center' 
+    : adjustedAlign === 'center' 
     ? 'md:left-1/2 md:-translate-x-1/2'
     : 'md:right-0 md:left-auto md:translate-x-0';
 
@@ -238,7 +261,7 @@ export default function DateRangeFilter({ onFilterChange, buttonClassName, align
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[90] bg-slate-900/20 backdrop-blur-[2px] md:hidden" onClick={() => setIsOpen(false)}></div>
-          <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:translate-y-0 z-[100] w-[210px] max-h-[85vh] rounded-xl
+          <div className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:translate-y-0 z-[100] w-[260px] max-w-[90vw] md:max-w-[calc(100vw-2rem)] max-h-[85vh] rounded-xl
             md:absolute ${alignmentClass} md:top-full md:bottom-auto md:w-auto md:mt-2 md:max-h-none
             bg-white shadow-2xl border border-slate-200 flex flex-col md:flex-row overflow-y-auto md:overflow-visible
             animate-in fade-in zoom-in-95 duration-200`}>

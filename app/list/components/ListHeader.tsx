@@ -112,7 +112,7 @@ export default function ListHeader({
                         </div>
 
                         <div className="flex-1 md:flex-none z-40 min-w-0">
-                            <DateRangeFilter 
+                            <DateRangeFilter align="start" 
                                 onFilterChange={onDateChange} 
                                 buttonClassName="w-full md:w-auto flex items-center justify-center md:justify-start gap-1 md:gap-2 px-1.5 md:px-4 h-6 md:h-10 bg-white border border-slate-200 md:border-slate-300 rounded md:rounded-lg shadow-sm hover:bg-slate-50 transition-all group min-w-0 md:min-w-[140px] text-[10px] md:text-sm font-bold"
                             />
