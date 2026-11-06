@@ -72,13 +72,21 @@ export default function TestsPage() {
   const safeActiveTab = visibleTabs.find(t => t.label === activeTab) ? activeTab : visibleTabs[0].label;
 
   return (
-    <div className="flex flex-col w-full h-full bg-[#f1f5f9] font-sans">
-      {/* CONTENT VIEW */}
-      <div className={`flex flex-col w-full h-full animate-in slide-in-from-right-4 md:slide-in-from-right-0 duration-200 bg-slate-50 md:bg-[#f1f5f9]`}>
-          
-          {/* Desktop Tabs Header */}
-          <div className="hidden md:flex bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm px-6 pt-3">
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+    <div className="flex flex-1 overflow-hidden p-0 gap-0 relative h-full">
+      <div className="w-full h-full bg-white rounded-none md:rounded-[10px] md:shadow-xl md:border md:border-slate-200 overflow-hidden flex flex-col relative z-10">
+        
+        {/* UNIFIED PAGE HEADER: min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px] */}
+        <div className="px-2.5 xl:px-3 py-1.5 md:py-0 md:px-2.5 xl:px-3 bg-white md:bg-slate-50 shrink-0 flex items-center justify-between gap-1.5 xl:gap-2 border-b border-slate-200 z-20 min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px]">
+            {/* Left: 20px Title in Calibri */}
+            <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
+                <div className="p-1 rounded bg-purple-50 text-[#9575cd] shadow-2xs"><FlaskConical size={16} /></div>
+                <h2 className="text-[20px] font-semibold text-slate-800 tracking-tight leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                    Test Configuration
+                </h2>
+            </div>
+
+            {/* Right: Module Tabs (Departments, Test Library, Formats, Parameters, Packages) */}
+            <div className="hidden md:flex items-center h-[24px] xl:h-[26px] bg-slate-100 rounded-[5px] p-0.5 gap-0.5 border border-slate-200 shrink-0">
                 {visibleTabs.map(tab => (
                     <button 
                         key={tab.label}
@@ -86,24 +94,44 @@ export default function TestsPage() {
                             setActiveTab(tab.label);
                             router.replace(`/tests?tab=${tab.label}`, { scroll: false });
                         }}
-                        className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all border-b-2 whitespace-nowrap ${
-                            safeActiveTab === tab.label ? 'border-[#9575cd] text-[#9575cd] bg-purple-50/50 rounded-t-md' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-t-md'
+                        className={`h-full whitespace-nowrap px-2 xl:px-2.5 rounded text-[11px] xl:text-[12px] font-normal transition-all flex items-center gap-1.5 leading-none ${
+                            safeActiveTab === tab.label ? 'bg-white shadow-sm text-slate-800 font-medium' : 'text-slate-500 hover:text-slate-700'
                         }`}
                     >
-                        {tab.icon}{tab.label}
+                        {tab.icon}
+                        <span>{tab.label}</span>
                     </button>
                 ))}
             </div>
-          </div>
+        </div>
 
-          {/* Content Area */}
-          <div className="flex-1 overflow-hidden relative">
-              {safeActiveTab === 'Departments' && <div className="h-full overflow-hidden"><DepartmentPage /></div>}
-              {safeActiveTab === 'Test Library' && <TestsLibraryView initialType="All" canPerform={(act) => canPerform('Test Library', act)} />}
-              {safeActiveTab === 'Formats' && <div className="h-full overflow-hidden"><TestFormatsPage /></div>}
-              {safeActiveTab === 'Parameters' && <div className="h-full overflow-hidden"><ParametersListPage /></div>}
-              {safeActiveTab === 'Packages' && <div className="h-full overflow-hidden"><PackagesPage /></div>}
-          </div>
+        {/* Mobile Tabs Header */}
+        <div className="md:hidden flex items-center gap-1 px-2 py-1.5 bg-slate-50 border-b border-slate-200 overflow-x-auto no-scrollbar shrink-0">
+            {visibleTabs.map(tab => (
+                <button 
+                    key={tab.label}
+                    onClick={() => {
+                        setActiveTab(tab.label);
+                        router.replace(`/tests?tab=${tab.label}`, { scroll: false });
+                    }}
+                    className={`h-[24px] px-2 rounded text-[11px] font-normal whitespace-nowrap flex items-center gap-1 shrink-0 ${
+                        safeActiveTab === tab.label ? 'bg-white shadow-sm text-[#9575cd] font-medium border border-slate-200' : 'text-slate-500'
+                    }`}
+                >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                </button>
+            ))}
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-white">
+            {safeActiveTab === 'Departments' && <div className="h-full overflow-hidden"><DepartmentPage embedded={true} /></div>}
+            {safeActiveTab === 'Test Library' && <TestsLibraryView initialType="All" canPerform={(act) => canPerform('Test Library', act)} />}
+            {safeActiveTab === 'Formats' && <div className="h-full overflow-hidden"><TestFormatsPage /></div>}
+            {safeActiveTab === 'Parameters' && <div className="h-full overflow-hidden"><ParametersListPage embedded={true} /></div>}
+            {safeActiveTab === 'Packages' && <div className="h-full overflow-hidden"><PackagesPage /></div>}
+        </div>
       </div>
     </div>
   );
@@ -231,155 +259,284 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
 
   const activeFilterCount = (filterDepartment !== 'All' ? 1 : 0) + (filterStatus !== 'All' ? 1 : 0);
 
-  const colWidths = { code: "w-24", name: "flex-1 min-w-[150px]", display: "flex-1 min-w-[150px]", dept: "w-32", price: "w-24", type: "w-24", status: "w-20", action: "w-20" };
-
   return (
-    <div className="flex flex-col w-full h-full p-2 md:p-6 relative font-sans">
+    <div className="flex flex-col w-full h-full relative font-sans overflow-hidden bg-white">
       {/* --- DESKTOP LAYOUT --- */}
-      <div className="hidden md:flex flex-col h-full overflow-hidden">
-        <div className="mb-6 shrink-0">
-           <div className="flex items-center justify-between mb-4">
-               <div className="flex items-center gap-2 text-slate-800">
-                   {initialType === 'Package' ? <Archive className="text-[#9575cd]" size={24}/> : <FlaskConical className="text-[#9575cd]" size={24}/>}
-                   <h1 className="text-xl font-bold tracking-tight">{initialType === 'Package' ? 'Packages Library' : 'Tests Overview'}</h1>
-               </div>
-               {canPerform('Add') && (
-                   <Link href="/tests/add"><button className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-4 py-2 rounded-md text-xs font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"><Plus size={16} /> ADD NEW TEST</button></Link>
-               )}
-           </div>
-
-           {initialType !== 'Package' && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <StatCard label="Total Tests" count={stats.total} icon={<LayoutGrid size={18} />} color="text-slate-600" bg="bg-white" border="border-slate-200" isActive={filterType === 'All'} onClick={() => setFilterType('All')} />
-                  <StatCard label="Tests" count={stats.test} icon={<FlaskConical size={18} />} color="text-blue-600" bg="bg-blue-50" border="border-blue-100" isActive={filterType === 'Test'} onClick={() => setFilterType('Test')} />
-                  <StatCard label="Packages" count={stats.package} icon={<Archive size={18} />} color="text-purple-600" bg="bg-purple-50" border="border-purple-100" isActive={filterType === 'Package'} onClick={() => setFilterType('Package')} />
-                  <StatCard label="Others" count={stats.other} icon={<MoreHorizontal size={18} />} color="text-orange-600" bg="bg-orange-50" border="border-orange-100" isActive={filterType === 'Other'} onClick={() => setFilterType('Other')} />
-                  <StatCard label="Outsourced" count={stats.outsource} icon={<Microscope size={18} />} color="text-teal-600" bg="bg-teal-50" border="border-teal-100" isActive={filterType === 'Outsource'} onClick={() => setFilterType('Outsource')} />
+      <div className="hidden md:flex flex-col h-full overflow-hidden bg-white">
+        {/* TOOLBAR / HEADER: 38px / 42px */}
+        <div className="px-2.5 xl:px-3 py-1.5 md:py-0 bg-white md:bg-slate-50 border-b border-slate-200 shrink-0 flex items-center justify-between gap-2 z-10 min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px]">
+          {/* Left: Title & Filter Pills */}
+          <div className="flex items-center gap-2 xl:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <div className="p-1 rounded bg-purple-50 text-[#9575cd] shadow-2xs">
+                {initialType === 'Package' ? <Archive size={15}/> : <FlaskConical size={15}/>}
               </div>
-           )}
+              <span className="text-[14px] xl:text-[15px] font-semibold text-slate-800 tracking-tight leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                {initialType === 'Package' ? 'Packages' : 'Tests'}
+              </span>
+              <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 leading-tight">
+                {filteredTests.length} Total
+              </span>
+            </div>
+
+            {/* Quick Type Filter Pills */}
+            {initialType !== 'Package' && (
+              <div className="hidden lg:flex items-center bg-slate-100 p-0.5 rounded-[5px] border border-slate-200 h-[24px] xl:h-[26px]">
+                {[
+                  { id: 'All', label: 'All', count: stats.total },
+                  { id: 'Test', label: 'Tests', count: stats.test },
+                  { id: 'Package', label: 'Packages', count: stats.package },
+                  { id: 'Other', label: 'Others', count: stats.other },
+                  { id: 'Outsource', label: 'Outsourced', count: stats.outsource },
+                ].map(chip => (
+                  <button
+                    key={chip.id}
+                    onClick={() => { setFilterType(chip.id); setCurrentPage(1); }}
+                    className={`h-full px-2 rounded text-[11px] xl:text-[12px] font-normal transition-all flex items-center gap-1 leading-none ${
+                      filterType === chip.id
+                        ? 'bg-white shadow-2xs text-[#9575cd] font-medium'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <span>{chip.label}</span>
+                    <span className={`text-[9px] px-1 py-0.2 rounded-full leading-none ${
+                      filterType === chip.id ? 'bg-purple-100 text-[#9575cd] font-semibold' : 'bg-slate-200/70 text-slate-500'
+                    }`}>{chip.count}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right: Search, Filter, Add */}
+          <div className="flex items-center gap-1.5 xl:gap-2">
+            <div className="relative w-36 lg:w-44 xl:w-52 shrink-0">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search tests..." 
+                value={searchTerm} 
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+                className="w-full pl-7 pr-2.5 h-[24px] xl:h-[26px] bg-white border border-slate-300 rounded-[5px] text-[11px] xl:text-[12px] font-normal text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#9575cd] transition-all" 
+              />
+            </div>
+
+            {/* Filter Dropdown */}
+            <div className="relative" ref={filterRef}>
+              <button 
+                onClick={() => setShowFilters(!showFilters)} 
+                className={`h-[24px] xl:h-[26px] px-2 border rounded-[5px] flex items-center gap-1 text-[11px] xl:text-[12px] font-normal transition-colors ${
+                  showFilters || activeFilterCount > 0 
+                    ? 'bg-purple-50 border-[#9575cd] text-[#9575cd] font-medium' 
+                    : 'bg-white border-slate-300 text-slate-600 hover:border-slate-400'
+                }`}
+              >
+                <Filter size={12}/> 
+                <span>Filter</span> 
+                {activeFilterCount > 0 && (
+                  <span className="bg-[#9575cd] text-white text-[9px] px-1 py-0.2 rounded-full leading-none font-bold">
+                    {activeFilterCount}
+                  </span>
+                )}
+                <ChevronDown size={11} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`}/>
+              </button>
+              
+              {showFilters && (
+                <div className="absolute right-0 top-full mt-1.5 w-60 bg-white rounded-lg shadow-xl border border-slate-200 z-50 p-3 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="mb-3">
+                    <label className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider mb-1 block">Department</label>
+                    <div className="relative">
+                      <select 
+                        value={filterDepartment} 
+                        onChange={(e) => { setFilterDepartment(e.target.value); setCurrentPage(1); }}
+                        className="w-full text-[11px] xl:text-[12px] font-normal border border-slate-300 rounded-[5px] px-2 h-[26px] xl:h-[28px] bg-white focus:outline-none focus:border-[#9575cd] text-slate-700 appearance-none pr-6"
+                      >
+                        <option value="All">All Departments</option>
+                        {uniqueDepartments.map(dept => (
+                          <option key={dept as string} value={dept as string}>{dept as string}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider mb-1 block">Status</label>
+                    <div className="space-y-1">
+                      {['All', 'Active', 'Inactive'].map(s => (
+                        <label key={s} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1 rounded transition-colors">
+                          <input 
+                            type="radio" 
+                            checked={filterStatus === s} 
+                            onChange={() => { setFilterStatus(s); setCurrentPage(1); }} 
+                            className="accent-[#9575cd] w-3.5 h-3.5" 
+                          />
+                          <span className="text-[11px] text-slate-700 font-normal">{s}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <button 
+                      onClick={() => { setFilterDepartment('All'); setFilterType(initialType); setFilterStatus('All'); setCurrentPage(1); setShowFilters(false); }} 
+                      className="py-1 px-2 text-[10px] font-medium text-slate-500 hover:text-slate-800 rounded transition-colors"
+                    >
+                      Reset
+                    </button>
+                    <button 
+                      onClick={() => setShowFilters(false)} 
+                      className="py-1 px-2.5 text-[10px] font-medium text-white bg-[#9575cd] hover:bg-[#7e57c2] rounded shadow-xs transition-colors"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Add New Button */}
+            {canPerform('Add') && (
+              <Link href="/tests/add">
+                <button className="h-[24px] xl:h-[26px] px-2.5 rounded-[5px] bg-[#9575cd] hover:bg-[#7e57c2] text-white text-[11px] xl:text-[12px] font-normal flex items-center gap-1 shadow-xs active:scale-95 transition-all">
+                  <Plus size={13} strokeWidth={2.5}/>
+                  <span>Add Test</span>
+                </button>
+              </Link>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden w-full h-full">
-            <div className="px-6 py-4 flex items-center gap-4 shrink-0 bg-white border-b border-slate-50">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-10 pl-10 pr-4 rounded-lg border border-slate-200 text-sm focus:border-[#9575cd] outline-none" />
-                </div>
-                <div className="relative" ref={filterRef}>
-                    <button onClick={() => setShowFilters(!showFilters)} className={`h-10 px-4 border rounded-lg flex items-center gap-2 text-xs font-bold transition-colors ${showFilters || activeFilterCount > 0 ? 'bg-purple-50 border-[#9575cd] text-[#9575cd]' : 'bg-white border-slate-200 text-slate-600'}`}>
-                        <Filter size={14}/> FILTER {activeFilterCount > 0 && <span className="bg-[#9575cd] text-white text-[9px] px-1.5 py-0.5 rounded-full">{activeFilterCount}</span>}
-                        <ChevronDown size={12} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`}/>
-                    </button>
-                    
-                    {showFilters && (
-                      <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-xl border border-slate-100 z-50 p-4 animate-in fade-in zoom-in-95 duration-100">
-                          
-                          <div className="mb-4">
-                              <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Department</label>
-                              <div className="relative">
-                                  <select 
-                                      value={filterDepartment} 
-                                      onChange={(e) => setFilterDepartment(e.target.value)}
-                                      className="w-full text-sm font-medium border border-slate-200 rounded-md px-3 h-9 bg-white focus:border-[#9575cd] focus:ring-1 focus:ring-[#9575cd] outline-none appearance-none text-slate-700"
-                                  >
-                                      <option value="All">All Departments</option>
-                                      {uniqueDepartments.map(dept => (
-                                          <option key={dept as string} value={dept as string}>{dept as string}</option>
-                                      ))}
-                                  </select>
-                                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
-                              </div>
-                          </div>
-
-                           <div className="mb-4">
-                              <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">Status</label>
-                              <div className="space-y-1">
-                                  {['All', 'Active', 'Inactive'].map(s => (
-                                      <label key={s} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-1.5 rounded transition-colors">
-                                          <input type="radio" checked={filterStatus === s} onChange={() => setFilterStatus(s)} className="accent-[#9575cd] w-4 h-4" />
-                                          <span className="text-sm text-slate-700 font-medium">{s}</span>
-                                      </label>
-                                  ))}
-                              </div>
-                          </div>
-                          <div className="pt-3 border-t border-slate-100">
-                              <button onClick={() => { setFilterDepartment('All'); setFilterType(initialType); setFilterStatus('All'); setShowFilters(false); }} className="w-full py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 rounded transition-colors">Reset Filters</button>
-                          </div>
-                      </div>
-                    )}
-                </div>
-            </div>
-
-            <div className="h-10 bg-slate-50 border-b border-slate-200 flex items-center px-6 shrink-0 gap-4">
-                <div className={`${colWidths.code} text-[10px] font-bold text-slate-500 uppercase`}>Code</div>
-                <div className={`${colWidths.name} text-[10px] font-bold text-slate-500 uppercase`}>Test Name</div>
-                <div className={`${colWidths.display} text-[10px] font-bold text-slate-500 uppercase`}>Display Name</div>
-                <div className={`${colWidths.dept} text-[10px] font-bold text-slate-500 uppercase`}>Department</div>
-                <div className={`${colWidths.price} text-[10px] font-bold text-slate-500 uppercase`}>Price</div>
-                <div className={`${colWidths.type} text-center text-[10px] font-bold text-slate-500 uppercase`}>Type</div>
-                <div className={`${colWidths.status} text-center text-[10px] font-bold text-slate-500 uppercase`}>Status</div>
-                <div className={`${colWidths.action} text-center text-[10px] font-bold text-slate-500 uppercase`}>Action</div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto">
-                {isLoading ? (
-                    <div className="flex items-center justify-center h-40">
+        {/* TABLE CONTAINER: p-0 md:p-2.5 xl:p-3 with rounded-[6px] border */}
+        <div className="flex-1 overflow-hidden bg-white p-0 md:p-2.5 xl:p-3 flex flex-col min-h-0">
+          <div className="w-full h-full flex flex-col overflow-hidden rounded-[6px] border border-slate-200 shadow-sm bg-white">
+            <div className="flex-1 min-h-0 overflow-auto custom-scrollbar">
+              <table className="w-full text-left text-sm border-collapse min-w-[700px] bg-white border-spacing-0">
+                <thead className="bg-[#9575cd] sticky top-0 z-10 text-white border-b border-[#7e57c2]">
+                  <tr>
+                    <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left w-20">Code</th>
+                    <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left min-w-[170px]">Test Name</th>
+                    <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left min-w-[150px]">Display Name</th>
+                    <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left w-28">Department</th>
+                    <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-right w-20">Price</th>
+                    <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-center w-20">Type</th>
+                    <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-center w-20">Status</th>
+                    <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-center w-20">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={8} className="py-12 text-center">
                         <MusicBarLoader text="Loading Tests..." />
-                    </div>
-                ) : filteredTests.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-slate-400"><FileText size={48} className="mb-2 opacity-20"/><p className="text-sm">No items found.</p></div>
-                ) : (
+                      </td>
+                    </tr>
+                  ) : filteredTests.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
+                        No tests found.
+                      </td>
+                    </tr>
+                  ) : (
                     paginatedTests.map((test) => (
-                        <div key={test.id} className="h-12 border-b border-slate-50 flex items-center px-6 hover:bg-slate-50 transition-colors group gap-4">
-                            <div className={`${colWidths.code} text-xs font-semibold text-slate-700 font-mono truncate`}>{test.code}</div>
-                            <div className={`${colWidths.name} text-sm font-medium text-slate-800 truncate`}>{test.name}</div>
-                            <div className={`${colWidths.display} text-xs text-slate-500 truncate`}>{test.displayName || '-'}</div>
-                            <div className={`${colWidths.dept} text-xs text-slate-600 font-medium truncate`}>{test.type === 'Package' ? '-' : (test.department?.name || test.department || '-')}</div>
-                            <div className={`${colWidths.price} text-xs font-bold text-slate-700`}>{Number(test.price)?.toFixed(2)}</div>
-                            <div className={`${colWidths.type} flex justify-center`}><span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${test.type === 'Package' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>{test.type || 'Test'}</span></div>
-                            
-                            <div className={`${colWidths.status} flex justify-center`}>
-                                {canPerform('Edit') ? (
-                                    <button onClick={() => handleToggleStatus(test.id, test.isActive)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${test.isActive ? 'bg-green-500' : 'bg-slate-300'}`}><span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${test.isActive ? 'translate-x-4' : 'translate-x-0.5'}`} /></button>
-                                ) : <Lock size={14} className="text-slate-300" />}
-                            </div>
-                            
-                            <div className={`${colWidths.action} flex justify-center items-center gap-2`}>
-                                {canPerform('Edit') ? <Link href={`/tests/edit/${test.id}`}><button className="p-1.5 hover:bg-purple-50 rounded text-slate-400 hover:text-[#9575cd]"><Edit size={14} /></button></Link> : <span className="w-6 text-center text-slate-300">-</span>}
-                                {canPerform('Delete') ? <button onClick={() => handleDeleteClick(test.id)} className="p-1.5 hover:bg-red-50 rounded text-slate-400 hover:text-red-500"><Trash2 size={14} /></button> : <span className="w-6 text-center text-slate-300">-</span>}
-                            </div>
-                        </div>
+                      <tr key={test.id} className="hover:bg-purple-50/40 transition-colors">
+                        <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left whitespace-nowrap">
+                          <span className="font-mono text-[11px] font-medium text-[#9575cd] bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 leading-tight inline-block">
+                            {test.code}
+                          </span>
+                        </td>
+                        <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left">
+                          <span className="font-normal text-slate-800 text-[11px] leading-tight truncate block max-w-[240px]" title={test.name}>
+                            {test.name}
+                          </span>
+                        </td>
+                        <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left">
+                          <span className="font-normal text-slate-500 text-[11px] leading-tight truncate block max-w-[200px]" title={test.displayName || ''}>
+                            {test.displayName || '-'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left whitespace-nowrap">
+                          <span className="font-normal text-slate-600 text-[11px] leading-tight">
+                            {test.type === 'Package' ? '-' : (test.department?.name || test.department || '-')}
+                          </span>
+                        </td>
+                        <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-right whitespace-nowrap">
+                          <span className="font-normal text-slate-700 text-[11px]">
+                            {Number(test.price || 0).toFixed(2)}
+                          </span>
+                        </td>
+                        <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-center whitespace-nowrap">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${test.type === 'Package' ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                            {test.type || 'Test'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-center whitespace-nowrap">
+                          {canPerform('Edit') ? (
+                            <button 
+                              onClick={() => handleToggleStatus(test.id, test.isActive)} 
+                              className={`relative inline-flex h-3.5 w-6 items-center rounded-full transition-colors ${test.isActive ? 'bg-green-500' : 'bg-slate-300'}`}
+                            >
+                              <span className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${test.isActive ? 'translate-x-[11px]' : 'translate-x-[1px]'}`} />
+                            </button>
+                          ) : <Lock size={12} className="text-slate-300 inline" />}
+                        </td>
+                        <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-center whitespace-nowrap">
+                          <div className="inline-flex items-center justify-center gap-1 leading-none align-middle">
+                            {canPerform('Edit') ? (
+                              <Link 
+                                href={`/tests/edit/${test.id}`}
+                                className="h-[20px] md:h-[22px] px-1 md:px-1.5 rounded border border-slate-200 hover:border-teal-300 bg-white hover:bg-teal-50 text-teal-600 shadow-2xs transition-all inline-flex items-center justify-center leading-none" 
+                                title="Edit"
+                              >
+                                <Edit className="w-3 h-3 md:w-3.5 md:h-3.5 shrink-0 block" strokeWidth={2} />
+                              </Link>
+                            ) : <span className="text-slate-300 text-[10px]">-</span>}
+                            {canPerform('Delete') ? (
+                              <button 
+                                onClick={() => handleDeleteClick(test.id)} 
+                                className="h-[20px] md:h-[22px] px-1 md:px-1.5 rounded border border-slate-200 hover:border-rose-300 bg-white hover:bg-rose-50 text-rose-600 shadow-2xs transition-all inline-flex items-center justify-center leading-none" 
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3 h-3 md:w-3.5 md:h-3.5 shrink-0 block" strokeWidth={2} />
+                              </button>
+                            ) : <span className="text-slate-300 text-[10px]">-</span>}
+                          </div>
+                        </td>
+                      </tr>
                     ))
-                )}
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            <div className="h-14 border-t border-slate-200 bg-white flex items-center justify-between px-6 shrink-0">
-               <div className="text-xs font-medium text-slate-500">
-                  Showing <span className="font-bold text-slate-700">{filteredTests.length === 0 ? 0 : startIndex + 1}</span> to <span className="font-bold text-slate-700">{Math.min(startIndex + ITEMS_PER_PAGE, filteredTests.length)}</span> of <span className="font-bold text-slate-700">{filteredTests.length}</span> tests
-               </div>
-               <div className="flex items-center gap-3">
-                   <button 
-                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-                       disabled={currentPage === 1}
-                       className="p-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                   >
-                       <ChevronLeft size={16} />
-                   </button>
-                   <span className="text-xs font-bold text-slate-700 min-w-[80px] text-center">
-                       Page {currentPage} of {totalPages || 1}
-                   </span>
-                   <button 
-                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
-                       disabled={currentPage === totalPages || totalPages === 0}
-                       className="p-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                   >
-                       <ChevronRight size={16} />
-                   </button>
-               </div>
+            {/* PAGINATION FOOTER: 30px / 34px */}
+            <div className="min-h-[30px] h-[30px] xl:min-h-[34px] xl:h-[34px] border-t border-slate-200 bg-white flex items-center justify-between px-3 shrink-0">
+              <div className="text-[11px] font-normal text-slate-500">
+                Showing <span className="font-medium text-slate-700">{filteredTests.length === 0 ? 0 : startIndex + 1}</span> to <span className="font-medium text-slate-700">{Math.min(startIndex + ITEMS_PER_PAGE, filteredTests.length)}</span> of <span className="font-medium text-slate-700">{filteredTests.length}</span> tests
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                  disabled={currentPage === 1}
+                  className="h-[22px] px-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-2xs flex items-center"
+                >
+                  <ChevronLeft size={12} />
+                </button>
+                <span className="text-[11px] font-normal text-slate-700 min-w-[70px] text-center select-none">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="h-[22px] px-1.5 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-2xs flex items-center"
+                >
+                  <ChevronRight size={12} />
+                </button>
+              </div>
             </div>
+          </div>
         </div>
       </div>
-
       {/* --- MOBILE LAYOUT --- */}
       <div className="flex md:hidden flex-col flex-1 overflow-hidden p-0 bg-transparent">
         <div className="w-full h-full bg-white rounded-none border-0 overflow-hidden flex flex-col relative">
@@ -567,13 +724,13 @@ function TestsLibraryView({ initialType = 'All', canPerform }: { initialType?: s
                       
                       <div className="flex items-center gap-3">
                         {canPerform('Edit') && (
-                          <Link href={`/tests/edit/${test.id}`} className="text-[#9575cd] flex items-center gap-1 text-[9px] font-medium active:opacity-70">
-                            <Edit size={10}/> Edit
+                          <Link href={`/tests/edit/${test.id}`} className="text-teal-600 inline-flex items-center justify-center gap-1 text-[9px] font-medium active:opacity-70 leading-none">
+                            <Edit size={10} className="shrink-0" strokeWidth={2} /> <span>Edit</span>
                           </Link>
                         )}
                         {canPerform('Delete') && (
-                          <button onClick={() => handleDeleteClick(test.id)} className="text-red-500 flex items-center gap-1 text-[9px] font-medium active:opacity-70">
-                            <Trash2 size={10}/> Delete
+                          <button onClick={() => handleDeleteClick(test.id)} className="text-rose-600 inline-flex items-center justify-center gap-1 text-[9px] font-medium active:opacity-70 leading-none">
+                            <Trash2 size={10} className="shrink-0" strokeWidth={2} /> <span>Delete</span>
                           </button>
                         )}
                       </div>

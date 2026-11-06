@@ -46,7 +46,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className={`${inter.className} bg-gray-50 antialiased flex flex-col h-full min-h-screen overflow-hidden`}>
+      <body className={`${inter.className} bg-gray-50 subpixel-antialiased flex flex-col h-full min-h-screen overflow-hidden`}>
         
         <NextAuthProvider>
             {/* WRAP THE APP IN THE PERMISSION PROVIDER */}

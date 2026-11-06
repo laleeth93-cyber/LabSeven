@@ -1,8 +1,12 @@
+// --- BLOCK app/reports/page.tsx OPEN ---
 "use client";
 
 import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, Table, LayoutTemplate, Stethoscope, Printer, CheckCircle, Activity, ChevronLeft, Eye, FileText, Settings2 } from 'lucide-react';
+import { 
+    Save, Loader2, Table, LayoutTemplate, Stethoscope, Printer, 
+    CheckCircle, Activity, ChevronLeft, Eye, FileText, Settings2, SlidersHorizontal 
+} from 'lucide-react';
 import { getReportSettings, updateReportSettings } from '@/app/actions/reports';
 import MusicBarLoader from '@/app/components/MusicBarLoader'; 
 
@@ -112,14 +116,14 @@ export default function ReportsSettingsPage() {
         colWidthParam: '', colWidthResult: '', colWidthFlag: '', colWidthUnit: '', colWidthRef: '', colWidthMethod: '',
         showEndOfReport: true, 
         bodyTableStyle: 'horizontal', bodyFontFamily: 'font-sans', bodyFontSize: 'text-sm', bodyRowHeight: 'py-2', bodyColPadding: 'px-2',
-        bodyLineHeight: '1.5', // 🚨 ADDED
+        bodyLineHeight: '1.5',
         bodyHeaderBgColor: '#f8fafc', bodyHeaderTextColor: '#1e293b', bodyResultAlign: 'text-left',
-        headerFontSize: 'text-xs', headerFontWeight: 'font-bold', headerRowHeight: 'py-1.5', headerBorderRadius: 'none', headerToBodyGap: '0', // 🚨 ADDED
+        headerFontSize: 'text-xs', headerFontWeight: 'font-bold', headerRowHeight: 'py-1.5', headerBorderRadius: 'none', headerToBodyGap: '0',
         showDepartmentName: true, showTestName: true, departmentNameSize: 'text-sm', testNameAlignment: 'text-center', testNameUnderline: true, testNameSize: 'text-base', gridLineThickness: '1',
         subheadingColor: '#5e35b1', subheadingSize: 'text-sm',
         flagStyle: 'lh', flagColorLow: '#3b82f6', flagColorNormal: '#000000', flagColorHigh: '#ef4444',
         tableHeaderRepeat: 'test', separatePagesBy: 'none',
-        testBlockSpacing: 'mb-4' // 🚨 ADDED
+        testBlockSpacing: 'mb-4' 
     });
     
     const [footerSettings, setFooterSettings] = useState({ 
@@ -350,11 +354,11 @@ export default function ReportsSettingsPage() {
     };
 
     const tabs = [ 
-        { id: 'Header', label: 'Header (Demographics)', icon: <LayoutTemplate size={14}/> }, 
-        { id: 'Body', label: 'Body (Results Table)', icon: <Table size={14}/> }, 
-        { id: 'Footer', label: 'Footer (Signatures)', icon: <Stethoscope size={14}/> },
-        { id: 'PrintFit', label: 'Report Fit (Print & Margins)', icon: <Printer size={14}/> },
-        { id: 'DeltaReport', label: 'Delta Report (Analytics)', icon: <Activity size={14}/> } 
+        { id: 'Header', label: 'Header', icon: <LayoutTemplate size={13}/> }, 
+        { id: 'Body', label: 'Body', icon: <Table size={13}/> }, 
+        { id: 'Footer', label: 'Footer', icon: <Stethoscope size={13}/> },
+        { id: 'PrintFit', label: 'Report Fit', icon: <Printer size={13}/> },
+        { id: 'DeltaReport', label: 'Delta Report', icon: <Activity size={13}/> } 
     ];
 
     const mobileTabs = [ 
@@ -367,50 +371,116 @@ export default function ReportsSettingsPage() {
     ];
 
     if (isLoading) return (
-        <div className="h-full flex items-center justify-center bg-[#f1f5f9]">
+        <div className="h-full flex items-center justify-center bg-white font-sans">
             <MusicBarLoader text="Loading Settings..." />
         </div>
     );
 
+    const currentTabObj = tabs.find(t => t.id === activeTab) || tabs[0];
+    const CurrentTabIcon = currentTabObj.icon;
+
     return (
-        <div className="h-full w-full bg-[#f1f5f9] flex flex-col font-sans relative">
-            
-            {showSuccessPopup && (
-              <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-                <div className="bg-white rounded-2xl p-8 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-sm w-full mx-4 border border-slate-100">
-                  <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-5 border-[4px] border-emerald-100">
-                    <CheckCircle className="text-emerald-500" size={32} strokeWidth={2.5} />
-                  </div>
-                  <h2 className="text-xl font-black text-slate-800 tracking-tight text-center">Settings Saved!</h2>
-                </div>
-              </div>
-            )}
-
-            {/* ========================================================================= */}
-            {/* DESKTOP RATIO (100% UNTOUCHED ORIGINAL LAYOUT)                            */}
-            {/* ========================================================================= */}
-            <div className="hidden md:flex flex-col flex-1 h-full w-full bg-[#f1f5f9] overflow-hidden">
-                <header className="flex justify-between items-center p-6 pb-4 shrink-0 bg-white border-b border-slate-200 z-10">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Report Template Configuration</h1>
-                        <p className="text-sm text-slate-500 mt-1">Design the anatomy of your printed PDF reports.</p>
+        <div className="flex flex-1 overflow-hidden p-0 gap-0 relative h-full font-sans">
+            <div className="w-full h-full bg-white rounded-none md:rounded-[10px] md:shadow-xl md:border md:border-slate-200 overflow-hidden flex flex-col relative z-10">
+                
+                {/* SUCCESS POPUP */}
+                {showSuccessPopup && (
+                  <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300 p-4">
+                    <div className="bg-white rounded-xl p-6 flex flex-col items-center shadow-xl animate-in zoom-in-95 duration-200 max-w-xs w-full mx-4 border border-slate-200">
+                      <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3 border-2 border-emerald-100">
+                        <CheckCircle className="text-emerald-500" size={26} strokeWidth={2.5} />
+                      </div>
+                      <h2 className="text-sm font-semibold text-slate-800 tracking-tight text-center" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                        Settings Saved Successfully!
+                      </h2>
                     </div>
-                    <button onClick={handleSave} disabled={isPending} className="flex items-center gap-2 bg-[#9575cd] hover:bg-[#7e57c2] text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-md transition-all active:scale-95 disabled:opacity-70">
-                        {isPending ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} {isPending ? 'Saving...' : 'Save Settings'}
-                    </button>
-                </header>
+                  </div>
+                )}
 
-                <div className="bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm px-6">
-                    <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                {/* UNIFIED PAGE HEADER: min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px] */}
+                <div className="px-2.5 xl:px-3 py-1.5 md:py-0 md:px-2.5 xl:px-3 bg-white md:bg-slate-50 shrink-0 flex items-center justify-between gap-1.5 xl:gap-2 border-b border-slate-200 z-20 min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px]">
+                    {/* Left: 20px Title in Calibri */}
+                    <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
+                        <div className="p-1 rounded bg-purple-50 text-[#9575cd] shadow-2xs">
+                            <LayoutTemplate size={16} />
+                        </div>
+                        <h2 className="text-[20px] font-semibold text-slate-800 tracking-tight leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            Report Formatting
+                        </h2>
+                    </div>
+
+                    {/* Right: Desktop Module Tabs (Header, Body, Footer, Report Fit, Delta Report) */}
+                    <div className="hidden md:flex items-center h-[24px] xl:h-[26px] bg-slate-100 rounded-[5px] p-0.5 gap-0.5 border border-slate-200 shrink-0">
                         {tabs.map(tab => (
-                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-6 py-3.5 text-xs font-bold uppercase tracking-wider transition-all border-b-[3px] ${activeTab === tab.id ? 'border-[#9575cd] text-[#9575cd] bg-purple-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}>
-                                {tab.icon} {tab.label}
+                            <button 
+                                key={tab.id} 
+                                onClick={() => setActiveTab(tab.id)} 
+                                className={`h-full whitespace-nowrap px-2 xl:px-2.5 rounded text-[11px] xl:text-[12px] font-normal transition-all flex items-center gap-1.5 leading-none ${
+                                    activeTab === tab.id ? 'bg-white shadow-sm text-slate-800 font-medium' : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                            >
+                                {tab.icon}
+                                <span>{tab.label}</span>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <div className="flex-1 flex gap-6 p-6 min-h-0">
+                {/* Mobile Tabs Header */}
+                <div className="md:hidden flex items-center gap-1 px-2 py-1.5 bg-slate-50 border-b border-slate-200 overflow-x-auto no-scrollbar shrink-0">
+                    {mobileTabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setMobileTab(tab.id)}
+                            className={`h-[24px] px-2 rounded text-[11px] font-normal whitespace-nowrap flex items-center gap-1 shrink-0 ${
+                                mobileTab === tab.id
+                                    ? 'bg-white shadow-sm text-[#9575cd] font-medium border border-slate-200'
+                                    : 'text-slate-500'
+                            }`}
+                        >
+                            {tab.icon}
+                            <span>{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Sub-header Toolbar flush under header (matching Result Entry & Patient List) */}
+                <div className="min-h-[34px] h-[34px] xl:min-h-[38px] xl:h-[38px] px-2.5 xl:px-3 bg-white md:bg-slate-50/80 border-b border-slate-200 flex items-center justify-between gap-2 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <div className="p-1 rounded bg-purple-50 text-[#9575cd]">
+                            {CurrentTabIcon}
+                        </div>
+                        <h3 className="text-[13px] xl:text-[14px] font-semibold text-slate-800" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            {activeTab === 'Header' ? 'Header Demographics Setup' : activeTab === 'Body' ? 'Body Results Table Layout' : activeTab === 'Footer' ? 'Footer & Signatures Setup' : activeTab === 'PrintFit' ? 'Report Fit & Margins' : 'Delta Report Analytics'}
+                        </h3>
+                        <span className="text-[10px] text-slate-500 font-normal bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
+                            {formData.paperSize || 'A4'} • {isLandscape ? 'Landscape' : 'Portrait'}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                        <button 
+                            onClick={handleOpenPDFPreview}
+                            className="h-[24px] xl:h-[26px] px-2.5 xl:px-3 rounded-[5px] text-[11px] xl:text-[12px] font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 flex items-center gap-1.5 shadow-2xs transition-colors"
+                        >
+                            <Eye size={12} strokeWidth={2}/>
+                            <span>Get Report</span>
+                        </button>
+
+                        <button 
+                            onClick={handleSave} 
+                            disabled={isPending} 
+                            className="h-[24px] xl:h-[26px] px-3.5 xl:px-4 rounded-[5px] text-[11px] xl:text-[12px] font-medium text-white flex items-center gap-1.5 shadow-2xs hover:opacity-95 transition-all shrink-0 disabled:opacity-50"
+                            style={{ background: 'linear-gradient(to right, #9575cd, #b39ddb)' }}
+                        >
+                            {isPending ? <Loader2 size={13} className="animate-spin"/> : <Save size={13} strokeWidth={2}/>} 
+                            <span>{isPending ? 'Saving...' : 'Save Settings'}</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* DESKTOP CONTENT AREA - PANELS AS SEPARATE BLOCKS */}
+                <div className="hidden md:flex flex-1 overflow-hidden bg-[#f8fafc] p-2 md:p-2.5 xl:p-3 min-h-0 gap-2.5 xl:gap-3">
                     
                     {activeTab !== 'DeltaReport' && (
                         <LivePreviewPanel 
@@ -429,7 +499,7 @@ export default function ReportsSettingsPage() {
                         />
                     )}
 
-                    <div className={`${activeTab === 'DeltaReport' ? 'w-full max-w-4xl mx-auto' : 'w-[50%]'} flex flex-col min-h-0 transition-all`}>
+                    <div className={`${activeTab === 'DeltaReport' ? 'w-full max-w-4xl mx-auto rounded-[6px] border border-slate-200 shadow-sm bg-white p-3 xl:p-4 overflow-y-auto custom-scrollbar' : 'w-[48%] xl:w-[45%] rounded-[6px] border border-slate-200 shadow-sm bg-white overflow-hidden flex flex-col min-h-0 p-2.5 xl:p-3'} transition-all`}>
                         {activeTab === 'Header' && ( <HeaderTab formData={formData} handleChange={handleChange} handleToggleSetting={handleToggleSetting} availableFields={availableFields} setAvailableFields={setAvailableFields} leftColFields={leftColFields} setLeftColFields={setLeftColFields} rightColFields={rightColFields} setRightColFields={setRightColFields} searchQuery={searchQuery} setSearchQuery={setSearchQuery} /> )}
                         {activeTab === 'Body' && ( <BodyTab bodySettings={bodySettings} handleToggleBody={handleToggleBody} handleBodySettingChange={handleBodySettingChange} /> )}
                         {activeTab === 'Footer' && ( <FooterTab footerSettings={footerSettings} handleToggleFooter={handleToggleFooter} handleFooterSettingChange={handleFooterSettingChange} /> )}
@@ -437,234 +507,213 @@ export default function ReportsSettingsPage() {
                         {activeTab === 'DeltaReport' && ( <DeltaReportTab deltaSettings={deltaSettings} setDeltaSettings={setDeltaSettings} /> )}
                     </div>
                 </div>
-            </div>
 
-            {/* ========================================================================= */}
-            {/* MOBILE RATIO (BUILT SPECIFICALLY FOR MOBILE RATIO)                        */}
-            {/* ========================================================================= */}
-            <div className="flex md:hidden flex-col flex-1 w-full h-full bg-[#f1f5f9] p-2 overflow-hidden">
-                <div className="w-full h-full bg-white rounded-none border-0 shadow-sm overflow-hidden flex flex-col relative">
-                {/* Mobile Tab Switcher Ribbon */}
-                <div className="px-2 py-1 bg-white shrink-0 z-10 overflow-x-auto no-scrollbar flex items-center gap-1">
-                    {mobileTabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setMobileTab(tab.id)}
-                            className={`h-5 px-2 rounded-full text-[8.5px] font-bold shrink-0 flex items-center gap-1 transition-all ${
-                                mobileTab === tab.id
-                                    ? 'bg-[#9575cd] text-white shadow-2xs'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
-                            }`}
-                        >
-                            {tab.icon}
-                            <span>{tab.label}</span>
-                        </button>
-                    ))}
-                </div>
+                {/* MOBILE VIEWPORT */}
+                <div className="flex md:hidden flex-col flex-1 w-full h-full bg-[#f8fafc] p-2 overflow-hidden">
+                    <div className="w-full h-full bg-white rounded-[6px] border border-slate-200 shadow-sm overflow-hidden flex flex-col relative">
+                        
+                        {/* Mobile Tab Content Area */}
+                        <div className="flex-1 min-h-0 overflow-y-auto p-2.5 custom-scrollbar bg-white">
+                            {mobileTab === 'Header' && (
+                                <HeaderTab 
+                                    formData={formData} 
+                                    handleChange={handleChange} 
+                                    handleToggleSetting={handleToggleSetting} 
+                                    availableFields={availableFields} 
+                                    setAvailableFields={setAvailableFields} 
+                                    leftColFields={leftColFields} 
+                                    setLeftColFields={setLeftColFields} 
+                                    rightColFields={rightColFields} 
+                                    setRightColFields={setRightColFields} 
+                                    searchQuery={searchQuery} 
+                                    setSearchQuery={setSearchQuery} 
+                                />
+                            )}
 
-                {/* Mobile Tab Content Area */}
-                <div className="flex-1 min-h-0 overflow-y-auto p-2.5 custom-scrollbar bg-white">
-                    {mobileTab === 'Header' && (
-                        <HeaderTab 
-                            formData={formData} 
-                            handleChange={handleChange} 
-                            handleToggleSetting={handleToggleSetting} 
-                            availableFields={availableFields} 
-                            setAvailableFields={setAvailableFields} 
-                            leftColFields={leftColFields} 
-                            setLeftColFields={setLeftColFields} 
-                            rightColFields={rightColFields} 
-                            setRightColFields={setRightColFields} 
-                            searchQuery={searchQuery} 
-                            setSearchQuery={setSearchQuery} 
-                        />
-                    )}
+                            {mobileTab === 'Body' && (
+                                <BodyTab 
+                                    bodySettings={bodySettings} 
+                                    handleToggleBody={handleToggleBody} 
+                                    handleBodySettingChange={handleBodySettingChange} 
+                                />
+                            )}
 
-                    {mobileTab === 'Body' && (
-                        <BodyTab 
-                            bodySettings={bodySettings} 
-                            handleToggleBody={handleToggleBody} 
-                            handleBodySettingChange={handleBodySettingChange} 
-                        />
-                    )}
+                            {mobileTab === 'Footer' && (
+                                <FooterTab 
+                                    footerSettings={footerSettings} 
+                                    handleToggleFooter={handleToggleFooter} 
+                                    handleFooterSettingChange={handleFooterSettingChange} 
+                                />
+                            )}
 
-                    {mobileTab === 'Footer' && (
-                        <FooterTab 
-                            footerSettings={footerSettings} 
-                            handleToggleFooter={handleToggleFooter} 
-                            handleFooterSettingChange={handleFooterSettingChange} 
-                        />
-                    )}
+                            {mobileTab === 'PrintFit' && (
+                                <PrintFitTab 
+                                    formData={formData} 
+                                    handleChange={handleChange} 
+                                    handleCustomChange={handleCustomChange} 
+                                />
+                            )}
 
-                    {mobileTab === 'PrintFit' && (
-                        <PrintFitTab 
-                            formData={formData} 
-                            handleChange={handleChange} 
-                            handleCustomChange={handleCustomChange} 
-                        />
-                    )}
+                            {mobileTab === 'DeltaReport' && (
+                                <DeltaReportTab 
+                                    deltaSettings={deltaSettings} 
+                                    setDeltaSettings={setDeltaSettings} 
+                                />
+                            )}
 
-                    {mobileTab === 'DeltaReport' && (
-                        <DeltaReportTab 
-                            deltaSettings={deltaSettings} 
-                            setDeltaSettings={setDeltaSettings} 
-                        />
-                    )}
+                            {mobileTab === 'Preview' && (
+                                <div className="w-full bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 flex flex-col overflow-hidden relative">
+                                    <div className="border-b border-slate-100 pb-2 mb-2 shrink-0 flex items-center justify-between gap-1 flex-wrap">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] font-bold text-slate-800">Print Canvas</span>
+                                            <span className="text-[8.5px] font-bold text-[#9575cd] bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
+                                                {formData.paperSize || 'A4'} • {isLandscape ? 'Landscape' : 'Portrait'}
+                                            </span>
+                                        </div>
 
-                    {mobileTab === 'Preview' && (
-                        <div className="w-full bg-white border border-slate-200 shadow-sm rounded-none md:rounded-xl p-2.5 flex flex-col overflow-hidden relative">
-                            {/* Preview Controls Bar */}
-                            <div className="border-b border-slate-100 pb-2 mb-2 shrink-0 flex items-center justify-between gap-1 flex-wrap">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] font-bold text-slate-800">Print Canvas</span>
-                                    <span className="text-[8.5px] font-bold text-[#9575cd] bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
-                                        {formData.paperSize || 'A4'} • {isLandscape ? 'Landscape' : 'Portrait'}
-                                    </span>
-                                </div>
+                                        <div className="flex items-center gap-1">
+                                            <div className="flex items-center bg-slate-100 rounded p-0.5 border border-slate-200">
+                                                <button
+                                                    onClick={() => setMobileZoom('fit')}
+                                                    className={`h-5 px-1.5 rounded text-[8.5px] font-bold transition-all flex items-center gap-0.5 ${
+                                                        mobileZoom === 'fit' ? 'bg-white text-[#9575cd] shadow-2xs' : 'text-slate-500'
+                                                    }`}
+                                                >
+                                                    Fit View
+                                                </button>
+                                                <button
+                                                    onClick={() => setMobileZoom('full')}
+                                                    className={`h-5 px-1.5 rounded text-[8.5px] font-bold transition-all flex items-center gap-0.5 ${
+                                                        mobileZoom === 'full' ? 'bg-white text-[#9575cd] shadow-2xs' : 'text-slate-500'
+                                                    }`}
+                                                >
+                                                    100%
+                                                </button>
+                                            </div>
 
-                                <div className="flex items-center gap-1">
-                                    {/* Zoom Mode Toggle */}
-                                    <div className="flex items-center bg-slate-100 rounded p-0.5 border border-slate-200">
-                                        <button
-                                            onClick={() => setMobileZoom('fit')}
-                                            className={`h-5 px-1.5 rounded text-[8.5px] font-bold transition-all flex items-center gap-0.5 ${
-                                                mobileZoom === 'fit' ? 'bg-white text-[#9575cd] shadow-2xs' : 'text-slate-500'
-                                            }`}
-                                        >
-                                            Fit View
-                                        </button>
-                                        <button
-                                            onClick={() => setMobileZoom('full')}
-                                            className={`h-5 px-1.5 rounded text-[8.5px] font-bold transition-all flex items-center gap-0.5 ${
-                                                mobileZoom === 'full' ? 'bg-white text-[#9575cd] shadow-2xs' : 'text-slate-500'
-                                            }`}
-                                        >
-                                            100%
-                                        </button>
+                                            <button
+                                                onClick={handleOpenPDFPreview}
+                                                className="h-5 px-2 bg-[#9575cd] hover:bg-[#7e57c2] text-white text-[9px] font-bold rounded flex items-center gap-1 shadow-2xs active:scale-95 transition-all"
+                                            >
+                                                <FileText size={10} /> Get PDF
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <button
-                                        onClick={handleOpenPDFPreview}
-                                        className="h-5 px-2 bg-[#9575cd] hover:bg-[#7e57c2] text-white text-[9px] font-bold rounded flex items-center gap-1 shadow-2xs active:scale-95 transition-all"
-                                    >
-                                        <FileText size={10} /> Get PDF
-                                    </button>
+                                    <div className="w-full overflow-auto bg-slate-100/90 p-2 rounded-lg border border-slate-200 flex justify-center items-start custom-scrollbar max-h-[72vh]">
+                                        <div 
+                                            style={
+                                                mobileZoom === 'fit' 
+                                                    ? { 
+                                                            transform: `scale(${isLandscape ? 0.32 : 0.44})`, 
+                                                            transformOrigin: 'top center',
+                                                            width: `${paperWidth}px`,
+                                                            height: `${paperHeight * (isLandscape ? 0.32 : 0.44)}px`,
+                                                            marginBottom: `${isLandscape ? 30 : 60}px`
+                                                        }
+                                                    : {
+                                                            width: `${paperWidth}px`
+                                                        }
+                                            }
+                                            className="transition-transform duration-200 shrink-0"
+                                        >
+                                            <PrintReportContent 
+                                                formData={formData}
+                                                leftColFields={leftColFields}
+                                                rightColFields={rightColFields}
+                                                bodySettings={bodySettings}
+                                                footerSettings={footerSettings}
+                                                paperWidth={paperWidth}
+                                                paperHeight={paperHeight}
+                                                t={t} b={b} l={l} r={r}
+                                                activeImageBase64={activeImageBase64}
+                                                printHeaderFooter={printHeaderFooter}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Canvas Scroll Viewport */}
-                            <div className="w-full overflow-auto bg-slate-200/90 p-2 rounded-lg border border-slate-200 flex justify-center items-start custom-scrollbar max-h-[72vh]">
-                                <div 
-                                    style={
-                                        mobileZoom === 'fit' 
-                                            ? { 
-                                                    transform: `scale(${isLandscape ? 0.32 : 0.44})`, 
-                                                    transformOrigin: 'top center',
-                                                    width: `${paperWidth}px`,
-                                                    height: `${paperHeight * (isLandscape ? 0.32 : 0.44)}px`,
-                                                    marginBottom: `${isLandscape ? 30 : 60}px`
-                                                }
-                                            : {
-                                                    width: `${paperWidth}px`
-                                                }
-                                    }
-                                    className="transition-transform duration-200 shrink-0"
-                                >
-                                    <PrintReportContent 
-                                        formData={formData}
-                                        leftColFields={leftColFields}
-                                        rightColFields={rightColFields}
-                                        bodySettings={bodySettings}
-                                        footerSettings={footerSettings}
-                                        paperWidth={paperWidth}
-                                        paperHeight={paperHeight}
-                                        t={t} b={b} l={l} r={r}
-                                        activeImageBase64={activeImageBase64}
-                                        printHeaderFooter={printHeaderFooter}
-                                    />
-                                </div>
-                            </div>
+                            )}
                         </div>
-                    )}
-                </div>
 
-                {/* Mobile Proper Footer */}
-                <footer className="shrink-0 bg-white p-2 z-[50] pb-safe">
-                    <div className="grid grid-cols-4 gap-1.5 w-full">
-                        <button 
-                            type="button"
-                            onClick={() => router.back()} 
-                            className="h-6 w-full flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-600 font-medium text-[9px] rounded active:scale-95 transition-all gap-0.5"
-                        >
-                            <ChevronLeft size={12} />
-                            <span>Back</span>
-                        </button>
+                        {/* Mobile Footer */}
+                        <footer className="shrink-0 bg-white p-2 z-[50] pb-safe border-t border-slate-100">
+                            <div className="grid grid-cols-4 gap-1.5 w-full">
+                                <button 
+                                    type="button" 
+                                    onClick={() => router.back()} 
+                                    className="h-6 w-full flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-600 font-medium text-[9px] rounded active:scale-95 transition-all gap-0.5"
+                                >
+                                    <ChevronLeft size={12} />
+                                    <span>Back</span>
+                                </button>
 
-                        {mobileTab !== 'Preview' ? (
-                            <button 
-                                type="button"
-                                onClick={() => setMobileTab('Preview')}
-                                className="h-6 w-full bg-purple-50 hover:bg-purple-100/70 border border-purple-200 text-[#9575cd] rounded text-[9px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all"
-                            >
-                                <Eye size={11} />
-                                <span>Canvas</span>
-                            </button>
-                        ) : (
-                            <button 
-                                type="button"
-                                onClick={() => setMobileTab('Header')}
-                                className="h-6 w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all border border-slate-200"
-                            >
-                                <Settings2 size={11} />
-                                <span>Config</span>
-                            </button>
-                        )}
+                                {mobileTab !== 'Preview' ? (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setMobileTab('Preview')}
+                                        className="h-6 w-full bg-purple-50 hover:bg-purple-100/70 border border-purple-200 text-[#9575cd] rounded text-[9px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all"
+                                    >
+                                        <Eye size={11} />
+                                        <span>Canvas</span>
+                                    </button>
+                                ) : (
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setMobileTab('Header')}
+                                        className="h-6 w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[9px] font-bold flex items-center justify-center gap-1 active:scale-95 transition-all border border-slate-200"
+                                    >
+                                        <Settings2 size={11} />
+                                        <span>Config</span>
+                                    </button>
+                                )}
 
-                        <button 
-                            type="button"
-                            onClick={handleOpenPDFPreview}
-                            className="h-6 w-full text-[9px] font-bold text-[#9575cd] bg-purple-50 hover:bg-purple-100/70 border border-purple-200 rounded flex items-center justify-center gap-1 active:scale-95 transition-all shadow-2xs"
-                        >
-                            <FileText size={11} />
-                            <span>Preview</span>
-                        </button>
+                                <button 
+                                    type="button" 
+                                    onClick={handleOpenPDFPreview}
+                                    className="h-6 w-full text-[9px] font-bold text-[#9575cd] bg-purple-50 hover:bg-purple-100/70 border border-purple-200 rounded flex items-center justify-center gap-1 active:scale-95 transition-all shadow-2xs"
+                                >
+                                    <FileText size={11} />
+                                    <span>Preview</span>
+                                </button>
 
-                        <button 
-                            type="button"
-                            onClick={handleSave} 
-                            disabled={isPending}
-                            className="h-6 w-full bg-[#9575cd] hover:bg-[#7e57c2] text-white rounded text-[9.5px] font-bold flex items-center justify-center gap-1 shadow-sm active:scale-95 transition-all disabled:opacity-70"
-                        >
-                            {isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
-                            <span>{isPending ? '...' : 'Save'}</span>
-                        </button>
+                                <button 
+                                    type="button" 
+                                    onClick={handleSave} 
+                                    disabled={isPending}
+                                    className="h-6 w-full bg-[#9575cd] hover:bg-[#7e57c2] text-white rounded text-[9.5px] font-bold flex items-center justify-center gap-1 shadow-sm active:scale-95 transition-all disabled:opacity-70"
+                                >
+                                    {isPending ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                                    <span>{isPending ? '...' : 'Save'}</span>
+                                </button>
+                            </div>
+                        </footer>
                     </div>
-                </footer>
                 </div>
+
+                <ReportDispatchModal 
+                    isOpen={isReportModalOpen}
+                    onClose={handleCloseModal}
+                    pdfPreviewUrl={pdfPreviewUrl}
+                    isPreviewLoading={isPreviewLoading}
+                    handleDirectDownload={handleDirectDownload}
+                    printHeaderFooter={printHeaderFooter}
+                    onToggleHeaderFooter={handleToggleHeaderFooter}
+                    letterheadStyle={formData.letterheadStyle || 'none'}
+                    onChangeLetterheadStyle={handleChangeLetterheadStyle}
+                    separateDept={separateDept}
+                    onToggleSeparateDept={setSeparateDept}
+                    separateTest={separateTest}
+                    onToggleSeparateTest={setSeparateTest}
+                    billItems={[]} 
+                    selectedItemIds={[]}
+                    onToggleItem={() => {}}
+                    onSelectAll={() => {}}
+                    onDeselectAll={() => {}}
+                />
+
+                <style>{`.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; } .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
             </div>
-
-            <ReportDispatchModal 
-                isOpen={isReportModalOpen}
-                onClose={handleCloseModal}
-                pdfPreviewUrl={pdfPreviewUrl}
-                isPreviewLoading={isPreviewLoading}
-                handleDirectDownload={handleDirectDownload}
-                printHeaderFooter={printHeaderFooter}
-                onToggleHeaderFooter={handleToggleHeaderFooter}
-                letterheadStyle={formData.letterheadStyle || 'none'}
-                onChangeLetterheadStyle={handleChangeLetterheadStyle}
-                separateDept={separateDept}
-                onToggleSeparateDept={setSeparateDept}
-                separateTest={separateTest}
-                onToggleSeparateTest={setSeparateTest}
-                billItems={[]} 
-                selectedItemIds={[]}
-                onToggleItem={() => {}}
-                onSelectAll={() => {}}
-                onDeselectAll={() => {}}
-            />
-
-            <style>{`.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; } .no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
         </div>
     );
 }
+// --- BLOCK app/reports/page.tsx CLOSE ---

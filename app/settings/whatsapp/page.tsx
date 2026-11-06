@@ -103,13 +103,13 @@ export default async function WhatsAppSettingsPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 text-xs text-slate-500 uppercase font-bold border-b border-slate-200">
+            <thead className="bg-[#9575cd] text-xs text-white uppercase font-bold border-b border-[#7e57c2]">
               <tr>
-                <th className="px-5 py-3">Time</th>
-                <th className="px-5 py-3">Phone</th>
-                <th className="px-5 py-3">Category</th>
-                <th className="px-5 py-3">Transport</th>
-                <th className="px-5 py-3">Status</th>
+                <th style={{ padding: '5px 12px', verticalAlign: 'middle', lineHeight: 1 }} className="text-white align-middle leading-none">Time</th>
+                <th style={{ padding: '5px 12px', verticalAlign: 'middle', lineHeight: 1 }} className="text-white align-middle leading-none">Phone</th>
+                <th style={{ padding: '5px 12px', verticalAlign: 'middle', lineHeight: 1 }} className="text-white align-middle leading-none">Category</th>
+                <th style={{ padding: '5px 12px', verticalAlign: 'middle', lineHeight: 1 }} className="text-white align-middle leading-none">Transport</th>
+                <th style={{ padding: '5px 12px', verticalAlign: 'middle', lineHeight: 1 }} className="text-white align-middle leading-none">Status</th>
               </tr>
             </thead>
             <tbody>

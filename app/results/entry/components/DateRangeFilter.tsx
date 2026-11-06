@@ -214,7 +214,7 @@ export default function DateRangeFilter({ onFilterChange, buttonClassName, align
     setIsOpen(false);
   };
 
-  const finalButtonClass = buttonClassName || "flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 transition-all h-8 group min-w-[140px]";
+  const finalButtonClass = buttonClassName || "flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-md shadow-sm hover:bg-slate-50 transition-all h-[26px] group min-w-[130px] text-[12px] font-normal";
 
   const [adjustedAlign, setAdjustedAlign] = useState<'start' | 'end' | 'center'>(align);
 
@@ -251,7 +251,7 @@ export default function DateRangeFilter({ onFilterChange, buttonClassName, align
       <button onClick={() => setIsOpen(!isOpen)} className={finalButtonClass}>
         <div className="flex items-center gap-1.5 w-full overflow-hidden">
             <CalendarIcon size={12} className="text-slate-500 group-hover:text-[#9575cd] transition-colors shrink-0"/>
-            <span className="text-[10px] font-bold text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis text-left flex-1">
+            <span className="text-[12px] font-normal text-slate-700 whitespace-nowrap overflow-hidden text-ellipsis text-left flex-1">
                 {displayLabel}
             </span>
         </div>
@@ -267,12 +267,12 @@ export default function DateRangeFilter({ onFilterChange, buttonClassName, align
             animate-in fade-in zoom-in-95 duration-200`}>
           
           <div className={`w-full md:w-40 bg-white md:bg-slate-50/50 md:border-r border-slate-100 py-1 shrink-0 ${mobileScreen === 'list' ? 'flex flex-col' : 'hidden md:flex flex-col'} overflow-y-auto overflow-x-hidden md:overflow-visible no-scrollbar`}>
-            <div className="md:hidden px-3 pt-1 pb-1.5 font-bold text-slate-800 text-[11px] border-b border-slate-100 mb-0.5">Select Range</div>
+            <div className="md:hidden px-3 pt-1 pb-1.5 font-medium text-slate-800 text-[11px] border-b border-slate-100 mb-0.5">Select Range</div>
             {presets.map(preset => (
               <button
                 key={preset}
                 onClick={() => handlePresetClick(preset)}
-                className={`w-full text-left px-3 py-1.5 md:py-2 text-[10px] md:text-xs font-bold flex items-center justify-between transition-colors shrink-0 whitespace-nowrap ${
+                className={`w-full text-left px-3 py-1.5 md:py-2 text-[11px] md:text-[12px] font-normal flex items-center justify-between transition-colors shrink-0 whitespace-nowrap ${
                     activePreset === preset 
                     ? 'bg-purple-50 md:bg-white text-[#9575cd] border-l-2 border-[#9575cd] shadow-[inset_1px_0_0_#9575cd] md:shadow-none' 
                     : 'text-slate-600 hover:bg-slate-50 border-l-2 border-transparent'

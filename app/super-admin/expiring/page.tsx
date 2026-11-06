@@ -1,12 +1,11 @@
 // --- BLOCK app/super-admin/expiring/page.tsx OPEN ---
 import React from "react";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { AlertTriangle, Clock, PhoneForwarded } from "lucide-react";
+import { AlertTriangle, Clock, Crown, Building2, LibraryBig, UserCog, IndianRupee } from "lucide-react";
 import SuperAdminTable from "../components/SuperAdminTable";
 
 export default async function ExpiringLabsPage() {
-  
-  // 1. Fetch all labs except Master HQ
   const allLabs = await prisma.organization.findMany({
     where: { id: { not: 1 } },
     include: {
@@ -14,11 +13,8 @@ export default async function ExpiringLabsPage() {
     }
   });
 
-  // 2. Filter them manually to ensure the 5-Day fallback applies to older accounts
   const labs = allLabs.filter(lab => {
       let expDate = lab.subscriptionEndsAt ? new Date(lab.subscriptionEndsAt) : null;
-      
-      // If missing from database, calculate 5 days from creation
       if (!expDate) {
           expDate = new Date(lab.createdAt);
           expDate.setDate(expDate.getDate() + 5);
@@ -28,45 +24,76 @@ export default async function ExpiringLabsPage() {
       const next5Days = new Date();
       next5Days.setDate(today.getDate() + 5);
 
-      // Only keep labs expiring between right now and 5 days from now
       return expDate >= today && expDate <= next5Days;
   });
 
-  // Sort the results so the closest expiration shows up first
   labs.sort((a, b) => {
       const dateA = a.subscriptionEndsAt ? new Date(a.subscriptionEndsAt) : new Date(a.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000);
       const dateB = b.subscriptionEndsAt ? new Date(b.subscriptionEndsAt) : new Date(b.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000);
       return dateA.getTime() - dateB.getTime();
   });
 
-  const expiringCount = labs.length;
+  const hqTabs = [
+    { href: "/super-admin", label: "Tenant Labs", icon: <Building2 size={13} />, active: false },
+    { href: "/super-admin/central-library", label: "Central Library", icon: <LibraryBig size={13} />, active: false },
+    { href: "/super-admin/admins", label: "System Admins", icon: <UserCog size={13} />, active: false },
+    { href: "/super-admin/recharge", label: "Message Recharge", icon: <IndianRupee size={13} />, active: false },
+  ];
 
   return (
-    <div className="w-full max-w-[100vw] min-h-screen bg-slate-50 p-4 md:p-6 font-sans overflow-x-hidden">
-      
-      <div className="mb-6 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-red-600 tracking-tight flex items-center gap-2">
-            <AlertTriangle size={24} />
-            Expiring Within 5 Days
-          </h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">High-priority renewal targets. Contact these labs immediately.</p>
-        </div>
+    <div className="flex flex-1 overflow-hidden p-0 gap-0 relative h-full font-sans">
+      <div className="w-full h-full bg-white rounded-none md:rounded-[10px] md:shadow-xl md:border md:border-slate-200 overflow-hidden flex flex-col relative z-10">
         
-        <div className="flex flex-wrap gap-3 w-full xl:w-auto">
-          <div className="flex items-center gap-3 bg-red-50 px-4 py-2 rounded-lg border border-red-200 shadow-sm flex-1 xl:flex-none min-w-[140px]">
-            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center"><Clock size={16} className="text-red-600" /></div>
-            <div><p className="text-[11px] font-bold text-red-400 uppercase">At Risk</p><p className="text-lg font-black text-red-700 leading-none">{expiringCount}</p></div>
+        {/* UNIFIED PAGE HEADER: min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px] */}
+        <div className="px-2.5 xl:px-3 py-1.5 md:py-0 md:px-2.5 xl:px-3 bg-white md:bg-slate-50 shrink-0 flex items-center justify-between gap-1.5 xl:gap-2 border-b border-slate-200 z-20 min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px]">
+          {/* Left: 20px Title in Calibri */}
+          <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
+            <div className="p-1 rounded bg-rose-50 text-rose-600 shadow-2xs">
+              <AlertTriangle size={16} />
+            </div>
+            <h2 className="text-[20px] font-semibold text-slate-800 tracking-tight leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+              Master HQ
+            </h2>
           </div>
-          <div className="flex items-center gap-3 bg-orange-50 px-4 py-2 rounded-lg border border-orange-200 shadow-sm flex-1 xl:flex-none min-w-[140px]">
-            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center"><PhoneForwarded size={16} className="text-orange-600" /></div>
-            <div><p className="text-[11px] font-bold text-orange-400 uppercase">Action</p><p className="text-sm font-black text-orange-700 leading-none mt-1">Call Required</p></div>
+
+          {/* Right: Desktop Module Tabs */}
+          <div className="hidden md:flex items-center h-[24px] xl:h-[26px] bg-slate-100 rounded-[5px] p-0.5 gap-0.5 border border-slate-200 shrink-0">
+            {hqTabs.map(tab => (
+              <Link 
+                key={tab.href}
+                href={tab.href}
+                className={`h-full whitespace-nowrap px-2 xl:px-2.5 rounded text-[11px] xl:text-[12px] font-normal transition-all flex items-center gap-1.5 leading-none ${
+                  tab.active ? 'bg-white shadow-sm text-slate-800 font-medium' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+              </Link>
+            ))}
           </div>
         </div>
+
+        {/* Sub-header Toolbar flush under header */}
+        <div className="min-h-[34px] h-[34px] xl:min-h-[38px] xl:h-[38px] px-2.5 xl:px-3 bg-white md:bg-slate-50/80 border-b border-slate-200 flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <div className="p-1 rounded bg-rose-50 text-rose-600 shrink-0">
+              <Clock size={14} />
+            </div>
+            <h3 className="text-[13px] xl:text-[14px] font-semibold text-slate-800 shrink-0" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+              Expiring Within 5 Days
+            </h3>
+            <span className="text-[10px] xl:text-[11px] px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-semibold border border-rose-200 shrink-0">
+              {labs.length} Urgent Labs
+            </span>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto bg-[#f8fafc] p-2 md:p-2.5 xl:p-3 min-h-0 custom-scrollbar flex flex-col">
+          <SuperAdminTable labs={labs} />
+        </div>
+
       </div>
-
-      <SuperAdminTable labs={labs} />
-
     </div>
   );
 }

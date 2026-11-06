@@ -41,10 +41,12 @@ export default function HeaderTab({
         <div className="flex flex-col gap-2.5 w-full h-auto md:h-full md:overflow-y-auto custom-scrollbar md:pr-2 pb-2">
             
             {/* Table Styling & Typography */}
-            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col shrink-0">
                 <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                     <Settings2 size={14} className="text-[#9575cd]" />
-                    <h3 className="font-bold text-slate-800 text-[11px] md:text-sm">Table Styling & Typography</h3>
+                    <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px]" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                        Table Styling & Typography
+                    </h3>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2.5 gap-y-2">
@@ -144,12 +146,14 @@ export default function HeaderTab({
             </div>
 
             {/* Field Builder */}
-            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl flex flex-col md:flex-1 md:overflow-hidden">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] flex flex-col md:flex-1 md:overflow-hidden">
                 <div className="flex items-center gap-1.5 border-b border-slate-100 p-2.5 md:p-3 bg-white shrink-0">
                     <LayoutTemplate size={14} className="text-[#9575cd]" />
                     <div>
-                        <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Demographics Field Builder</h3>
-                        <p className="text-[9px] text-slate-400 mt-0.5 leading-none">Allocate registration fields to left or right columns.</p>
+                        <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            Demographics Field Builder
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Allocate registration fields to left or right columns.</p>
                     </div>
                 </div>
 

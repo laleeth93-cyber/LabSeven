@@ -107,15 +107,18 @@ export default function CentralDepartmentsView() {
     if (!deleteConfirmId) return;
 
     startTransition(async () => {
-      await deleteCentralDepartment(deleteConfirmId);
+      const res = await deleteCentralDepartment(deleteConfirmId);
       setDeleteConfirmId(null);
-
-      setSuccessMessage("Deleted Successfully!");
-      setShowSuccessPopup(true);
-      setTimeout(() => {
-        setShowSuccessPopup(false);
-        loadData();
-      }, 1200);
+      if (res.success) {
+        setSuccessMessage("Deleted Successfully!");
+        setShowSuccessPopup(true);
+        setTimeout(() => {
+          setShowSuccessPopup(false);
+          loadData();
+        }, 1200);
+      } else {
+        alert(res.message || "Failed to delete department");
+      }
     });
   };
 
@@ -140,74 +143,232 @@ export default function CentralDepartmentsView() {
   );
 
   return (
-    <div className="flex flex-col w-full h-full bg-slate-50 p-2 md:p-6 font-sans relative">
+    <div className="flex-1 flex flex-col h-full min-h-0 space-y-2">
+      {/* FILTER & ACTIONS BAR AS SEPARATE CARD BLOCK */}
+      <div className="bg-white rounded-[6px] border border-slate-200 shadow-sm p-2 xl:p-2.5 flex items-center justify-between gap-2 shrink-0">
+        <div className="relative w-48 sm:w-64">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
+          <input
+            type="text"
+            placeholder="Search departments..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-[24px] xl:h-[26px] pl-7 pr-2.5 text-[11px] xl:text-[12px] font-normal border border-slate-300 rounded-[5px] bg-white focus:outline-none focus:border-[#9575cd]"
+          />
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={handleAdd}
+            className="h-[24px] xl:h-[26px] px-2.5 xl:px-3 rounded-[5px] text-[11px] xl:text-[12px] font-medium text-white flex items-center gap-1 shadow-2xs hover:opacity-95 transition-all shrink-0"
+            style={{ background: 'linear-gradient(to right, #9575cd, #b39ddb)' }}
+          >
+            <Plus size={13} strokeWidth={2.5} /> Add Department
+          </button>
+        </div>
+      </div>
+
+      {/* DESKTOP TABLE VIEW AS SEPARATE BLOCK */}
+      <div className="hidden md:flex flex-1 flex-col overflow-hidden rounded-[6px] border border-slate-200 shadow-sm bg-white min-h-0">
+        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar relative">
+          <table className="w-full text-left border-collapse border-spacing-0 whitespace-nowrap">
+            <thead className="bg-[#9575cd] sticky top-0 z-10 text-white border-b border-[#7e57c2]">
+              <tr>
+                <th className="text-white font-medium text-[11px] uppercase tracking-wider align-middle leading-none w-24" style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }}>Code</th>
+                <th className="text-white font-medium text-[11px] uppercase tracking-wider align-middle leading-none" style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }}>Department Name</th>
+                <th className="text-white font-medium text-[11px] uppercase tracking-wider align-middle leading-none" style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }}>Description</th>
+                <th className="text-white font-medium text-[11px] uppercase tracking-wider align-middle leading-none text-center w-20" style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }}>Status</th>
+                <th className="text-white font-medium text-[11px] uppercase tracking-wider align-middle leading-none text-center w-20" style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center">
+                    <MusicBarLoader text="Loading Departments..." />
+                  </td>
+                </tr>
+              ) : filteredList.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-slate-400 text-xs italic">
+                    No central departments found.
+                  </td>
+                </tr>
+              ) : (
+                filteredList.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50/80 transition-colors border-b border-[#d9d9d9]">
+                    <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="font-mono text-slate-600 text-[11px] font-medium">
+                      {item.code}
+                    </td>
+
+                    <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }}>
+                      <span className="font-semibold text-slate-800 text-[11px] xl:text-[12px]">{item.name}</span>
+                    </td>
+
+                    <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="text-slate-500 text-[11px] truncate max-w-md">
+                      {item.description || "-"}
+                    </td>
+
+                    <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="text-center">
+                      <button
+                        onClick={() => handleToggle(item.id, item.isActive)}
+                        disabled={isPending}
+                        className={`h-[20px] px-2 text-[10px] font-semibold rounded shadow-2xs transition-colors ${
+                          item.isActive 
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                            : 'bg-slate-100 text-slate-500 border border-slate-200'
+                        }`}
+                      >
+                        {item.isActive ? "Active" : "Disabled"}
+                      </button>
+                    </td>
+
+                    <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="h-[22px] w-[22px] rounded border border-slate-200 text-teal-600 hover:bg-teal-50 flex items-center justify-center shadow-2xs transition-colors"
+                          title="Edit Department"
+                        >
+                          <Edit size={13} strokeWidth={2}/>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(item.id)}
+                          className="h-[22px] w-[22px] rounded border border-rose-200 text-rose-600 hover:bg-rose-50 flex items-center justify-center shadow-2xs transition-colors"
+                          title="Delete Department"
+                        >
+                          <Trash2 size={13} strokeWidth={2}/>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* PINNED TABLE FOOTER */}
+        <div className="px-3 py-1.5 bg-[#f8fafc] border-t border-slate-200 shrink-0 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+          <div>
+            Showing: <strong className="text-slate-700">{filteredList.length} of {departments.length} Departments</strong>
+          </div>
+          <div className="text-[10px] text-slate-400">
+            Departments automatically seed into new laboratory accounts
+          </div>
+        </div>
+      </div>
+
+      {/* MOBILE LIST VIEW */}
+      <div className="md:hidden space-y-2 pb-6">
+        {filteredList.map((item) => (
+          <article key={item.id} className="rounded-[6px] border border-slate-200 bg-white p-2.5 shadow-2xs flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-slate-800 text-xs" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>{item.name}</span>
+              <span className="font-mono text-[9px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
+                {item.code}
+              </span>
+            </div>
+            {item.description && (
+              <p className="text-[10px] text-slate-400">{item.description}</p>
+            )}
+            <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+              <button
+                onClick={() => handleToggle(item.id, item.isActive)}
+                className={`text-[9px] font-semibold px-2 py-0.5 rounded border ${
+                  item.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200"
+                }`}
+              >
+                {item.isActive ? "Active" : "Disabled"}
+              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleEdit(item)}
+                  className="h-6 w-6 rounded border border-slate-200 text-teal-600 flex items-center justify-center"
+                >
+                  <Edit size={12} />
+                </button>
+                <button
+                  onClick={() => handleDeleteClick(item.id)}
+                  className="h-6 w-6 rounded border border-rose-200 text-rose-600 flex items-center justify-center"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+
       {/* ADD/EDIT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-[280px] md:max-w-xs overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h3 className="text-xs font-bold text-slate-800 uppercase flex items-center gap-2">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-xs animate-in fade-in p-3">
+          <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-150">
+            <div className="px-4 py-2.5 border-b border-slate-200 flex justify-between items-center bg-slate-50 min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px]">
+              <h3 className="font-semibold text-[15px] xl:text-[16px] text-slate-800 flex items-center gap-1.5 leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                {editingId ? <Edit size={14} className="text-[#9575cd]"/> : <Plus size={14} className="text-[#9575cd]"/>}
                 {editingId ? "Edit" : "Add"} Central Department
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-red-500 transition-colors"
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <div className="p-4 space-y-3">
+            <div className="p-4 space-y-2.5">
               <div>
-                <label className="text-[9px] font-bold text-slate-500 uppercase mb-1 block">
-                  Department Name *
+                <label className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider mb-1 flex items-center h-4">
+                  Department Name <span className="text-rose-500 ml-0.5">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full text-[11px] h-7 border border-slate-300 rounded px-2 outline-none focus:border-[#9575cd]"
+                  className="w-full h-[26px] xl:h-[28px] text-[11px] xl:text-[12px] font-normal border border-slate-300 rounded-[5px] px-2.5 bg-white focus:outline-none focus:border-[#9575cd]"
                   placeholder="e.g. Hematology"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="text-[9px] font-bold text-slate-500 uppercase mb-1 block">
+                <label className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider mb-1 flex items-center h-4">
                   Code (Auto)
                 </label>
                 <input
                   type="text"
                   value={formData.code}
                   readOnly
-                  className="w-full text-[11px] h-7 border border-slate-200 rounded px-2 outline-none bg-slate-100 text-slate-500 cursor-not-allowed font-mono"
+                  className="w-full h-[26px] xl:h-[28px] text-[11px] xl:text-[12px] font-mono border border-slate-200 rounded-[5px] px-2.5 bg-slate-100 text-slate-500 cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="text-[9px] font-bold text-slate-500 uppercase mb-1 block">
+                <label className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider mb-1 flex items-center h-4">
                   Description
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full text-[11px] border border-slate-300 rounded px-2 py-1.5 outline-none focus:border-[#9575cd] h-12 resize-none"
+                  className="w-full text-[11px] border border-slate-300 rounded-[5px] px-2.5 py-1.5 focus:outline-none focus:border-[#9575cd] h-14 resize-none"
                   placeholder="Optional details..."
                 />
               </div>
 
-              <div className="pt-2 flex gap-2">
+              <div className="pt-2 flex gap-2 justify-end border-t border-slate-100">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 h-7 text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 rounded transition-colors"
+                  className="h-[24px] xl:h-[26px] px-3 text-[11px] xl:text-[12px] font-normal text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 rounded-[5px] transition-colors"
                 >
-                  CANCEL
+                  Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={isPending}
-                  className="flex-1 h-7 text-[10px] font-bold text-white bg-[#9575cd] hover:bg-[#7e57c2] rounded shadow-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-70"
+                  className="h-[24px] xl:h-[26px] px-4 rounded-[5px] text-[11px] xl:text-[12px] font-medium text-white flex items-center gap-1 shadow-2xs hover:opacity-95 transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(to right, #9575cd, #b39ddb)' }}
                 >
-                  {isPending ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}{" "}
-                  SAVE
+                  {isPending ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                  <span>Save</span>
                 </button>
               </div>
             </div>
@@ -217,252 +378,49 @@ export default function CentralDepartmentsView() {
 
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border-[4px] border-red-100">
-              <AlertTriangle className="text-red-500" size={32} strokeWidth={2.5} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="bg-white rounded-[10px] shadow-2xl w-full max-w-sm overflow-hidden p-5 text-center border border-slate-200">
+            <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-3 border-2 border-rose-100">
+              <AlertTriangle className="text-rose-500" size={24} strokeWidth={2.5} />
             </div>
-            <h3 className="text-lg font-bold text-slate-800 mb-2">Delete Department?</h3>
-            <p className="text-sm text-slate-500 mb-6">
-              Are you sure you want to delete this central master department?
+            <h3 className="text-[16px] font-semibold text-slate-800 mb-1 leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+              Delete Central Department?
+            </h3>
+            <p className="text-[12px] text-slate-500 mb-4 font-normal">
+              Are you sure you want to delete this central department? This action cannot be undone.
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-2 justify-center">
               <button
                 onClick={() => setDeleteConfirmId(null)}
-                className="flex-1 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                className="h-[26px] px-3 text-[11px] font-medium text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 rounded-[5px] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={isPending}
-                className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                className="h-[26px] px-3.5 text-[11px] font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-[5px] shadow-2xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
-                {isPending ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}{" "}
-                Delete
+                {isPending ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} Delete
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* --- DESKTOP LAYOUT --- */}
-      <div className="hidden md:flex flex-col h-full overflow-hidden">
-        {/* HEADER */}
-        <div className="h-16 bg-white border border-slate-200 rounded-t-xl flex items-center justify-between px-6 shrink-0">
-          <div className="flex items-center gap-2 text-slate-800">
-            <Building2 className="text-[#9575cd]" size={20} />
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">Central Department Master</h1>
-              <p className="text-xs text-slate-500">
-                Master laboratory departments seeded across all newly created tenant laboratories
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/super-admin/central-library/departments/add">
-              <button className="border border-[#9575cd] text-[#9575cd] hover:bg-purple-50 px-3 py-2 rounded-md text-xs font-bold transition-all">
-                Full Page Add
-              </button>
-            </Link>
-            <button
-              onClick={handleAdd}
-              className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-4 py-2 rounded-md text-xs font-bold shadow-md flex items-center gap-2 transition-all active:scale-95"
-            >
-              <Plus size={16} /> ADD NEW
-            </button>
-          </div>
-        </div>
-
-        {/* TOOLBAR */}
-        <div className="bg-white border-x border-b border-slate-200 px-6 py-4 flex flex-col gap-4">
-          <div className="relative max-w-md">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={16}
-            />
-            <input
-              type="text"
-              placeholder="Search central departments..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-lg border border-slate-200 text-sm focus:border-[#9575cd] outline-none transition-all"
-            />
-          </div>
-        </div>
-
-        {/* TABLE */}
-        <div className="flex-1 bg-white border-x border-b border-slate-200 rounded-b-xl overflow-hidden flex flex-col">
-          <div className="h-10 bg-slate-50 border-b border-slate-200 flex items-center px-6 gap-4">
-            <div className="w-24 text-[10px] font-bold text-slate-500 uppercase">Code</div>
-            <div className="flex-1 text-[10px] font-bold text-slate-500 uppercase">
-              Department Name
-            </div>
-            <div className="flex-1 text-[10px] font-bold text-slate-500 uppercase">
-              Description
-            </div>
-            <div className="w-20 text-center text-[10px] font-bold text-slate-500 uppercase">
-              Status
-            </div>
-            <div className="w-24 text-center text-[10px] font-bold text-slate-500 uppercase">
-              Action
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-40">
-                <MusicBarLoader text="Loading Departments..." />
-              </div>
-            ) : filteredList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-40 text-slate-400">
-                <p className="text-xs">No central departments found.</p>
-              </div>
-            ) : (
-              filteredList.map((item) => (
-                <div
-                  key={item.id}
-                  className="h-12 border-b border-slate-50 flex items-center px-6 hover:bg-slate-50 transition-colors group gap-4"
-                >
-                  <div className="w-24 text-xs font-mono font-semibold text-slate-600">
-                    {item.code}
-                  </div>
-                  <div className="flex-1 text-sm font-medium text-slate-700">{item.name}</div>
-                  <div className="flex-1 text-xs text-slate-400 truncate">
-                    {item.description || "-"}
-                  </div>
-
-                  <div className="w-20 flex justify-center">
-                    <button
-                      onClick={() => handleToggle(item.id, item.isActive)}
-                      disabled={isPending}
-                      className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
-                        item.isActive ? "bg-green-500" : "bg-slate-300"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${
-                          item.isActive ? "translate-x-3.5" : "translate-x-0.5"
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="w-24 flex justify-center items-center gap-2">
-                    <button
-                      onClick={() => handleEdit(item)}
-                      className="text-slate-400 hover:text-[#9575cd] transition-colors p-1"
-                      title="Quick Edit Modal"
-                    >
-                      <Edit size={14} />
-                    </button>
-
-                    <Link
-                      href={`/super-admin/central-library/departments/edit/${item.id}`}
-                      className="text-slate-400 hover:text-purple-600 transition-colors text-[10px] font-bold"
-                      title="Full Page Edit"
-                    >
-                      Edit
-                    </Link>
-
-                    <button
-                      onClick={() => handleDeleteClick(item.id)}
-                      className="text-slate-400 hover:text-red-500 transition-colors p-1"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* --- MOBILE LAYOUT --- */}
-      <div className="flex md:hidden flex-col h-full overflow-hidden bg-white rounded-lg border border-slate-200">
-        <div className="p-3 border-b border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Building2 className="text-[#9575cd]" size={16} />
-            <h1 className="text-xs font-bold text-slate-800">Departments</h1>
-          </div>
-          <button
-            onClick={handleAdd}
-            className="h-6 bg-[#9575cd] hover:bg-[#7e57c2] text-white px-2.5 rounded text-[10px] font-bold flex items-center gap-1 shadow-sm"
-          >
-            <Plus size={12} /> Add
-          </button>
-        </div>
-
-        <div className="p-2 border-b border-slate-100">
-          <div className="relative">
-            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search departments..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-7 pr-2 h-7 text-[10px] border border-slate-200 rounded outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-2 space-y-2">
-          {filteredList.map((item) => (
-            <div
-              key={item.id}
-              className="p-2.5 bg-white border border-slate-200 rounded-lg flex flex-col gap-1.5 shadow-2xs"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-800 text-xs">{item.name}</span>
-                <span className="font-mono text-[9px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
-                  {item.code}
-                </span>
-              </div>
-              {item.description && (
-                <p className="text-[10px] text-slate-400">{item.description}</p>
-              )}
-              <div className="flex items-center justify-between pt-1 border-t border-slate-100">
-                <button
-                  onClick={() => handleToggle(item.id, item.isActive)}
-                  className={`text-[9px] font-bold px-2 py-0.5 rounded ${
-                    item.isActive ? "bg-green-50 text-green-700" : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {item.isActive ? "Active" : "Inactive"}
-                </button>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className="text-[#9575cd] text-[10px] font-bold"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(item.id)}
-                    className="text-red-500 text-[10px] font-bold"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* SUCCESS POPUP */}
       {showSuccessPopup && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300 p-4">
-          <div className="bg-white rounded-2xl p-6 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-300 max-w-[280px] w-full border border-slate-100">
-            <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3 border-[3px] border-emerald-100">
-              <CheckCircle className="text-emerald-500" size={24} strokeWidth={2.5} />
+        <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200 p-4">
+          <div className="bg-white rounded-[10px] p-5 flex flex-col items-center shadow-2xl animate-in zoom-in-95 duration-200 max-w-xs w-full border border-slate-200">
+            <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mb-2.5 border-2 border-emerald-100">
+              <CheckCircle className="text-emerald-500" size={22} strokeWidth={2.5} />
             </div>
-            <h2 className="text-base font-black text-slate-800 text-center">{successMessage}</h2>
+            <h2 className="text-sm font-semibold text-slate-800 tracking-tight text-center" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+              {successMessage}
+            </h2>
           </div>
         </div>
       )}
     </div>
   );
 }
-

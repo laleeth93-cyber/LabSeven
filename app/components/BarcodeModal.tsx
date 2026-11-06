@@ -185,33 +185,35 @@ export default function BarcodeModal({ isOpen, onClose, data }: BarcodeModalProp
 
   return (
     <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200 p-2 md:p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 flex flex-col h-[90vh] md:max-h-[85vh]">
+      <div className="bg-white rounded-[6px] shadow-2xl w-full max-w-5xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 flex flex-col h-[90vh] md:max-h-[85vh]">
         
         {/* HEADER */}
-        <div className="flex justify-between items-center p-3 md:p-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white shrink-0">
-           <div className="flex items-center gap-3">
-             <div className="p-2 bg-purple-50 text-purple-600 rounded-lg hidden sm:block"><BarcodeIcon size={20} strokeWidth={2.5} /></div>
-             <div>
-                 <h3 className="font-bold text-slate-800 text-sm md:text-lg">Barcode Manager</h3>
-                 <p className="text-[10px] md:text-xs text-slate-500 font-medium">Select tests, preview stickers, and print.</p>
+        <div className="min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px] px-3 md:px-4 bg-white md:bg-slate-50/80 border-b border-slate-200 flex justify-between items-center shrink-0">
+           <div className="flex items-center gap-2">
+             <div className="p-1 rounded bg-purple-50 text-[#9575cd] shadow-2xs"><BarcodeIcon size={14} /></div>
+             <div className="flex items-center gap-2">
+                 <h3 className="font-semibold text-slate-800 text-[14px] xl:text-[15px] leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>Barcode Manager</h3>
+                 <span className="text-[10px] xl:text-[11px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 leading-none">
+                     Print Barcode Stickers
+                 </span>
              </div>
            </div>
-           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"><X size={20} /></button>
+           <button onClick={onClose} className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"><X size={16} /></button>
         </div>
 
         {/* MOBILE TABS */}
-        <div className="md:hidden flex px-2 pt-2 bg-white border-b border-slate-200 shrink-0 gap-2">
+        <div className="md:hidden flex px-2 bg-slate-50 border-b border-slate-200 shrink-0 gap-1 min-h-[36px] h-[36px]">
             <button 
                 onClick={() => setActiveMobileTab('tests')}
-                className={`flex-1 py-2.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors ${activeMobileTab === 'tests' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-500'}`}
+                className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-medium border-b-2 transition-colors ${activeMobileTab === 'tests' ? 'border-[#9575cd] text-[#9575cd] font-semibold bg-white' : 'border-transparent text-slate-500'}`}
             >
-                <ListChecks size={16} /> Select Tests
+                <ListChecks size={13} /> Select Tests
             </button>
             <button 
                 onClick={() => setActiveMobileTab('preview')}
-                className={`flex-1 py-2.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors ${activeMobileTab === 'preview' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-500'}`}
+                className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-medium border-b-2 transition-colors ${activeMobileTab === 'preview' ? 'border-[#9575cd] text-[#9575cd] font-semibold bg-white' : 'border-transparent text-slate-500'}`}
             >
-                <Eye size={16} /> Preview
+                <Eye size={13} /> Preview
             </button>
         </div>
 
@@ -219,25 +221,25 @@ export default function BarcodeModal({ isOpen, onClose, data }: BarcodeModalProp
             
             {/* LEFT PANEL: TEST LIST */}
             <div className={`w-full md:w-2/3 flex flex-col bg-white md:border-r border-slate-200 h-full ${activeMobileTab === 'tests' ? 'flex' : 'hidden md:flex'}`}>
-                <div className="p-2 md:p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
-                    <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">Test List</span>
-                    <span className="text-[10px] md:text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded border">{selectedIds.length} / {data.items?.length || 0} Selected</span>
+                <div className="px-3 py-1.5 bg-slate-50/80 border-b border-slate-200 flex justify-between items-center shrink-0">
+                    <span className="text-[10px] xl:text-[11px] font-semibold text-slate-600 uppercase tracking-wider">Test List</span>
+                    <span className="text-[10px] xl:text-[11px] font-semibold text-[#9575cd] bg-purple-50 px-2 py-0.5 rounded border border-purple-200">{selectedIds.length} / {data.items?.length || 0} Selected</span>
                 </div>
                 
                 <div className="flex-1 overflow-auto custom-scrollbar bg-white relative">
                     <div className="min-w-[500px] md:min-w-0">
                         <table className="w-full text-left border-collapse">
-                            <thead className="bg-white/90 backdrop-blur-sm sticky top-0 z-10 shadow-sm text-[10px] md:text-xs text-slate-500 uppercase">
+                            <thead className="bg-[#9575cd] sticky top-0 z-10 shadow-sm text-[10px] md:text-xs text-white uppercase border-b border-[#7e57c2] align-middle leading-none">
                                 <tr>
-                                    <th className="p-2 md:p-3 pl-3 md:pl-4 border-b w-[40px] md:w-[50px]">
-                                        <button onClick={toggleSelectAll} className="flex items-center justify-center text-slate-400 hover:text-slate-700">
-                                            {allSelected ? <CheckSquare size={16} className="text-purple-600" /> : <Square size={16} />}
+                                    <th style={{ verticalAlign: 'middle', lineHeight: 1 }} className="p-2 md:p-2.5 pl-3 md:pl-4 border-b border-[#7e57c2] w-[40px] md:w-[50px]">
+                                        <button onClick={toggleSelectAll} className="flex items-center justify-center text-white hover:text-white/80">
+                                            {allSelected ? <CheckSquare size={16} className="text-white" /> : <Square size={16} className="text-white" />}
                                         </button>
                                     </th>
-                                    <th className="p-2 md:p-3 border-b w-[30%]">Test Name</th>
-                                    <th className="p-2 md:p-3 border-b w-[25%]">Sample</th>
-                                    <th className="p-2 md:p-3 border-b w-[25%]">Barcode No.</th>
-                                    <th className="p-2 md:p-3 pr-3 md:pr-4 border-b text-right">Actions</th>
+                                    <th style={{ verticalAlign: 'middle', lineHeight: 1 }} className="p-2 md:p-2.5 border-b border-[#7e57c2] w-[30%]">Test Name</th>
+                                    <th style={{ verticalAlign: 'middle', lineHeight: 1 }} className="p-2 md:p-2.5 border-b border-[#7e57c2] w-[25%]">Sample</th>
+                                    <th style={{ verticalAlign: 'middle', lineHeight: 1 }} className="p-2 md:p-2.5 border-b border-[#7e57c2] w-[25%]">Barcode No.</th>
+                                    <th style={{ verticalAlign: 'middle', lineHeight: 1 }} className="p-2 md:p-2.5 pr-3 md:pr-4 border-b border-[#7e57c2] text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 text-[11px] md:text-xs">
@@ -276,55 +278,65 @@ export default function BarcodeModal({ isOpen, onClose, data }: BarcodeModalProp
                     </div>
                 </div>
                 
-                <div className="p-3 md:p-4 border-t border-slate-200 bg-white shrink-0">
-                    <button onClick={handlePrintSelected} disabled={selectedIds.length === 0 || isPrinting} className={`flex items-center justify-center gap-2 w-full py-2.5 md:py-3 rounded-lg text-sm font-bold transition-all ${selectedIds.length > 0 ? 'bg-purple-600 text-white shadow-md hover:bg-purple-700' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}>
-                        {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-                        {selectedIds.length > 0 ? `Print ${selectedIds.length} Selected` : 'Select Tests to Print'}
+                <div className="px-3 py-2 border-t border-slate-200 bg-white md:bg-slate-50/80 shrink-0">
+                    <button 
+                        onClick={handlePrintSelected} 
+                        disabled={selectedIds.length === 0 || isPrinting} 
+                        className={`flex items-center justify-center gap-1.5 w-full h-[26px] xl:h-[28px] rounded-[5px] text-[11px] xl:text-[12px] font-medium transition-all shadow-2xs ${
+                            selectedIds.length > 0 
+                                ? 'text-white hover:opacity-95' 
+                                : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                        }`}
+                        style={selectedIds.length > 0 ? { background: 'linear-gradient(to right, #9575cd, #b39ddb)' } : {}}
+                    >
+                        {isPrinting ? <Loader2 size={13} className="animate-spin" /> : <Printer size={13} />}
+                        <span>{selectedIds.length > 0 ? `Print ${selectedIds.length} Selected` : 'Select Tests to Print'}</span>
                     </button>
                 </div>
             </div>
 
             {/* RIGHT PANEL: LIVE PREVIEW */}
             <div className={`w-full md:w-1/3 bg-slate-50 flex flex-col h-full ${activeMobileTab === 'preview' ? 'flex' : 'hidden md:flex'}`}>
-                 <div className="p-3 border-b border-slate-200 shrink-0"><span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-wider">Live Preview</span></div>
+                 <div className="px-3 py-1.5 border-b border-slate-200 shrink-0 bg-slate-50/80">
+                     <span className="text-[10px] xl:text-[11px] font-semibold text-slate-600 uppercase tracking-wider">Live Preview</span>
+                 </div>
                  
-                 <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 overflow-y-auto">
+                 <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
                     {previewItem ? (
-                        <div className="animate-in zoom-in-95 duration-300 transform scale-110 md:scale-100">
-                            <div className="w-[240px] h-[120px] bg-white border border-slate-300 shadow-md rounded-lg p-2 flex flex-col relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
-                                <div className="flex justify-between items-end border-b border-slate-100 pb-1 mb-2 mt-1">
-                                    <span className="text-[11px] font-bold text-slate-800 truncate max-w-[140px]">{data.patientName}</span>
-                                    <span className="text-[9px] text-slate-500">{data.date.split(',')[0]}</span>
+                        <div className="animate-in zoom-in-95 duration-200 transform scale-100">
+                            <div className="w-[220px] h-[115px] bg-white border border-slate-300 shadow-sm rounded-[6px] p-2 flex flex-col relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-[#9575cd]"></div>
+                                <div className="flex justify-between items-end border-b border-slate-100 pb-1 mb-1 mt-0.5">
+                                    <span className="text-[10px] font-bold text-slate-800 truncate max-w-[130px]">{data.patientName}</span>
+                                    <span className="text-[8.5px] text-slate-500">{data.date.split(',')[0]}</span>
                                 </div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-[9px] text-slate-500">{data.ageGender}</span>
-                                    <span className="text-[9px] font-bold text-purple-700 bg-purple-50 px-1 rounded border border-purple-100">{previewItem.sample}</span>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[8.5px] text-slate-500">{data.ageGender}</span>
+                                    <span className="text-[8.5px] font-semibold text-[#9575cd] bg-purple-50 px-1 rounded border border-purple-100">{previewItem.sample}</span>
                                 </div>
                                 <div className="flex-1 flex items-center justify-center bg-slate-50/50 rounded border border-slate-100 mb-1">
-                                     {/* Use conditional rendering to ensure canvas initializes on mobile tab switch */}
                                      {activeMobileTab === 'preview' || typeof window !== 'undefined' ? (
-                                        <canvas ref={previewCanvasRef} className="h-8 w-full object-contain mix-blend-multiply" />
+                                        <canvas ref={previewCanvasRef} className="h-7 w-full object-contain mix-blend-multiply" />
                                      ) : null}
                                 </div>
-                                <div className="flex justify-between items-center text-[9px] font-mono text-slate-600">
+                                <div className="flex justify-between items-center text-[8.5px] font-mono text-slate-600">
                                     <span>{previewItem.barcode}</span>
-                                    <span className="font-sans font-bold truncate max-w-[100px]">{previewItem.name}</span>
+                                    <span className="font-sans font-medium truncate max-w-[100px]">{previewItem.name}</span>
                                 </div>
                             </div>
-                            <p className="text-center text-[10px] text-slate-400 mt-4 md:mt-6">Previewing: <span className="font-bold text-slate-600">{previewItem.name}</span></p>
+                            <p className="text-center text-[10px] text-slate-400 mt-3">Previewing: <span className="font-semibold text-slate-700">{previewItem.name}</span></p>
                         </div>
                     ) : (
                         <div className="text-center text-slate-400">
-                            <Eye size={32} className="mx-auto mb-2 opacity-20" />
-                            <p className="text-xs">Select an item to preview</p>
-                            <button onClick={() => setActiveMobileTab('tests')} className="mt-4 px-4 py-2 bg-white border border-slate-200 text-purple-600 rounded shadow-sm text-xs font-bold md:hidden">Go back to Tests</button>
+                            <Eye size={28} className="mx-auto mb-2 opacity-25" />
+                            <p className="text-[11px]">Select an item to preview</p>
+                            <button onClick={() => setActiveMobileTab('tests')} className="mt-3 px-3 py-1 bg-white border border-slate-200 text-[#9575cd] rounded-[5px] shadow-2xs text-[11px] font-medium md:hidden">Go back to Tests</button>
                         </div>
                     )}
                  </div>
 
-                 <div className="p-3 md:p-4 bg-white border-t border-slate-200 shrink-0">
-                    <button onClick={onClose} className="w-full py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded border border-slate-200 transition shadow-sm">Close Window</button>
+                 <div className="px-3 py-2 bg-white md:bg-slate-50/80 border-t border-slate-200 shrink-0">
+                    <button onClick={onClose} className="w-full h-[26px] xl:h-[28px] text-[11px] xl:text-[12px] font-medium text-slate-700 hover:bg-slate-50 rounded-[5px] border border-slate-300 transition shadow-2xs">Close Window</button>
                  </div>
             </div>
         </div>

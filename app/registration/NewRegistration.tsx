@@ -425,7 +425,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
   };
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden animate-in slide-in-from-bottom-2 duration-500 bg-white md:bg-transparent">
+    <div className="w-full h-full flex flex-col overflow-hidden bg-white md:bg-transparent">
       
       {!isOnline && (
         <div className="bg-amber-100 border-b border-amber-200 text-amber-800 px-4 py-2 text-xs font-bold flex items-center justify-center gap-2 z-50 shadow-sm">
@@ -434,7 +434,7 @@ export default function NewRegistration({ onCustomizeClick, onQuotationClick, fi
         </div>
       )}
 
-      <div className="flex flex-1 overflow-hidden p-0 flex-col md:flex-row gap-0 md:gap-4 relative">
+      <div className="flex flex-1 overflow-hidden p-0 flex-col md:flex-row gap-0 md:gap-2 xl:gap-3 relative">
           
           {(() => {
             const timeline = (

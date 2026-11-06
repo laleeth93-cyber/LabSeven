@@ -1,6 +1,15 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* --- CRISP CLEAR FONT RENDERING FIX (Windows Subpixel Antialiasing) --- */
+html, body, input, select, textarea, button {
+  font-family: 'Roboto', Arial, sans-serif;
+  -webkit-font-smoothing: subpixel-antialiased !important;
+  -moz-osx-font-smoothing: auto !important;
+  text-rendering: optimizeLegibility !important;
+}
+
 
 /* --- 1. FORCE LIGHT MODE VARIABLES (Crucial Fix) --- */
 :root {
@@ -113,4 +122,13 @@ body {
     color: black !important;
     text-shadow: none !important;
   }
+}
+/* --- TABLE HEADER FONT VERTICAL CENTERING --- */
+thead th,
+thead.bg-\[\#9575cd\] th,
+th.align-middle {
+  vertical-align: middle !important;
+  line-height: 1 !important;
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
 }

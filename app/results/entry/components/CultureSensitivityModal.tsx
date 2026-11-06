@@ -305,14 +305,14 @@ export default function CultureSensitivityModal({ isOpen, onClose, onSave, initi
                                     {activeOrganismData && (
                                         <div className="flex-1 overflow-auto custom-scrollbar">
                                             <table className="w-full text-left border-collapse min-w-[700px]">
-                                                <thead className="bg-white sticky top-0 z-20 shadow-sm outline outline-1 outline-slate-200">
+                                                <thead className="bg-[#9575cd] sticky top-0 z-20 shadow-sm border-b border-[#7e57c2] text-white">
                                                     <tr>
-                                                        <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-48">Antibiotic Name</th>
-                                                        <th className="px-2 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-24">Result</th>
-                                                        <th className="px-2 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-24">Value</th>
-                                                        <th className="px-2 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-32">Interpretation</th>
-                                                        <th className="px-2 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-28">BreakPoint</th>
-                                                        <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider w-28">MIC (µg/ml)</th>
+                                                        <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="px-4 text-[11px] font-medium text-white uppercase tracking-wider align-middle leading-none w-48">Antibiotic Name</th>
+                                                        <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="px-2 text-[11px] font-medium text-white uppercase tracking-wider align-middle leading-none w-24">Result</th>
+                                                        <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="px-2 text-[11px] font-medium text-white uppercase tracking-wider align-middle leading-none w-24">Value</th>
+                                                        <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="px-2 text-[11px] font-medium text-white uppercase tracking-wider align-middle leading-none w-32">Interpretation</th>
+                                                        <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="px-2 text-[11px] font-medium text-white uppercase tracking-wider align-middle leading-none w-28">BreakPoint</th>
+                                                        <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="px-4 text-[11px] font-medium text-white uppercase tracking-wider align-middle leading-none w-28">MIC (µg/ml)</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-slate-100">

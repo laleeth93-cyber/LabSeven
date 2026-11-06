@@ -13,16 +13,18 @@ export default function FooterTab({ footerSettings, handleToggleFooter, handleFo
         <div className="flex flex-col gap-2.5 md:gap-5 w-full md:h-full md:overflow-y-auto custom-scrollbar md:pr-2 pb-2">
             
             {/* QR & Barcode Settings Card */}
-            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col shrink-0">
                 <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                     <QrCode size={14} className="text-[#9575cd]" />
                     <div>
-                        <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">QR & Barcode Settings</h3>
-                        <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">Toggle digital verification codes on your footer.</p>
+                        <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            QR & Barcode Settings
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Toggle digital verification codes on your footer.</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-1.5 md:gap-2.5 mb-2.5">
+                <div className="grid grid-cols-2 gap-1.5 md:gap-2 mb-2.5">
                     {[
                         { key: 'showQrCode', label: 'Show QR Code' },
                         { key: 'showBarcode', label: 'Show Barcode' },
@@ -30,18 +32,18 @@ export default function FooterTab({ footerSettings, handleToggleFooter, handleFo
                         <div 
                             key={item.key} 
                             onClick={() => handleToggleFooter(item.key)} 
-                            className={`px-2 py-1 md:px-4 md:py-3 rounded-md md:rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-1 ${
+                            className={`px-2.5 py-1.5 md:px-3 md:py-2 rounded-[5px] border cursor-pointer transition-all flex items-center justify-between gap-1 ${
                                 footerSettings[item.key as keyof typeof footerSettings] 
                                     ? 'border-[#9575cd] bg-purple-50/20' 
                                     : 'border-slate-200 hover:border-slate-300 bg-white'
                             }`}
                         >
-                            <span className={`font-bold text-[9px] md:text-[12px] truncate ${
+                            <span className={`font-medium text-[10px] md:text-[11px] truncate ${
                                 footerSettings[item.key as keyof typeof footerSettings] ? 'text-[#5e35b1]' : 'text-slate-700'
                             }`}>
                                 {item.label}
                             </span>
-                            <span className={`shrink-0 h-3.5 px-1.5 rounded flex items-center justify-center text-[7.5px] font-extrabold uppercase tracking-tight transition-all shadow-2xs min-w-[24px] ${
+                            <span className={`shrink-0 h-4 px-1.5 rounded flex items-center justify-center text-[8px] font-bold uppercase tracking-tight transition-all shadow-2xs min-w-[24px] ${
                                 footerSettings[item.key as keyof typeof footerSettings] 
                                     ? 'bg-[#9575cd] text-white' 
                                     : 'bg-slate-100 text-slate-500 border border-slate-200'
@@ -91,12 +93,14 @@ export default function FooterTab({ footerSettings, handleToggleFooter, handleFo
             </div>
 
             {/* Signature Fine Tuning Card */}
-            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col shrink-0">
                 <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                     <PenTool size={14} className="text-[#9575cd]" />
                     <div>
-                        <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Signature Size & Alignment</h3>
-                        <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">Control the exact pixel sizes of the doctor signatures.</p>
+                        <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            Signature Size & Alignment
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Control the exact pixel sizes of the doctor signatures.</p>
                     </div>
                 </div>
 
@@ -157,34 +161,36 @@ export default function FooterTab({ footerSettings, handleToggleFooter, handleFo
             </div>
 
             {/* Footer Layout Elements Card */}
-            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col shrink-0">
                 <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                     <LayoutTemplate size={14} className="text-[#9575cd]" />
                     <div>
-                        <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Footer Layout Elements</h3>
-                        <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">Configure page numbering and overall alignment.</p>
+                        <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            Footer Layout Elements
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Configure page numbering and overall alignment.</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-1.5 md:gap-2.5 mb-2.5">
+                <div className="grid grid-cols-2 gap-1.5 md:gap-2 mb-2.5">
                     {[
                         { key: 'showPageNumbers', label: 'Show Page Nos' },
                     ].map((item) => (
                         <div 
                             key={item.key} 
                             onClick={() => handleToggleFooter(item.key)} 
-                            className={`px-2 py-1 md:px-4 md:py-3 rounded-md md:rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-1 ${
+                            className={`px-2.5 py-1.5 md:px-3 md:py-2 rounded-[5px] border cursor-pointer transition-all flex items-center justify-between gap-1 ${
                                 footerSettings[item.key as keyof typeof footerSettings] 
                                     ? 'border-[#9575cd] bg-purple-50/20' 
                                     : 'border-slate-200 hover:border-slate-300 bg-white'
                             }`}
                         >
-                            <span className={`font-bold text-[9px] md:text-[12px] truncate ${
+                            <span className={`font-medium text-[10px] md:text-[11px] truncate ${
                                 footerSettings[item.key as keyof typeof footerSettings] ? 'text-[#5e35b1]' : 'text-slate-700'
                             }`}>
                                 {item.label}
                             </span>
-                            <span className={`shrink-0 h-3.5 px-1.5 rounded flex items-center justify-center text-[7.5px] font-extrabold uppercase tracking-tight transition-all shadow-2xs min-w-[24px] ${
+                            <span className={`shrink-0 h-4 px-1.5 rounded flex items-center justify-center text-[8px] font-bold uppercase tracking-tight transition-all shadow-2xs min-w-[24px] ${
                                 footerSettings[item.key as keyof typeof footerSettings] 
                                     ? 'bg-[#9575cd] text-white' 
                                     : 'bg-slate-100 text-slate-500 border border-slate-200'

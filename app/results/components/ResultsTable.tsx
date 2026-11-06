@@ -25,13 +25,13 @@ export default function ResultsTable({ sortedData, onResetDate }: any) {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-slate-50 border-b border-slate-200">
+    <div className="bg-white rounded-[6px] border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="w-full text-left text-sm border-collapse min-w-[750px] bg-white border-spacing-0">
+          <thead className="bg-[#9575cd] sticky top-0 z-10 text-white border-b border-[#7e57c2]">
             <tr>
               {['Bill Date', 'ID', 'Patient Info', 'Referral', 'Tests', 'Barcode', 'Status', 'Action'].map((h) => (
-                <th key={h} className={`px-4 py-3 text-[11px] font-bold text-slate-500 uppercase align-middle ${h === 'Action' ? 'text-left' : 'text-left'}`}>
+                <th key={h} style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className={`border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none ${h === 'Action' ? 'text-center' : 'text-left'}`}>
                   {h}
                 </th>
               ))}
@@ -41,25 +41,25 @@ export default function ResultsTable({ sortedData, onResetDate }: any) {
             {sortedData.length > 0 ? (
               sortedData.map((row: any) => (
                 <tr key={row.id} className={`hover:bg-slate-50 transition-colors ${getRowClass(row.status)}`}>
-                  <td className="px-4 py-3 align-middle"><div className="font-bold text-slate-700">{row.billDate}</div><div className="text-xs text-slate-500">{row.billTime}</div></td>
-                  <td className="px-4 py-3 align-middle font-mono text-slate-600">{row.id}</td>
-                  <td className="px-4 py-3 align-middle"><div className="font-bold text-slate-800">{row.patientName}</div><div className="text-xs text-slate-500">{row.ageGender}</div></td>
-                  <td className="px-4 py-3 align-middle text-slate-600">{row.referral}</td>
-                  <td className="px-4 py-3 align-middle">
-                    <div className="flex flex-wrap gap-2 max-w-xs">
+                  <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle"><div className="font-bold text-slate-700 text-[11px]">{row.billDate}</div><div className="text-[10px] text-slate-500">{row.billTime}</div></td>
+                  <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle font-mono text-slate-600 text-[11px]">{row.id}</td>
+                  <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle"><div className="font-bold text-slate-800 text-[11px]">{row.patientName}</div><div className="text-[10px] text-slate-500">{row.ageGender}</div></td>
+                  <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-slate-600 text-[11px]">{row.referral}</td>
+                  <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle">
+                    <div className="flex flex-wrap gap-1 max-w-xs">
                       {row.tests.map((t: any, i: number) => (
-                        <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 rounded text-[10px] text-slate-600">
-                          {t.name} <span className={`w-3 h-3 flex items-center justify-center rounded text-[9px] text-white ${t.code === 'C' ? 'bg-green-500' : 'bg-blue-500'}`}>{t.code}</span>
-                          {t.isOutsource && <ExternalLink size={10} className="text-purple-500"/>}
+                        <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[9px] text-slate-600">
+                          {t.name} <span className={`w-3 h-3 flex items-center justify-center rounded text-[8px] text-white ${t.code === 'C' ? 'bg-green-500' : 'bg-blue-500'}`}>{t.code}</span>
+                          {t.isOutsource && <ExternalLink size={9} className="text-purple-500"/>}
                         </span>
                       ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3 align-middle font-mono text-xs font-bold text-slate-700">{row.barcode}</td>
-                  <td className="px-4 py-3 align-middle">{getStatusBadge(row.status)}</td>
-                  <td className="px-4 py-3 align-middle text-left">
-                    <button onClick={() => alert('Opening Entry')} className="inline-flex items-center gap-1 px-3 py-1 bg-[#9575cd] hover:bg-[#7e57c2] text-white text-xs font-bold rounded shadow-sm">
-                      <Edit size={12}/> Enter Results
+                  <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle font-mono text-[11px] text-slate-700">{row.barcode}</td>
+                  <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle">{getStatusBadge(row.status)}</td>
+                  <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left">
+                    <button onClick={() => alert('Opening Entry')} className="h-[20px] inline-flex items-center gap-1 px-2 bg-[#9575cd] hover:bg-[#7e57c2] text-white text-[10px] font-medium rounded shadow-2xs leading-none">
+                      <Edit size={11}/> Enter Results
                     </button>
                   </td>
                 </tr>

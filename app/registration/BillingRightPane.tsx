@@ -131,22 +131,22 @@ export default function BillingRightPane({
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-white md:rounded-[10px] md:shadow-xl md:border border-transparent md:border-slate-200 overflow-y-auto md:overflow-hidden z-20 relative">
+    <div className="w-full md:w-[65%] md:flex-1 md:min-w-0 h-full flex flex-col bg-white md:rounded-[10px] md:shadow-xl md:border border-transparent md:border-slate-200 overflow-y-auto md:overflow-hidden z-20 relative">
        
        {/* --- STICKY HEADER SECTION --- */}
        <div className="sticky top-0 z-40 flex flex-col w-full shrink-0 bg-white md:bg-transparent">
 
            {/* --- TOP HEADER --- */}
-           <div className="pt-2 px-3 pb-2 md:p-3 bg-white md:bg-slate-50 md:border-b md:border-slate-200 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3 overflow-visible w-full relative z-30">
+           <div className="pt-2 px-3 pb-2 md:px-2.5 xl:px-3 md:py-0 md:min-h-[38px] md:h-[38px] xl:min-h-[42px] xl:h-[42px] bg-white md:bg-slate-50 border-b border-slate-200 shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-1.5 xl:gap-2 overflow-visible w-full relative z-30">
               
               {/* MOBILE ONLY: Patient name bar */}
               {patientName && (
                 <div className="md:hidden flex items-center gap-1.5 w-full mb-1">
-                  <span className="text-[13px] font-black text-slate-800 truncate">{patientName}</span>
+                  <span className="text-[13px] font-medium text-slate-800 truncate">{patientName}</span>
                   {patientAge && (
                     <>
-                      <span className="text-[13px] font-black text-slate-300">•</span>
-                      <span className="text-[13px] font-black text-slate-800 shrink-0">{patientAge}</span>
+                      <span className="text-[13px] font-normal text-slate-300">•</span>
+                      <span className="text-[13px] font-medium text-slate-800 shrink-0">{patientAge}</span>
                     </>
                   )}
                 </div>
@@ -167,16 +167,16 @@ export default function BillingRightPane({
                             onChange={(d) => handleManualDateChange(d)}
                             label=""
                             align="right"
-                            triggerClassName="flex items-center justify-between w-full bg-white border border-slate-300 rounded shadow-sm h-[24px] px-2 gap-1 cursor-pointer transition-all group select-none hover:border-[#9575cd] [&_span:last-child]:!text-[11px] [&_svg]:!w-3.5 [&_svg]:!h-3.5"
+                            triggerClassName="flex items-center justify-between w-full bg-white border border-slate-300 rounded shadow-sm h-[26px] px-2 gap-1 cursor-pointer transition-all group select-none hover:border-[#9575cd] [&_span:last-child]:!text-[11px] [&_svg]:!w-3.5 [&_svg]:!h-3.5"
                             popupClassName="w-[280px] scale-[0.85] origin-top-left"
                          />
                       </div>
                       {/* Note & Quotation small icons */}
                       <div className="flex gap-2 shrink-0">
-                          <button onClick={handleOpenNotes} className="w-[24px] h-[24px] flex justify-center items-center rounded text-[#9575cd] bg-purple-50 border border-purple-200 hover:bg-purple-100 shadow-sm transition-all active:scale-95">
+                          <button onClick={handleOpenNotes} className="w-[26px] h-[26px] flex justify-center items-center rounded text-[#9575cd] bg-purple-50 border border-purple-200 hover:bg-purple-100 shadow-sm transition-all active:scale-95">
                               <StickyNote size={11} />
                           </button>
-                          <button onClick={onQuotationClick} className="w-[24px] h-[24px] flex justify-center items-center rounded text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 shadow-sm transition-all active:scale-95">
+                          <button onClick={onQuotationClick} className="w-[26px] h-[26px] flex justify-center items-center rounded text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 shadow-sm transition-all active:scale-95">
                               <ReceiptText size={11} />
                           </button>
                       </div>
@@ -184,9 +184,9 @@ export default function BillingRightPane({
               )}
 
               {/* DESKTOP ONLY: Invoice & Date */}
-              <div className="hidden md:flex md:items-center md:w-auto gap-2">
-                  <div className="h-[34px] flex items-center gap-1.5 text-slate-800 font-mono font-bold text-[13px] bg-white px-3 rounded border border-slate-300 shadow-sm min-w-max">
-                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">INV:</span>
+              <div className="hidden md:flex md:items-center md:w-auto gap-1.5 xl:gap-2 min-w-0 shrink-0">
+                  <div className="h-[24px] xl:h-[26px] flex items-center gap-1 text-slate-800 font-mono font-normal text-[10px] xl:text-xs bg-white px-1.5 xl:px-2.5 rounded border border-slate-300 shadow-sm shrink-0">
+                     <span className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">INV:</span>
                      <span className="whitespace-nowrap">{currentBillNumber}</span>
                   </div>
                   
@@ -196,7 +196,7 @@ export default function BillingRightPane({
                         onChange={(d) => handleManualDateChange(d)}
                         label=""
                         align="right"
-                        triggerClassName="flex items-center justify-between w-full bg-white border border-slate-300 rounded shadow-sm h-[34px] px-3 gap-1 cursor-pointer transition-all group select-none hover:border-[#9575cd] [&_span:last-child]:!text-[13px] [&_svg]:!w-4 [&_svg]:!h-4"
+                        triggerClassName="flex items-center justify-between bg-white border border-slate-300 rounded shadow-sm h-[24px] xl:h-[26px] px-1.5 xl:px-2.5 gap-1 cursor-pointer transition-all group select-none hover:border-[#9575cd] [&_span:last-child]:!text-[10px] xl:[&_span:last-child]:!text-xs [&_svg]:!w-3 [&_svg]:!h-3 xl:[&_svg]:!w-3.5 xl:[&_svg]:!h-3.5 whitespace-nowrap shrink-0"
                         popupClassName="scale-100"
                      />
                   </div>
@@ -208,18 +208,18 @@ export default function BillingRightPane({
               </div>
               
               {/* DESKTOP ONLY: Note & Quotation Buttons */}
-              <div className="hidden md:flex gap-2 w-auto shrink-0">
-                  <button onClick={handleOpenNotes} className="h-8 flex justify-center items-center gap-1.5 px-3 rounded text-[#9575cd] bg-purple-50 border border-purple-200 hover:bg-purple-100 font-bold text-xs shadow-sm transition-all active:scale-95">
+              <div className="hidden md:flex gap-1.5 xl:gap-2 w-auto shrink-0">
+                  <button onClick={handleOpenNotes} className="h-[24px] xl:h-[26px] flex justify-center items-center gap-1 px-1.5 xl:px-2.5 rounded text-[#9575cd] bg-purple-50 border border-purple-200 hover:bg-purple-100 font-normal text-[10px] xl:text-[12px] shadow-sm transition-all active:scale-95 whitespace-nowrap">
                       <StickyNote size={14} /> <span>Note</span>
                   </button>
-                  <button onClick={onQuotationClick} className="h-8 flex justify-center items-center gap-1.5 px-3 rounded text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 font-bold text-xs shadow-sm transition-all active:scale-95">
+                  <button onClick={onQuotationClick} className="h-[24px] xl:h-[26px] flex justify-center items-center gap-1 px-1.5 xl:px-2.5 rounded text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 font-normal text-[10px] xl:text-[12px] shadow-sm transition-all active:scale-95 whitespace-nowrap">
                       <ReceiptText size={14} /> <span>Quotation</span>
                   </button>
               </div>
            </div> {/* Closes TOP HEADER */}
 
        {/* --- SEARCH BAR SECTION (Also Sticky) --- */}
-       <div className={`px-2 pt-1 pb-1 md:px-3 md:p-3 md:border-b md:border-slate-200 bg-white shrink-0 flex flex-row items-center justify-between gap-2 overflow-visible ${mobileView === 'billing' ? 'hidden md:flex' : ''}`}>
+       <div className={`px-2 pt-1 pb-1 md:px-2.5 xl:px-3 md:py-0 border-b border-slate-200 bg-white shrink-0 flex flex-row items-center justify-between gap-1.5 xl:gap-2 overflow-visible min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px] ${mobileView === 'billing' ? 'hidden md:flex' : ''}`}>
           <div className="flex items-center w-full relative overflow-visible flex-1">
              <input 
                 ref={searchInputRef}
@@ -228,7 +228,7 @@ export default function BillingRightPane({
                 onChange={(e) => setTestSearchQuery(e.target.value)} 
                 onKeyDown={handleSearchKeyDown} // 🚨 FIX: Attached Keyboard Event
                 placeholder="Search tests..." 
-                className="w-full pl-7 md:pl-9 pr-2 h-[24px] md:h-auto md:py-2 rounded-[5px] md:rounded-lg border border-slate-200 md:border-slate-300 text-[11px] md:text-[13px] placeholder:text-[10px] md:placeholder:text-[12px] focus:outline-none focus:border-[#9575cd] md:focus:ring-1 md:focus:ring-[#9575cd]/50 transition-all bg-white md:bg-slate-50 shadow-sm md:shadow-none" 
+                className="w-full pl-7 md:pl-7 xl:pl-8 pr-2 h-[24px] xl:h-[26px] rounded-[5px] md:rounded-md border border-slate-200 md:border-slate-300 text-[11px] xl:text-[12px] font-normal text-slate-800 placeholder:text-[11px] xl:placeholder:text-[12px] focus:outline-none focus:border-[#9575cd] md:focus:ring-1 md:focus:ring-[#9575cd]/50 transition-all bg-white md:bg-slate-50 shadow-sm md:shadow-none" 
              />
              {isSearchingTests ? <Loader2 size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#9575cd] animate-spin md:left-2.5 md:w-[13px] md:h-[13px]" /> : <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 md:left-2.5 md:w-[13px] md:h-[13px]" />}
              
@@ -244,14 +244,14 @@ export default function BillingRightPane({
                               className={`px-3 py-2 md:px-4 md:py-2.5 border-b border-slate-50 cursor-pointer flex justify-between items-center group transition-colors ${isFocused ? 'bg-purple-100' : 'hover:bg-purple-50'}`}
                            >
                               <div className="min-w-0 flex-1 pr-2">
-                                  <p className={`text-[11px] md:text-[12px] font-bold truncate ${isFocused ? 'text-[#7e57c2]' : 'text-slate-700 group-hover:text-[#7e57c2]'}`}>
+                                  <p className={`text-[11px] md:text-[12px] font-normal truncate ${isFocused ? 'text-[#7e57c2]' : 'text-slate-700 group-hover:text-[#7e57c2]'}`}>
                                       {test.isOutsourced && test.outsourceLab ? `${test.name} (${test.outsourceLab.name})` : test.name}
                                   </p>
                                   <p className={`text-[9px] mt-0.5 truncate ${isFocused ? 'text-[#9575cd]' : 'text-slate-400'}`}>
                                       {test.code} • {test.department?.name || 'General'}
                                   </p>
                               </div>
-                              <span className={`text-[10px] md:text-xs font-black px-1.5 py-0.5 rounded border transition-colors shrink-0 ${isFocused ? 'bg-white border-purple-200 text-slate-800 shadow-sm' : 'text-slate-800 bg-slate-100 border-slate-200 group-hover:bg-white group-hover:border-purple-200'}`}>
+                              <span className={`text-[10px] md:text-xs font-normal px-1.5 py-0.5 rounded border transition-colors shrink-0 ${isFocused ? 'bg-white border-purple-200 text-slate-800 shadow-sm' : 'text-slate-800 bg-slate-100 border-slate-200 group-hover:bg-white group-hover:border-purple-200'}`}>
                                   ₹{test.price}
                               </span>
                            </div>
@@ -265,129 +265,153 @@ export default function BillingRightPane({
              <select 
                 value={activeTab} 
                 onChange={(e) => setActiveTab(e.target.value)}
-                className="px-1 h-[24px] bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-[5px] text-[10px] font-bold text-slate-700 focus:outline-none focus:border-[#9575cd] cursor-pointer shadow-sm transition-all"
+                className="px-1.5 h-[26px] bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-[5px] text-[11px] font-normal text-slate-700 focus:outline-none focus:border-[#9575cd] cursor-pointer shadow-sm transition-all"
              >
                 <option value="Tests/Packages">Tests / Packages</option>
                 <option value="Other Charges">Other Charges</option>
              </select>
           </div>
           
-          <div className="hidden md:flex bg-slate-100 rounded-lg p-1 gap-1 w-full md:w-auto overflow-x-auto custom-scrollbar">
+          <div className="hidden md:flex items-center h-[24px] xl:h-[26px] bg-slate-100 rounded-[5px] p-0.5 gap-0.5 border border-slate-200 shrink-0">
              {['Tests/Packages', 'Other Charges'].map(tab => (
-               <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 md:flex-none whitespace-nowrap px-4 py-1.5 rounded-md text-[11px] font-bold transition-all ${activeTab === tab ? 'bg-white shadow-sm text-slate-800 border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'}`}>{tab}</button>
+               <button 
+                 key={tab} 
+                 onClick={() => setActiveTab(tab)} 
+                 className={`h-full whitespace-nowrap px-1.5 xl:px-2.5 rounded text-[10px] xl:text-[11px] font-normal transition-all flex items-center justify-center leading-none ${activeTab === tab ? "bg-white shadow-sm text-slate-800 font-medium" : "text-slate-500 hover:text-slate-700"}`}
+               >
+                 {tab}
+               </button>
              ))}
           </div>
        </div>
        </div> {/* Closes STICKY HEADER SECTION */}
 
-       {/* --- TEST LIST TABLE --- */}
-       <div className={`flex-none md:flex-1 h-full md:h-auto overflow-auto bg-white md:bg-slate-50/30 custom-scrollbar z-10 pb-20 md:pb-0 ${mobileView === 'billing' ? 'hidden md:block' : 'block'}`}>
-          <div className="w-full">
-            <table className="w-full text-left border-collapse block md:table">
-                <thead className="bg-white md:bg-slate-100/80 sticky top-0 z-10 md:backdrop-blur-sm md:shadow-sm hidden md:table-header-group">
-                    <tr>
-                    <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 w-16 text-center">Sr.</th>
-                    <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">Test / Package</th>
-                    <th className="py-2.5 px-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 w-28 text-right">Price</th>
-                    <th className="py-2.5 px-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 w-20 text-center">Urg.</th>
-                    <th className="py-2.5 px-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 w-16 text-center">Del</th>
-                    </tr>
-                </thead>
-                <tbody className="block md:table-row-group p-3 md:p-0">
-                    {billItems.length === 0 ? (
-                    <tr className="block md:table-row">
-                        <td colSpan={5} className="block md:table-cell h-48 text-center align-middle w-full">
-                            <div className="flex flex-col items-center justify-center text-slate-400 opacity-60 px-4 pt-10 md:pt-0">
-                            <Stethoscope size={48} className="mb-3 text-slate-300" strokeWidth={1.5} />
-                            <span className="text-sm font-bold tracking-wide">No tests added yet</span>
-                            <span className="text-xs font-medium mt-1">Search tests above</span>
-                            </div>
-                        </td>
-                    </tr>
-                    ) : (
-                    billItems.map((item, index) => (
-                        <tr key={`${item.id}-${index}`} className="relative flex flex-col md:table-row bg-white border md:border-b md:border-t-0 md:border-x-0 border-slate-100 md:border-slate-100 rounded-md md:rounded-none shadow-sm md:shadow-none hover:bg-slate-50 transition-colors mb-2 md:mb-0 p-2 md:p-0 border-l-2 md:border-l-0 border-l-[#9575cd]">
-                            {/* Desktop Sr */}
-                            <td className="hidden md:table-cell py-3 px-3 text-xs font-bold text-slate-400 text-center">{index + 1}</td>
-                            
-                            {/* Test Name, Code & Mobile Price */}
-                            <td className="flex flex-col md:table-cell py-0 md:py-3 px-0 md:px-3 justify-center min-h-[24px] md:min-h-[28px]">
-                               <p className="text-[11px] md:text-[13px] font-semibold md:font-bold text-slate-700 md:text-slate-800 leading-tight pr-7 md:pr-0">{item.name}</p>
-                               <div className="flex md:block items-center gap-1.5 mt-0.5">
-                                 <p className="text-[9px] md:text-[10px] font-medium md:font-bold text-slate-400">{item.code}</p>
-                                 <span className="md:hidden text-slate-300 text-[8px]">•</span>
-                                 <p className="md:hidden text-[10px] font-bold text-slate-600">₹{item.price.toFixed(2)}</p>
+       {/* --- TEST LIST TABLE AREA --- */}
+       <div className={`flex-none md:flex-1 h-full md:h-auto overflow-hidden bg-white p-0 md:p-2.5 xl:p-3 flex flex-col min-h-0 z-10 pb-20 md:pb-0 ${mobileView === 'billing' ? 'hidden md:flex' : 'flex'}`}>
+          
+          {/* MOBILE VIEW: CARDS (md:hidden) */}
+          <div className="block md:hidden overflow-y-auto p-2 space-y-2 h-full custom-scrollbar">
+             {billItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-slate-400 opacity-60 px-4 pt-10">
+                   <Stethoscope size={40} className="mb-2 text-slate-300" strokeWidth={1.5} />
+                   <span className="text-xs font-normal tracking-wide">No tests added yet</span>
+                   <span className="text-[11px] font-medium mt-0.5">Search tests above</span>
+                </div>
+             ) : (
+                billItems.map((item, index) => (
+                   <div key={`${item.id}-${index}`} className="relative bg-white border border-slate-200 rounded-md shadow-2xs p-2 border-l-2 border-l-[#9575cd]">
+                      <div className="pr-7">
+                         <p className="text-[12px] font-normal text-slate-800 leading-tight">{item.name}</p>
+                         <div className="flex items-center gap-1.5 mt-0.5">
+                            <p className="text-[9px] font-normal text-slate-400">{item.code}</p>
+                            <span className="text-slate-300 text-[8px]">•</span>
+                            <p className="text-[10px] font-medium text-slate-700">₹{item.price.toFixed(2)}</p>
+                         </div>
+                      </div>
+                      <button onClick={() => handleRemoveTest(index)} className="absolute top-1/2 -translate-y-1/2 right-2 text-red-400 bg-red-50 border border-red-100 p-1.5 rounded active:scale-95">
+                         <Trash2 size={12} />
+                      </button>
+                   </div>
+                ))
+             )}
+          </div>
+
+          {/* DESKTOP VIEW: DISTINCT SEPARATE BLOCK TABLE (hidden md:flex) */}
+          <div className="hidden md:flex flex-col flex-1 min-h-0 w-full h-full overflow-hidden">
+             <div className="w-full h-full overflow-auto custom-scrollbar rounded-[6px] border border-slate-200 shadow-sm bg-white">
+                <table className="w-full text-left text-sm border-collapse min-w-0 bg-white border-spacing-0">
+                   <thead className="bg-[#9575cd] sticky top-0 z-10 text-white border-b border-[#7e57c2]">
+                      <tr>
+                         <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-center w-10">Sr.</th>
+                         <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left">Test / Package</th>
+                         <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-right w-24">Price</th>
+                         <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-center w-12">Urg.</th>
+                         <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-center w-10">Del</th>
+                      </tr>
+                   </thead>
+                   <tbody className="divide-y divide-slate-100">
+                      {billItems.length === 0 ? (
+                         <tr>
+                            <td colSpan={5} className="py-12 text-center align-middle">
+                               <div className="flex flex-col items-center justify-center text-slate-400 opacity-60 px-4">
+                                  <Stethoscope size={40} className="mb-2 text-slate-300" strokeWidth={1.5} />
+                                  <span className="text-xs font-normal tracking-wide">No tests added yet</span>
+                                  <span className="text-[11px] font-medium mt-0.5">Search tests above</span>
                                </div>
                             </td>
-                            
-                            {/* Desktop Price */}
-                            <td className="hidden md:table-cell py-0 md:py-3 px-0 md:px-3 text-[13px] font-black md:text-slate-800 text-left md:text-right mt-1.5 md:mt-0">
-                               ₹{item.price.toFixed(2)}
-                            </td>
-                            
-                            {/* Desktop Urg */}
-                            <td className="hidden md:table-cell py-3 px-2 text-center">
-                               <input type="checkbox" className="rounded text-[#9575cd] focus:ring-[#9575cd] border-slate-300 w-4 h-4 cursor-pointer" />
-                            </td>
-                            
-                            {/* Delete Icon (Absolute on Mobile, Cell on Desktop) */}
-                            <td className="absolute top-1/2 -translate-y-1/2 right-2 md:static md:translate-y-0 md:table-cell py-0 md:py-3 px-0 md:px-2 text-center">
-                               <button onClick={() => handleRemoveTest(index)} className="text-red-400 bg-red-50 border border-red-100 md:border-transparent md:bg-transparent md:text-slate-300 hover:text-red-500 hover:bg-red-100 p-1 md:p-1.5 rounded transition-all active:scale-95">
-                                  <Trash2 size={12} className="md:w-4 md:h-4" />
-                               </button>
-                            </td>
-                        </tr>
-                    ))
-                    )}
-                </tbody>
-            </table>
+                         </tr>
+                      ) : (
+                         billItems.map((item, index) => (
+                            <tr key={`${item.id}-${index}`} className="hover:bg-purple-50/40 transition-colors">
+                               <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] text-[11px] font-normal text-slate-500 text-center w-10">
+                                  {index + 1}
+                               </td>
+                               <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9]">
+                                  <p className="text-[11px] font-normal text-slate-800 leading-tight">{item.name}</p>
+                                  <p className="text-[9px] font-normal text-slate-400 mt-0.5">{item.code}</p>
+                               </td>
+                               <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] text-[11px] font-normal text-slate-800 text-right w-24 whitespace-nowrap">
+                                  ₹{item.price.toFixed(2)}
+                               </td>
+                               <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] text-center w-12">
+                                  <input type="checkbox" className="rounded text-[#9575cd] focus:ring-[#9575cd] border-slate-300 w-3.5 h-3.5 cursor-pointer accent-[#9575cd]" />
+                               </td>
+                               <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] text-center w-10">
+                                  <button onClick={() => handleRemoveTest(index)} className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-all active:scale-95 inline-flex items-center justify-center">
+                                     <Trash2 size={13} />
+                                  </button>
+                               </td>
+                            </tr>
+                         ))
+                      )}
+                   </tbody>
+                </table>
+             </div>
           </div>
        </div>
-
-
 
        {/* --- BOTTOM SECTION --- */}
        <div className={`bg-white shrink-0 flex flex-col md:flex-row w-full md:border-t border-transparent md:border-slate-200 z-10 ${mobileView === 'tests' ? 'hidden md:flex' : 'flex'}`}>
           
-          <div className="w-full md:w-1/3 p-2 md:p-4 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col gap-1.5 md:gap-3 shrink-0">
+          <div className="w-full md:w-1/3 p-2 md:p-2 xl:p-2.5 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col gap-1 md:gap-1.5 xl:gap-2 shrink-0 min-w-0">
               
               {/* MOBILE ONLY: Total Amount before Discount */}
               <div className="md:hidden flex justify-between items-center bg-slate-50 px-2 py-1.5 rounded-[5px] border border-slate-200 shadow-sm">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Amount</span>
-                  <span className="text-[12px] font-black text-slate-800">₹{subTotal.toFixed(2)}</span>
+                  <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wider">Total Amount</span>
+                  <span className="text-[12px] font-normal text-slate-800">₹{subTotal.toFixed(2)}</span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 xl:gap-2">
                   <div className="flex-1 space-y-0.5 md:space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Discount (%)</label>
-                      <input type="number" value={discountPercent} onChange={(e) => {setDiscountPercent(e.target.value); setDiscountAmount('')}} className="w-full px-1.5 md:px-2 py-0.5 md:py-1.5 rounded md:rounded-[5px] h-6 md:h-auto border border-slate-300 text-[11px] md:text-xs focus:border-[#9575cd] focus:outline-none" placeholder="0" />
+                      <label className="text-[10px] xl:text-[11px] font-normal text-slate-500 uppercase tracking-wide block truncate whitespace-nowrap">Discount (%)</label>
+                      <input type="number" value={discountPercent} onChange={(e) => {setDiscountPercent(e.target.value); setDiscountAmount('')}} className="w-full h-[24px] xl:h-[26px] px-1.5 xl:px-2 rounded-[5px] border border-slate-300 text-[10px] xl:text-[11px] font-normal focus:border-[#9575cd] focus:outline-none" placeholder="0" />
                   </div>
                   <div className="flex-1 space-y-0.5 md:space-y-1">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Discount (₹)</label>
-                      <input type="number" value={discountAmount} onChange={(e) => {setDiscountAmount(e.target.value); setDiscountPercent('')}} className="w-full px-1.5 md:px-2 py-0.5 md:py-1.5 rounded md:rounded-[5px] h-6 md:h-auto border border-slate-300 text-[11px] md:text-xs focus:border-[#9575cd] focus:outline-none" placeholder="0" />
+                      <label className="text-[10px] xl:text-[11px] font-normal text-slate-500 uppercase tracking-wide block truncate whitespace-nowrap">Discount (₹)</label>
+                      <input type="number" value={discountAmount} onChange={(e) => {setDiscountAmount(e.target.value); setDiscountPercent('')}} className="w-full h-[24px] xl:h-[26px] px-1.5 xl:px-2 rounded-[5px] border border-slate-300 text-[10px] xl:text-[11px] font-normal focus:border-[#9575cd] focus:outline-none" placeholder="0" />
                   </div>
               </div>
               <div className="space-y-0.5 md:space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Authorized By</label>
-                  <select value={discountBy} onChange={(e) => setDiscountBy(e.target.value)} className="w-full px-1.5 md:px-2 py-0.5 md:py-1.5 rounded md:rounded-[5px] h-6 md:h-auto border border-slate-300 text-[11px] md:text-xs bg-white focus:border-[#9575cd] focus:outline-none"><option value="">Select Doctor/Admin</option><option value="Dr. Smith">Dr. Smith</option></select>
+                  <label className="text-[10px] xl:text-[11px] font-normal text-slate-500 uppercase tracking-wide block truncate whitespace-nowrap">Authorized By</label>
+                  <select value={discountBy} onChange={(e) => setDiscountBy(e.target.value)} className="w-full h-[24px] xl:h-[26px] px-1.5 xl:px-2 rounded-[5px] border border-slate-300 text-[10px] xl:text-[11px] font-normal bg-white focus:border-[#9575cd] focus:outline-none cursor-pointer"><option value="">Select Doctor/Admin</option><option value="Dr. Smith">Dr. Smith</option></select>
               </div>
               <div className="space-y-0.5 md:space-y-1 flex-1 flex flex-col min-h-[40px] md:min-h-[60px]">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Reason</label>
-                  <textarea value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} className="w-full px-1.5 md:px-2 py-0.5 md:py-1.5 rounded md:rounded-[5px] border border-slate-300 text-[11px] resize-none flex-1 focus:border-[#9575cd] focus:outline-none"></textarea>
+                  <label className="text-[10px] xl:text-[11px] font-normal text-slate-500 uppercase tracking-wide block truncate whitespace-nowrap">Reason</label>
+                  <textarea value={discountReason} onChange={(e) => setDiscountReason(e.target.value)} className="w-full px-1.5 md:px-2 py-0.5 md:py-1.5 rounded md:rounded-[5px] border border-slate-300 text-[12px] font-normal resize-none flex-1 focus:border-[#9575cd] focus:outline-none"></textarea>
               </div>
           </div>
 
-          <div className="w-full md:w-1/3 px-2 pt-2 pb-1 md:p-4 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col shrink-0">
-              <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-4 bg-slate-50 p-1.5 md:p-2 rounded-md md:rounded-lg border border-slate-200">
-                  <label className="text-[11px] md:text-xs font-bold text-slate-700 cursor-pointer flex items-center gap-1.5 md:gap-2">
+          <div className="w-full md:w-1/3 px-2 pt-1.5 pb-1 md:p-2 xl:p-2.5 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col shrink-0 min-w-0">
+              <div className="flex items-center gap-1.5 xl:gap-2 mb-1 md:mb-1.5 bg-slate-50 p-1 md:p-1.5 rounded-md border border-slate-200">
+                  <label className="text-[11px] xl:text-[12px] font-normal text-slate-700 cursor-pointer flex items-center gap-1.5 whitespace-nowrap truncate">
                       <input type="checkbox" checked={isDuePayment} onChange={(e) => setIsDuePayment(e.target.checked)} className="w-3.5 h-3.5 md:w-4 md:h-4 rounded text-blue-500 focus:ring-blue-500 border-slate-300" />
                       Keep Due Payment
                   </label>
                   <ShieldAlert size={12} className="text-amber-500 ml-auto md:w-3.5 md:h-3.5" />
               </div>
               
-              <h4 className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 md:mb-2">Payment</h4>
-              <div className="flex gap-1.5 md:gap-2 mb-2 md:mb-3 items-center w-full">
+              <h4 className="text-[10px] xl:text-[11px] font-normal text-slate-500 uppercase tracking-wide mb-1 md:mb-1.5">Payment</h4>
+              <div className="flex gap-1 xl:gap-1.5 mb-1.5 md:mb-2 items-center w-full">
                 
                 {/* MOBILE ONLY: Unified Amount Input */}
                 <input 
@@ -402,48 +426,48 @@ export default function BillingRightPane({
                             setTimeout(() => handlePaymentDetailChange('Cash', 'amount', e.target.value), 0);
                         }
                     }}
-                    className="md:hidden flex-1 min-w-0 h-[22px] px-1.5 rounded-[5px] border border-slate-300 text-[10px] focus:outline-none focus:border-blue-400 font-medium bg-white shadow-sm" 
+                    className="md:hidden flex-1 min-w-0 h-[26px] px-2 rounded-[5px] border border-slate-300 text-[11px] focus:outline-none focus:border-blue-400 font-medium bg-white shadow-sm" 
                 />
 
                 {['Cash', 'UPI', 'Card'].map(mode => (
-                    <label key={mode} className="flex items-center gap-1 md:gap-1.5 cursor-pointer bg-slate-50 px-1.5 md:px-2 h-[22px] md:h-auto md:py-1 rounded-[5px] border border-slate-200 hover:border-blue-300 transition-colors">
-                      <input type="checkbox" checked={selectedModes.includes(mode)} onChange={() => handleModeToggle(mode)} className="w-3 h-3 md:w-3.5 md:h-3.5 rounded text-blue-500 border-slate-300" />
-                      <span className="text-[10px] md:text-[11px] font-bold text-slate-700">{mode}</span>
+                    <label key={mode} className="flex-1 min-w-0 flex items-center justify-center gap-1 cursor-pointer bg-slate-50 px-1 xl:px-1.5 h-[24px] xl:h-[26px] rounded-[5px] border border-slate-200 hover:border-blue-300 transition-colors">
+                      <input type="checkbox" checked={selectedModes.includes(mode)} onChange={() => handleModeToggle(mode)} className="w-3 h-3 rounded text-blue-500 border-slate-300 shrink-0" />
+                      <span className="text-[11px] xl:text-[12px] font-normal text-slate-700 whitespace-nowrap">{mode}</span>
                     </label>
                 ))}
               </div>
 
               <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1.5 md:space-y-2 min-h-0 md:min-h-[80px]">
                   {selectedModes.map(mode => (
-                      <div key={mode} className={`gap-1.5 md:gap-2 items-center ${mode === 'Cash' ? 'hidden md:flex' : 'flex'}`}>
-                          <div className="w-10 md:w-16 text-[10px] md:text-[11px] font-bold text-slate-600">{mode}</div>
-                          <input type="number" placeholder="Amt" value={paymentDetails[mode]?.amount || ''} onChange={(e) => handlePaymentDetailChange(mode, 'amount', e.target.value)} className="hidden md:block w-14 md:w-20 h-6 md:h-auto px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-slate-300 text-[10px] md:text-[11px] focus:outline-none focus:border-blue-400 font-medium" />
-                          <input type="text" placeholder="Txn ID" disabled={mode === 'Cash'} value={paymentDetails[mode]?.txnId || ''} onChange={(e) => handlePaymentDetailChange(mode, 'txnId', e.target.value)} className="flex-1 min-w-0 h-[22px] md:h-auto px-1.5 md:px-2 md:py-1 rounded-[5px] md:rounded border border-slate-300 text-[10px] md:text-[11px] disabled:bg-slate-100 focus:outline-none focus:border-blue-400 font-medium" />
+                      <div key={mode} className={`gap-1 xl:gap-1.5 items-center ${mode === 'Cash' ? 'hidden md:flex' : 'flex'}`}>
+                          <div className="w-9 xl:w-12 text-[11px] xl:text-[12px] font-normal text-slate-600 shrink-0 truncate">{mode}</div>
+                          <input type="number" placeholder="Amt" value={paymentDetails[mode]?.amount || ''} onChange={(e) => handlePaymentDetailChange(mode, 'amount', e.target.value)} className="hidden md:block w-12 lg:w-14 xl:w-18 h-[24px] xl:h-[26px] px-1 xl:px-1.5 rounded border border-slate-300 text-[10px] xl:text-[11px] font-normal focus:outline-none focus:border-blue-400 shrink-0" />
+                          <input type="text" placeholder="Txn ID" disabled={mode === 'Cash'} value={paymentDetails[mode]?.txnId || ''} onChange={(e) => handlePaymentDetailChange(mode, 'txnId', e.target.value)} className="flex-1 min-w-0 h-[24px] xl:h-[26px] px-1 xl:px-1.5 rounded border border-slate-300 text-[10px] xl:text-[11px] font-normal disabled:bg-slate-100 focus:outline-none focus:border-blue-400" />
                       </div>
                   ))}
                   {isDuePayment && (
                       <div className="flex gap-1.5 md:gap-2 pt-1.5 md:pt-2 border-t border-slate-100 mt-1.5 md:mt-2">
-                           <div className="w-10 md:w-16 pt-1 md:pt-1.5 text-[10px] md:text-[11px] font-bold text-slate-600">Advance</div>
-                           <input type="number" placeholder="Amt" value={advancePaid} onChange={(e) => setAdvancePaid(e.target.value)} className="w-14 md:w-20 h-6 md:h-auto px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-slate-300 text-[10px] md:text-[11px] focus:outline-none focus:border-amber-400 font-medium bg-amber-50" />
+                           <div className="w-9 xl:w-12 pt-0.5 md:pt-1 text-[11px] xl:text-[12px] font-normal text-slate-600 shrink-0 truncate">Advance</div>
+                           <input type="number" placeholder="Amt" value={advancePaid} onChange={(e) => setAdvancePaid(e.target.value)} className="w-12 lg:w-14 xl:w-18 h-[24px] xl:h-[26px] px-1 xl:px-1.5 rounded border border-slate-300 text-[10px] xl:text-[11px] font-normal focus:outline-none focus:border-amber-400 bg-amber-50 shrink-0" />
                       </div>
                   )}
               </div>
           </div>
 
-          <div className="w-full md:w-1/3 bg-slate-50 p-2 md:p-5 flex flex-col justify-between shrink-0">
-              <div className="space-y-1.5 md:space-y-3">
-                  <div className="flex justify-between items-center"><span className="text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wide">Sub Total</span><span className="text-xs md:text-sm font-bold text-slate-700">₹{subTotal.toFixed(2)}</span></div>
-                  <div className="flex justify-between items-center"><span className="text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wide">Discount</span><span className="text-xs md:text-sm font-bold text-emerald-600">- ₹{finalDiscount.toFixed(2)}</span></div>
+          <div className="w-full md:w-1/3 bg-slate-50 p-2 md:p-2 xl:p-2.5 flex flex-col justify-between shrink-0 min-w-0">
+              <div className="space-y-1 md:space-y-1.5 xl:space-y-2">
+                  <div className="flex justify-between items-center"><span className="text-[11px] xl:text-[12px] font-normal text-slate-600 uppercase tracking-wide whitespace-nowrap">Sub Total</span><span className="text-[11px] xl:text-[12px] font-normal text-slate-800 whitespace-nowrap">₹{subTotal.toFixed(2)}</span></div>
+                  <div className="flex justify-between items-center"><span className="text-[11px] xl:text-[12px] font-normal text-slate-600 uppercase tracking-wide whitespace-nowrap">Discount</span><span className="text-[11px] xl:text-[12px] font-normal text-emerald-600 whitespace-nowrap">- ₹{finalDiscount.toFixed(2)}</span></div>
                   <div className="h-px bg-slate-200 w-full my-0.5 md:my-1"></div>
-                  <div className="flex justify-between items-center"><span className="text-[11px] md:text-xs font-black text-slate-800">NET AMOUNT</span><span className="text-lg md:text-xl font-black text-[#9575cd]">₹{netAmount.toFixed(2)}</span></div>
-                  <div className="flex justify-between items-center mt-1 md:mt-2"><span className="text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-wide">DUE AMOUNT</span><span className={`text-xs md:text-sm font-black px-1.5 md:px-2 py-0.5 rounded border ${dueAmount > 0 ? 'bg-red-50 text-red-500 border-red-200' : 'bg-green-50 text-green-500 border-green-200'}`}>₹{dueAmount.toFixed(2)}</span></div>
+                  <div className="flex justify-between items-center"><span className="text-[11px] xl:text-[12px] font-medium text-slate-800 whitespace-nowrap">NET AMOUNT</span><span className="text-sm md:text-base xl:text-lg font-medium text-[#9575cd] whitespace-nowrap">₹{netAmount.toFixed(2)}</span></div>
+                  <div className="flex justify-between items-center mt-0.5 md:mt-1"><span className="text-[11px] xl:text-[12px] font-normal text-slate-600 uppercase tracking-wide whitespace-nowrap">DUE AMOUNT</span><span className={`text-[11px] xl:text-[12px] font-normal px-1 xl:px-1.5 py-0.5 rounded border whitespace-nowrap ${dueAmount > 0 ? 'bg-red-50 text-red-500 border-red-200' : 'bg-green-50 text-green-500 border-green-200'}`}>₹{dueAmount.toFixed(2)}</span></div>
               </div>
 
-              <div className="hidden md:flex gap-2 w-full mt-4 md:mt-0">
+              <div className="hidden md:flex gap-2 w-full mt-2 xl:mt-3">
                  <button 
                    onClick={handleSaveAndGenerate} 
                    disabled={isSaving} 
-                   className="flex-1 py-2 rounded-md text-white font-black text-[11px] uppercase tracking-wider shadow-sm shadow-purple-200 hover:shadow-purple-300 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60 disabled:hover:scale-100 flex items-center justify-center gap-1.5" 
+                   className="flex-1 py-1.5 xl:py-2 rounded-md text-white font-medium text-[11px] xl:text-[12px] uppercase tracking-wider shadow-sm shadow-purple-200 hover:shadow-purple-300 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60 disabled:hover:scale-100 flex items-center justify-center gap-1.5 whitespace-nowrap" 
                    style={{ background: 'linear-gradient(135deg, #9575cd, #7e57c2)' }}
                  >
                    {isSaving ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
@@ -454,7 +478,7 @@ export default function BillingRightPane({
        </div>
 
        <div className="md:hidden sticky bottom-0 p-1.5 bg-white shrink-0 flex justify-between w-full z-40 border-t border-slate-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-          <button onClick={onPrevStep} className="px-3 py-1 text-slate-600 bg-slate-100 rounded-md font-bold text-[10px] active:scale-95 transition-all flex items-center gap-1 shadow-sm border border-slate-200">
+          <button onClick={onPrevStep} className="px-3 py-1 text-slate-600 bg-slate-100 rounded-md font-medium text-[10px] active:scale-95 transition-all flex items-center gap-1 shadow-sm border border-slate-200">
              <ChevronDown className="rotate-[90deg]" size={10} /> Back
           </button>
           
@@ -462,13 +486,13 @@ export default function BillingRightPane({
              <button 
                 onClick={onNextStep} 
                 disabled={billItems.length === 0}
-                className={`px-3 py-1 text-white rounded-md font-bold text-[10px] flex items-center gap-1 shadow-sm ${billItems.length === 0 ? 'opacity-50 cursor-not-allowed' : 'active:scale-95 transition-all shadow-purple-200'}`} 
+                className={`px-3 py-1 text-white rounded-md font-medium text-[10px] flex items-center gap-1 shadow-sm ${billItems.length === 0 ? 'opacity-50 cursor-not-allowed' : 'active:scale-95 transition-all shadow-purple-200'}`} 
                 style={{ background: billItems.length === 0 ? '#94a3b8' : 'linear-gradient(135deg, #9575cd, #7e57c2)' }}
              >
                 Next <ChevronDown className="rotate-[-90deg]" size={10} />
              </button>
           ) : (
-             <button onClick={handleSaveAndGenerate} disabled={isSaving} className="px-3 py-1 text-white rounded-md font-bold text-[10px] active:scale-95 transition-all flex items-center gap-1 shadow-sm shadow-purple-200 disabled:opacity-60" style={{ background: 'linear-gradient(135deg, #9575cd, #7e57c2)' }}>
+             <button onClick={handleSaveAndGenerate} disabled={isSaving} className="px-3 py-1 text-white rounded-md font-medium text-[10px] active:scale-95 transition-all flex items-center gap-1 shadow-sm shadow-purple-200 disabled:opacity-60" style={{ background: 'linear-gradient(135deg, #9575cd, #7e57c2)' }}>
                 {isSaving ? <Loader2 size={10} className="animate-spin" /> : <CreditCard size={10} />}
                 {isSaving ? 'Processing...' : 'Generate Bill'}
              </button>

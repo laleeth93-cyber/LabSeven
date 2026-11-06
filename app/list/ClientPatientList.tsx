@@ -237,6 +237,30 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
         return filtered;
     }, [bills, searchQuery, activeFilter, advFilters, sortOrder, dateRange]);
 
+    const filterCounts = useMemo(() => {
+        let all = 0, pending = 0, partial = 0, completed = 0, printed = 0;
+        let targetBills = bills;
+        if (dateRange.from && dateRange.to) {
+            targetBills = targetBills.filter((bill: any) => {
+                const billDate = new Date(bill.date);
+                const bDate = new Date(billDate.getFullYear(), billDate.getMonth(), billDate.getDate());
+                const from = dateRange.from ? new Date(dateRange.from.getFullYear(), dateRange.from.getMonth(), dateRange.from.getDate()) : null;
+                const to = dateRange.to ? new Date(dateRange.to.getFullYear(), dateRange.to.getMonth(), dateRange.to.getDate()) : null;
+                if (from && to) return bDate >= from && bDate <= to;
+                return true;
+            });
+        }
+        targetBills.forEach((b: any) => {
+            all++;
+            const items = b.items || [];
+            if (items.some((i: any) => i.status === 'Pending')) pending++;
+            if (items.some((i: any) => i.status === 'Entered')) partial++;
+            if (items.some((i: any) => i.status === 'Approved' || i.status === 'Printed')) completed++;
+            if (items.length > 0 && items.every((i: any) => i.status === 'Printed')) printed++;
+        });
+        return { All: all, Pending: pending, Partial: partial, Completed: completed, Printed: printed };
+    }, [bills, dateRange]);
+
     const totalItems = filteredBills.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -445,32 +469,27 @@ export default function ClientPatientList({ initialBills }: { initialBills: any[
                 />
             )}
 
-            <div className="flex flex-col h-full bg-slate-50 w-full overflow-hidden relative">
-                <div className="flex flex-1 overflow-hidden pt-1 px-1 pb-2 md:p-4 gap-4 bg-transparent">
-                    <div className="w-full h-full bg-white rounded-none md:rounded-xl shadow-sm border-0 md:border md:border-slate-200 overflow-hidden flex flex-col relative">
-                        
-                        <div className="px-2 md:px-6 pt-0 md:pt-4 pb-0 md:pb-2 shrink-0 w-full max-w-full z-20">
-                            <ListHeader 
-                                searchQuery={searchQuery} setSearchQuery={setSearchQuery} onDateChange={setDateRange}
-                                activeFilter={activeFilter} setActiveFilter={setActiveFilter} filtersList={filtersList}
-                                advFilters={advFilters} setAdvFilters={setAdvFilters} uniqueDoctors={uniqueDoctors}
-                                viewMode={viewMode} setViewMode={handleSetViewMode}
-                                sortOrder={sortOrder} setSortOrder={setSortOrder}
-                            />
-                        </div>
+            <div className="flex flex-1 overflow-hidden p-0 gap-0 relative h-full">
+                <div className="w-full h-full bg-white rounded-none md:rounded-[10px] md:shadow-xl md:border md:border-slate-200 overflow-hidden flex flex-col relative z-10">
+                    <ListHeader 
+                        searchQuery={searchQuery} setSearchQuery={setSearchQuery} onDateChange={setDateRange}
+                        activeFilter={activeFilter} setActiveFilter={setActiveFilter} filtersList={filtersList}
+                        filterCounts={filterCounts}
+                        advFilters={advFilters} setAdvFilters={setAdvFilters} uniqueDoctors={uniqueDoctors}
+                        viewMode={viewMode} setViewMode={handleSetViewMode}
+                        sortOrder={sortOrder} setSortOrder={setSortOrder}
+                    />
 
-                        <div className="flex-1 overflow-hidden flex flex-col relative w-full pt-1 px-2 pb-2 md:px-0 md:pb-0">
-                            <ListTable 
-                                bills={paginatedBills} isLoading={isLoading} viewMode={viewMode}
-                                currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={setCurrentPage}
-                                onPrintBill={handlePrintBill} onPrintBarcode={handlePrintBarcode} onOpenReport={handleOpenReport}
-                                onSendWhatsappReport={handleSendWhatsappReport} whatsappManualEnabled={whatsappManualEnabled}
-                                onOpenSmartReport={handleOpenSmartReport} onOpenCultureReport={handleOpenCultureReport}
-                                onOpenClearDue={handleOpenClearDue} onOpenRefund={handleOpenRefund} onOpenAudit={handleOpenAudit}
-                                onEditBill={handleEditBill} onDeleteBill={handleDeleteBill}
-                            />
-                        </div>
-
+                    <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-white">
+                        <ListTable 
+                            bills={paginatedBills} isLoading={isLoading} viewMode={viewMode}
+                            currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={setCurrentPage}
+                            onPrintBill={handlePrintBill} onPrintBarcode={handlePrintBarcode} onOpenReport={handleOpenReport}
+                            onSendWhatsappReport={handleSendWhatsappReport} whatsappManualEnabled={whatsappManualEnabled}
+                            onOpenSmartReport={handleOpenSmartReport} onOpenCultureReport={handleOpenCultureReport}
+                            onOpenClearDue={handleOpenClearDue} onOpenRefund={handleOpenRefund} onOpenAudit={handleOpenAudit}
+                            onEditBill={handleEditBill} onDeleteBill={handleDeleteBill}
+                        />
                     </div>
                 </div>
             </div>

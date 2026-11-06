@@ -13,34 +13,35 @@ export default function WorklistPanel({ bills, onSelect, activeTab }: WorklistPa
   return (
     <div className="h-full flex flex-col bg-white overflow-hidden">
         
-        <div className="flex-1 overflow-y-auto custom-scrollbar bg-white md:bg-slate-50/20 py-0 md:py-4 px-0 md:px-6">
+        <div className="flex-1 overflow-hidden bg-white p-0 md:p-2.5 xl:p-3 flex flex-col min-h-0">
             
             {/* DESKTOP VIEW: Table */}
-            <div className="hidden md:block w-full overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
-                <table className="w-full text-left whitespace-nowrap min-w-[750px]">
-                    <thead className="bg-slate-100/80 sticky top-0 z-10 border-b border-slate-200 shadow-sm">
+            <div className="hidden md:flex flex-col flex-1 min-h-0 w-full h-full overflow-hidden">
+                <div className="w-full h-full overflow-auto custom-scrollbar rounded-[6px] border border-slate-200 shadow-sm bg-white">
+                    <table className="w-full text-left text-sm border-collapse whitespace-nowrap min-w-[750px] bg-white border-spacing-0">
+                    <thead className="bg-[#9575cd] sticky top-0 z-10 text-white border-b border-[#7e57c2]">
                         <tr>
-                            <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Bill Number</th>
-                            <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Bill Date</th>
-                            <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Patient Name</th>
-                            <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Age / Gender</th>
-                            <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Test Name</th>
-                            <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider">Phone</th>
-                            <th className="px-5 py-4 font-bold text-slate-500 text-sm md:text-xs uppercase tracking-wider text-right">Action</th>
+                            <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left w-24">Bill Number</th>
+                            <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left w-36">Bill Date</th>
+                            <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left max-w-[200px]">Patient Name</th>
+                            <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left w-24">Age / Gender</th>
+                            <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left max-w-[200px]">Test Name</th>
+                            <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-left w-28">Phone</th>
+                            <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#7e57c2] font-medium text-white text-[11px] uppercase tracking-wider align-middle leading-none text-center w-24">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
+                    <tbody className="bg-white">
                         {bills.map((bill: any) => (
-                            <tr key={bill.id} className="hover:bg-blue-50/60 transition-colors group">
+                            <tr key={bill.id} className="hover:bg-purple-50/50 transition-colors group">
                                 
-                                <td className="px-5 py-3.5">
-                                    <span className="font-mono font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded text-sm md:text-xs">
+                                <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left whitespace-nowrap overflow-hidden">
+                                    <span className="font-mono font-normal text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 text-[11px] inline-block leading-tight">
                                         #{bill.billNumber}
                                     </span>
                                 </td>
 
-                                <td className="px-5 py-3.5">
-                                    <span className="text-slate-600 font-medium text-sm md:text-xs">
+                                <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left whitespace-nowrap overflow-hidden">
+                                    <span className="text-slate-600 font-normal text-[11px] leading-tight block">
                                         {bill.date ? new Date(bill.date).toLocaleDateString('en-GB', { 
                                             day: '2-digit', 
                                             month: 'short', 
@@ -51,44 +52,44 @@ export default function WorklistPanel({ bills, onSelect, activeTab }: WorklistPa
                                     </span>
                                 </td>
 
-                                <td className="px-5 py-3.5">
-                                    <div className="font-bold text-slate-800 text-base md:text-sm">
+                                <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left whitespace-nowrap overflow-hidden max-w-[200px]">
+                                    <div className="font-normal text-slate-800 text-[12px] truncate leading-tight" title={`${bill.patient.firstName} ${bill.patient.lastName}`}>
                                         {bill.patient.firstName} {bill.patient.lastName}
                                     </div>
                                 </td>
 
-                                <td className="px-5 py-3.5">
-                                    <span className="text-slate-600 font-medium text-sm md:text-xs">
-                                        {bill.patient.ageY} Y / {bill.patient.gender.charAt(0)}
+                                <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left whitespace-nowrap overflow-hidden">
+                                    <span className="text-slate-600 font-normal text-[11px] leading-tight block">
+                                        {bill.patient.ageY} Y / {bill.patient.gender?.charAt(0) || 'U'}
                                     </span>
                                 </td>
 
-                                <td className="px-5 py-3.5">
-                                    <div className="flex flex-wrap gap-1.5 max-w-[200px] md:max-w-[300px]" title={bill.items?.map((i: any) => i.test?.name).join(', ')}>
+                                <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left max-w-[200px] overflow-hidden">
+                                    <div className="flex flex-wrap gap-1 max-w-[200px] overflow-hidden" title={bill.items?.map((i: any) => i.test?.name).join(', ')}>
                                         {bill.items?.length > 0 ? bill.items.map((i: any) => (
-                                            <span key={i.id} className={`inline-flex items-center gap-1 whitespace-nowrap px-1.5 py-0.5 rounded border text-[11px] md:text-[10px] font-medium ${i.status === 'Entered' ? 'bg-blue-100 text-blue-700 border-blue-200' : i.status === 'Approved' ? 'bg-green-100 text-green-700 border-green-200' : i.status === 'Printed' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
+                                            <span key={i.id} className={`inline-flex items-center gap-1 whitespace-nowrap px-1 py-0 rounded border text-[10px] font-normal leading-tight ${i.status === 'Entered' ? 'bg-blue-50 text-blue-700 border-blue-200' : i.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' : i.status === 'Printed' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
                                                 <span className="font-bold opacity-75">
                                                     {i.status === 'Entered' ? 'E' : i.status === 'Approved' ? 'A' : i.status === 'Printed' ? 'Pr' : 'P'}
                                                 </span>
-                                                {i.test?.name}
+                                                <span className="truncate max-w-[120px]">{i.test?.name}</span>
                                             </span>
-                                        )) : <span className="text-slate-500 text-sm md:text-xs">-</span>}
+                                        )) : <span className="text-slate-500 text-[11px]">-</span>}
                                     </div>
                                 </td>
 
-                                <td className="px-5 py-3.5">
-                                    <span className="text-slate-500 font-mono text-sm md:text-xs">
+                                <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-left whitespace-nowrap overflow-hidden">
+                                    <span className="text-slate-500 font-mono font-normal text-[11px] leading-tight block">
                                         {bill.patient.phone || '-'}
                                     </span>
                                 </td>
 
-                                <td className="px-5 py-3.5 text-right">
+                                <td style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="border-b border-[#d9d9d9] align-middle text-center whitespace-nowrap">
                                     <button 
                                         onClick={() => onSelect(bill.id)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#9575cd] text-white text-sm md:text-xs font-bold rounded-md hover:bg-[#8565bd] hover:shadow-md transition-all active:scale-95"
+                                        className="h-[18px] inline-flex items-center gap-1 px-1.5 bg-[#9575cd] text-white text-[10px] font-normal rounded hover:bg-[#8565bd] hover:shadow transition-all active:scale-95 leading-none shadow-xs"
                                     >
-                                        Enter Results
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                        <span>Results</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                                     </button>
                                 </td>
                             </tr>
@@ -106,6 +107,7 @@ export default function WorklistPanel({ bills, onSelect, activeTab }: WorklistPa
                         )}
                     </tbody>
                 </table>
+            </div>
             </div>
 
             {/* MOBILE VIEW: Cards */}

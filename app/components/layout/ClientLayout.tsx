@@ -74,7 +74,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           setActiveView={setActiveView} 
         />
         
-        <main className="flex-1 min-h-0 h-full flex flex-col overflow-hidden md:overflow-auto p-0 md:p-4 bg-white md:bg-[#f8fafc] relative md:pb-4">
+        <main className={`flex-1 min-h-0 h-full flex flex-col overflow-hidden md:overflow-auto ${pathname === '/registration' || pathname?.startsWith('/results') || pathname === '/list' || pathname?.startsWith('/tests') || pathname === '/department' || pathname?.startsWith('/parameters') || pathname?.startsWith('/packages') || pathname?.startsWith('/sensitivity') || pathname?.startsWith('/organisms') || pathname?.startsWith('/antibiotics') || pathname?.startsWith('/antibiotic-classes') || pathname?.startsWith('/multi-values') || pathname?.startsWith('/susceptibility-info') || pathname?.startsWith('/masters') || pathname?.startsWith('/specimen') || pathname?.startsWith('/referrals') || pathname?.startsWith('/lab-profile') || pathname?.startsWith('/profile') || pathname?.startsWith('/message-station') || pathname?.startsWith('/messages') || pathname?.startsWith('/reports') || pathname?.startsWith('/formatting') || pathname?.startsWith('/authorizations') || pathname?.startsWith('/security') || pathname?.startsWith('/super-admin') ? 'p-0 md:p-2 lg:p-2.5 xl:p-3 md:pb-2 lg:pb-2.5 xl:pb-3' : 'p-0 md:p-4 md:pb-4'} bg-white md:bg-[#f8fafc] relative`}>
           {children}
         </main>
       </div>

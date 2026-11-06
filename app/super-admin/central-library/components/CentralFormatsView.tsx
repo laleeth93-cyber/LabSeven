@@ -175,7 +175,7 @@ export default function CentralFormatsView({
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
               disabled={isPulling}
-              className="h-8 pl-2.5 pr-7 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-md shadow-2xs outline-none focus:border-[#9575cd] focus:ring-1 focus:ring-[#9575cd] appearance-none cursor-pointer transition-colors max-w-[210px] truncate disabled:opacity-60"
+              className="h-[24px] xl:h-[26px] pl-2 pr-6 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-[11px] xl:text-[12px] font-normal rounded-[5px] shadow-2xs outline-none focus:border-[#9575cd] appearance-none cursor-pointer transition-colors max-w-[190px] truncate disabled:opacity-60"
               title="Select user account to pull data from"
             >
               <option value="ALL">All User Accounts</option>
@@ -185,29 +185,29 @@ export default function CentralFormatsView({
                 </option>
               ))}
             </select>
-            <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <ChevronDown size={11} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>
 
           <button
             onClick={handleDataPull}
             disabled={isPulling}
-            className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3.5 h-8 rounded-md text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-60 cursor-pointer shrink-0"
+            className="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 px-2.5 h-[24px] xl:h-[26px] rounded-[5px] text-[11px] xl:text-[12px] font-medium shadow-2xs flex items-center gap-1 transition-all active:scale-95 disabled:opacity-60 cursor-pointer shrink-0"
             title="Pull report format data from selected user account"
           >
             {isPulling ? (
-              <Loader2 size={14} className="animate-spin text-[#9575cd]" />
+              <Loader2 size={12} className="animate-spin text-[#9575cd]" />
             ) : (
-              <CloudDownload size={14} className="text-[#9575cd]" />
+              <CloudDownload size={12} className="text-[#9575cd]" />
             )}
-            <span>{isPulling ? "Pulling Data..." : "Data Pull"}</span>
+            <span>{isPulling ? "Pulling..." : "Data Pull"}</span>
           </button>
         </div>
       </div>
 
       {/* DESKTOP SPLIT VIEW */}
-      <div className="hidden md:flex w-full flex-1 overflow-hidden p-6 gap-6">
+      <div className="hidden md:flex w-full flex-1 overflow-hidden p-2 xl:p-2.5 gap-2.5">
         {/* Left Side: Test List Panel */}
-        <div className="w-80 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden shrink-0">
+        <div className="w-80 bg-white rounded-[6px] border border-slate-200 shadow-sm flex flex-col overflow-hidden shrink-0">
           <div className="h-12 border-b border-slate-200 grid grid-cols-2 shrink-0 bg-slate-50">
             <button
               onClick={() => setSidebarTab("pending")}

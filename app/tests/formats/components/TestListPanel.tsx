@@ -63,7 +63,7 @@ export default function TestListPanel({
                     <select 
                         value={deptFilter} 
                         onChange={(e) => setDeptFilter(e.target.value)} 
-                        className="w-full text-[10px] font-bold border border-slate-200 rounded px-2 h-7 bg-white focus:border-[#9575cd] outline-none text-slate-700"
+                        className="w-full text-[11px] xl:text-[12px] font-normal border border-slate-300 rounded-[5px] px-2 h-[26px] xl:h-[28px] bg-white focus:outline-none focus:border-[#9575cd] text-slate-700"
                     >
                         <option value="All">All Departments</option>
                         {departments.map((d: any) => (
@@ -79,7 +79,7 @@ export default function TestListPanel({
                         placeholder="Search..." 
                         value={searchTerm} 
                         onChange={(e) => setSearchTerm(e.target.value)} 
-                        className="w-full pl-6 pr-2 h-7 text-[10px] border border-slate-200 rounded bg-white focus:border-[#9575cd] outline-none shadow-sm text-slate-700"
+                        className="w-full pl-6 pr-2 h-[26px] xl:h-[28px] text-[11px] xl:text-[12px] font-normal border border-slate-300 rounded-[5px] bg-white focus:outline-none focus:border-[#9575cd] text-slate-700 placeholder:text-slate-400"
                     />
                 </div>
             </div>
@@ -89,7 +89,7 @@ export default function TestListPanel({
                     <button 
                         key={test.id} 
                         onClick={() => onSelectTest(test)} 
-                        className={`w-full text-left px-3 py-2 rounded-md border text-[10px] transition-all flex flex-col gap-0.5 ${selectedTestId === test.id ? 'bg-[#9575cd] border-[#9575cd] text-white shadow-md' : 'bg-white border-slate-200 hover:bg-purple-50 text-slate-600'}`}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-[5px] border text-[11px] xl:text-[12px] font-normal transition-all flex flex-col gap-0.5 ${selectedTestId === test.id ? 'bg-[#9575cd] border-[#9575cd] text-white shadow-2xs' : 'bg-white border-slate-200 hover:bg-purple-50/50 text-slate-700'}`}
                     >
                         <span className="font-bold truncate">{test.name}</span>
                         <div className={`flex justify-between w-full text-[9px] ${selectedTestId === test.id ? 'text-purple-100' : 'text-slate-400'}`}>
@@ -101,19 +101,19 @@ export default function TestListPanel({
             </div>
 
             {/* 🚨 NEW: COMPACT PAGINATION FOOTER */}
-            <div className="h-10 border-t border-slate-200 bg-white flex items-center justify-between px-3 shrink-0">
-                 <div className="text-[10px] font-medium text-slate-500">
+            <div className="min-h-[30px] h-[30px] border-t border-slate-200 bg-white flex items-center justify-between px-2.5 shrink-0">
+                 <div className="text-[10px] font-normal text-slate-500">
                     {filteredList.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredList.length)} of {filteredList.length}
                  </div>
                  <div className="flex items-center gap-1">
                      <button 
                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
                          disabled={currentPage === 1}
-                         className="p-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                         className="h-[20px] px-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center"
                      >
                          <ChevronLeft size={12} />
                      </button>
-                     <span className="text-[10px] font-bold text-slate-700 w-16 text-center">
+                     <span className="text-[10px] font-normal text-slate-700 w-16 text-center select-none">
                          {currentPage} / {totalPages || 1}
                      </span>
                      <button 

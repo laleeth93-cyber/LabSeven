@@ -498,14 +498,14 @@ export default function AddCentralParameterPage() {
 
           <div className="overflow-x-auto border border-slate-200 rounded-lg">
             <table className="w-full min-w-[850px] text-xs">
-              <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 border-b border-slate-200">
+              <thead className="bg-[#9575cd] text-[10px] uppercase font-bold text-white border-b border-[#7e57c2]">
                 <tr>
-                  <th className="p-2.5 text-left">Gender</th>
-                  <th className="p-2.5 text-left">Age Range</th>
-                  <th className="p-2.5 text-left">Normal Operator</th>
-                  <th className="p-2.5 text-left">Normal Range</th>
-                  <th className="p-2.5 text-left">Critical Limits</th>
-                  <th className="p-2.5 text-center">Action</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 text-left">Gender</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 text-left">Age Range</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 text-left">Normal Operator</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 text-left">Normal Range</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 text-left">Critical Limits</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

@@ -130,10 +130,13 @@ export async function getTestParameters(testId: number) {
   }
 }
 
-export async function saveTestResults(billId: number, results: TestResultItem[], status: string = 'Entered', sig1Id?: number | null, sig2Id?: number | null) {
+export async function saveTestResults(billId: number, results: TestResultItem[], status: string = 'Entered', sig1Id?: number | null, sig2Id?: number | null, targetItemIds?: number[]) {
     try {
       const { orgId } = await requireAuth(); 
-      const billItemIds = Array.from(new Set(results.map(r => r.billItemId)));
+      const derivedItemIds = Array.from(new Set(results.map(r => r.billItemId)));
+      const billItemIds = targetItemIds && targetItemIds.length > 0 
+          ? Array.from(new Set([...targetItemIds, ...derivedItemIds]))
+          : derivedItemIds;
       const billItems = await prisma.billItem.findMany({
           where: { organizationId: orgId, id: { in: billItemIds } },
           include: {

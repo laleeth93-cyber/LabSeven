@@ -32,12 +32,12 @@ export default function HistoryModal({ show, onClose, paramName, isLoading, data
                                 </ResponsiveContainer>
                             </div>
                             <table className="w-full text-xs text-left">
-                                <thead className="bg-slate-50 text-slate-500 font-bold">
+                                <thead className="bg-[#9575cd] text-white font-bold border-b border-[#7e57c2]">
                                     <tr>
-                                        <th className="p-2 border">Date</th>
-                                        <th className="p-2 border">Bill No</th>
-                                        <th className="p-2 border">Result</th>
-                                        <th className="p-2 border">Flag</th>
+                                        <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="p-2 border border-[#7e57c2] text-white align-middle leading-none">Date</th>
+                                        <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="p-2 border border-[#7e57c2] text-white align-middle leading-none">Bill No</th>
+                                        <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="p-2 border border-[#7e57c2] text-white align-middle leading-none">Result</th>
+                                        <th style={{ padding: '5px 6px', verticalAlign: 'middle', lineHeight: 1 }} className="p-2 border border-[#7e57c2] text-white align-middle leading-none">Flag</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">

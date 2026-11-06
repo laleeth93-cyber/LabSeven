@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Trash2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Trash2, AlertTriangle, Loader2, X } from 'lucide-react';
 import { wipeAllTenantData } from '@/app/actions/super-admin';
 
 export default function GlobalWipeButton() {
@@ -18,7 +18,7 @@ export default function GlobalWipeButton() {
             if (res.success) {
                 alert("Global Wipe Complete: " + res.message);
                 setIsOpen(false);
-                window.location.reload(); // Refresh to update counts
+                window.location.reload();
             } else {
                 alert("Error: " + res.message);
             }
@@ -31,64 +31,71 @@ export default function GlobalWipeButton() {
 
     return (
         <>
-            {/* The Trigger Button on Super Admin Dashboard */}
             <button 
                 onClick={() => setIsOpen(true)}
-                className="flex items-center gap-1 sm:gap-1.5 h-6.5 sm:h-7.5 px-1.5 sm:px-2.5 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white font-bold text-[9.5px] sm:text-xs rounded sm:rounded-lg shadow-xs border border-red-200 transition-all active:scale-95 shrink-0 select-none whitespace-nowrap"
+                className="h-[24px] xl:h-[26px] px-2.5 rounded-[5px] text-[11px] xl:text-[12px] font-medium text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 flex items-center gap-1.5 shadow-2xs transition-all shrink-0 select-none"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
-                title="Permanently wipe all tenant data"
+                title="Permanently wipe all tenant clinical data"
             >
-                <Trash2 size={10.5} className="sm:w-3.5 sm:h-3.5 shrink-0" />
+                <Trash2 size={12} className="text-rose-600 shrink-0" />
                 <span>Global Wipe</span>
             </button>
 
-            {/* The Danger Modal */}
             {isOpen && (
-                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+                    <div className="bg-white w-full max-w-sm rounded-[10px] shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
                         
-                        <div className="bg-red-600 p-6 flex flex-col items-center justify-center text-white shrink-0">
-                            <AlertTriangle size={48} className="mb-3 animate-pulse" />
-                            <h2 className="text-xl font-black tracking-tight text-center">GLOBAL DATA WIPE</h2>
+                        <div className="bg-rose-50 px-4 py-2.5 border-b border-rose-100 flex items-center justify-between min-h-[38px] shrink-0">
+                            <h3 className="text-[14px] xl:text-[15px] font-semibold text-rose-700 flex items-center gap-1.5 leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                                <AlertTriangle size={15} className="text-rose-600 shrink-0" />
+                                Critical: Global Data Wipe
+                            </h3>
+                            <button 
+                                onClick={() => { setIsOpen(false); setConfirmText(''); }}
+                                className="text-rose-400 hover:text-rose-600 transition-colors p-0.5"
+                            >
+                                <X size={15} />
+                            </button>
                         </div>
 
-                        <div className="p-6">
-                            <p className="text-sm font-bold text-slate-700 mb-2 text-center">
-                                WARNING! You are about to permanently delete:
+                        <div className="p-4 space-y-3">
+                            <p className="text-[11px] text-slate-600 font-normal leading-snug">
+                                This will permanently purge all tenant records across the database:
                             </p>
-                            <ul className="text-xs text-slate-600 list-disc pl-5 mb-6 space-y-1 bg-red-50/50 p-4 rounded-lg border border-red-100">
-                                <li>All Patients across <b>ALL</b> Client Logins</li>
-                                <li>All Generated Invoices & Bills</li>
-                                <li>All Test Results & Reports</li>
-                                <li>All Payment Transactions</li>
+                            <ul className="text-[10px] text-rose-800 list-disc pl-4 space-y-0.5 bg-rose-50/60 p-2.5 rounded border border-rose-100 font-medium">
+                                <li>All Patient profiles and visit histories</li>
+                                <li>All Generated Invoices & Payment Receipts</li>
+                                <li>All Test Results, Formats, and Approvals</li>
                             </ul>
 
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                                <p className="text-[10px] text-red-800 font-bold mb-2 uppercase tracking-wide text-center">Type "WIPE ALL" to confirm</p>
+                            <div className="bg-slate-50 border border-slate-200 rounded p-2.5">
+                                <label className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider mb-1 block">
+                                    Type "WIPE ALL" to confirm
+                                </label>
                                 <input 
                                     type="text" 
                                     value={confirmText}
                                     onChange={(e) => setConfirmText(e.target.value)}
                                     placeholder="WIPE ALL"
-                                    className="w-full px-3 py-2 border border-red-300 rounded text-red-600 font-black focus:outline-none focus:ring-2 focus:ring-red-500 text-center uppercase tracking-widest bg-white"
+                                    className="w-full h-[26px] xl:h-[28px] text-[11px] xl:text-[12px] font-bold text-rose-700 border border-rose-300 rounded px-2.5 text-center uppercase tracking-widest bg-white focus:outline-none focus:border-rose-500"
                                 />
                             </div>
 
-                            <div className="flex gap-3">
+                            <div className="flex gap-2 justify-end pt-1">
                                 <button 
                                     onClick={() => { setIsOpen(false); setConfirmText(''); }}
                                     disabled={isDeleting}
-                                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-lg transition-colors disabled:opacity-50"
+                                    className="h-[24px] xl:h-[26px] px-3 text-[11px] xl:text-[12px] text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 rounded-[5px] transition-colors disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     onClick={handleExecuteWipe}
                                     disabled={isDeleting || confirmText !== 'WIPE ALL'}
-                                    className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-lg transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+                                    className="h-[24px] xl:h-[26px] px-3.5 bg-rose-600 hover:bg-rose-700 text-white font-medium text-[11px] xl:text-[12px] rounded-[5px] shadow-2xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                                 >
-                                    {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                                    {isDeleting ? "Wiping..." : "Confirm Wipe"}
+                                    {isDeleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                                    <span>{isDeleting ? "Wiping..." : "Confirm Wipe"}</span>
                                 </button>
                             </div>
                         </div>

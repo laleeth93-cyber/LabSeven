@@ -8,6 +8,11 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Roboto', 'Arial', 'sans-serif'],
+        roboto: ['Roboto', 'sans-serif'],
+        calibri: ['Calibri', 'Arial', 'sans-serif'],
+      },
       colors: {
         // Your Exact Purple Theme
         brand: {

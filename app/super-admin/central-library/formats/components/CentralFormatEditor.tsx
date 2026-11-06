@@ -661,14 +661,14 @@ export default function CentralFormatEditor({
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-xs">
-              <thead className="bg-slate-100/60 text-[10px] uppercase font-bold text-slate-500 border-b border-slate-200">
+              <thead className="bg-[#9575cd] text-[10px] uppercase font-bold text-white border-b border-[#7e57c2]">
                 <tr>
-                  <th className="p-2.5 w-16 text-center">Order</th>
-                  <th className="p-2.5 w-28 text-left">Code</th>
-                  <th className="p-2.5 text-left">Parameter / Subtitle</th>
-                  <th className="p-2.5 w-24 text-center">Formulas</th>
-                  <th className="p-2.5 w-20 text-center">Active</th>
-                  <th className="p-2.5 w-16 text-center">Remove</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 w-16 text-center">Order</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 w-28 text-left">Code</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 text-left">Parameter / Subtitle</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 w-24 text-center">Formulas</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 w-20 text-center">Active</th>
+                  <th style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }} className="align-middle leading-none p-2.5 w-16 text-center">Remove</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

@@ -15,25 +15,27 @@ export default function DeltaReportTab({ deltaSettings, setDeltaSettings }: Delt
         <div className="flex flex-col w-full h-auto md:h-full animate-in fade-in duration-300 pb-2">
             
             {/* Header Banner */}
-            <div className="p-2.5 md:p-5 pb-2 md:pb-4 border-b border-slate-100 bg-white rounded-xl md:rounded-none md:sticky md:top-0 z-10 shrink-0 mb-2.5 md:mb-0">
-                <h2 className="text-[11px] md:text-lg font-bold text-slate-800 flex items-center gap-1.5">
-                    <TrendingUp size={14} className="text-[#9575cd] md:w-5 md:h-5" />
+            <div className="p-2.5 md:p-3 pb-2 border-b border-slate-100 bg-white rounded-[6px] md:sticky md:top-0 z-10 shrink-0 mb-2.5 md:mb-0">
+                <h2 className="text-[13px] md:text-[14px] font-semibold text-slate-800 flex items-center gap-1.5" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                    <TrendingUp size={14} className="text-[#9575cd]" />
                     Delta Report Configurations
                 </h2>
-                <p className="text-[8.5px] md:text-xs text-slate-400 font-medium mt-0.5 leading-none">
+                <p className="text-[10px] text-slate-400 font-normal mt-0.5 leading-none">
                     Customize the look and feel of historical variance analysis reports.
                 </p>
             </div>
 
-            <div className="w-full md:flex-1 md:overflow-y-auto p-0 md:p-5 space-y-2.5 md:space-y-6 custom-scrollbar">
+            <div className="w-full md:flex-1 md:overflow-y-auto p-0 md:p-3 space-y-2.5 md:space-y-3 custom-scrollbar">
                 
                 {/* --- THEME COLORS --- */}
-                <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col shrink-0">
                     <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                         <Palette size={14} className="text-[#9575cd]" />
                         <div>
-                            <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Theme Colors</h3>
-                            <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">Color accents for graphs and data.</p>
+                            <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                                Theme Colors
+                            </h3>
+                            <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Color accents for graphs and data.</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 md:gap-4">
@@ -55,12 +57,14 @@ export default function DeltaReportTab({ deltaSettings, setDeltaSettings }: Delt
                 </div>
 
                 {/* --- TYPOGRAPHY --- */}
-                <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col shrink-0">
                     <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                         <Baseline size={14} className="text-[#9575cd]" />
                         <div>
-                            <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Typography & Sizes</h3>
-                            <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">Font family and text scales.</p>
+                            <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                                Typography & Sizes
+                            </h3>
+                            <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Font family and text scales.</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
@@ -102,12 +106,14 @@ export default function DeltaReportTab({ deltaSettings, setDeltaSettings }: Delt
                 </div>
 
                 {/* --- GRAPH STYLES --- */}
-                <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+                <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col shrink-0">
                     <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                         <TrendingUp size={14} className="text-[#9575cd]" />
                         <div>
-                            <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Graph Styles</h3>
-                            <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">Chart formatting and legends.</p>
+                            <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                                Graph Styles
+                            </h3>
+                            <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Chart formatting and legends.</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 md:gap-4 mb-2.5">

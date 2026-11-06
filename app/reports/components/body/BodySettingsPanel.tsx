@@ -46,12 +46,14 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
         <div className="w-full flex flex-col gap-2.5 md:gap-5 pb-2">
             
             {/* Table Content & Columns Toggle Card */}
-            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col">
                 <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                     <Table size={14} className="text-[#9575cd]" />
                     <div>
-                        <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Table Content & Columns</h3>
-                        <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">Toggle and configure visible columns in the results table.</p>
+                        <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            Table Content & Columns
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Toggle and configure visible columns in the results table.</p>
                     </div>
                 </div>
                 
@@ -107,12 +109,14 @@ export default function BodySettingsPanel({ bodySettings, handleToggleBody, hand
             </div>
 
             {/* Table Design & Typography Card */}
-            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col">
                 <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                     <Settings2 size={14} className="text-[#9575cd]" />
                     <div>
-                        <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Table Design & Typography</h3>
-                        <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">Customize borders, fonts, colors, and layout of the results table.</p>
+                        <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            Table Design & Typography
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Customize borders, fonts, colors, and layout of the results table.</p>
                     </div>
                 </div>
                 

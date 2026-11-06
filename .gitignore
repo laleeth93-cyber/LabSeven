@@ -21,3 +21,4 @@ venv/
 # IDE / Editor settings
 .vscode
 *.tsbuildinfo
+scratch/

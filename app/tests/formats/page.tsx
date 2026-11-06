@@ -151,37 +151,51 @@ export default function TestFormatsPage() {
   `;
 
   return (
-    <div className="h-full w-full bg-[#f1f5f9] p-0 md:p-6 flex flex-col font-sans text-slate-600 overflow-hidden relative">
+    <div className="h-full w-full bg-white flex flex-col font-sans text-slate-700 overflow-hidden relative">
       <style>{scrollbarStyles}</style>
       
       {/* --- DESKTOP LAYOUT --- */}
-      <div className="hidden md:flex flex-1 w-full bg-white rounded-2xl shadow-xl overflow-hidden flex-col border border-slate-200 ring-1 ring-slate-100">
-          <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 relative">
-              <div className="flex items-center gap-4">
-                  <div className="p-1.5 bg-[#9575cd] rounded-lg text-white shadow-sm"><Settings2 size={18}/></div>
-                  <div>
-                    <h1 className="text-sm font-bold text-slate-800 tracking-tight leading-none">Test Formats</h1>
-                    <span className="text-[10px] text-slate-400 font-medium">Report templates & layout</span>
+      <div className="hidden md:flex flex-1 w-full bg-white overflow-hidden flex-col">
+          <header className="px-2.5 xl:px-3 py-1.5 md:py-0 bg-white md:bg-slate-50 border-b border-slate-200 shrink-0 flex items-center justify-between gap-2 z-10 min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px]">
+              {/* Left: Title, Total & Pending/Configured Filter */}
+              <div className="flex items-center gap-2 xl:gap-3 shrink-0">
+                  <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
+                      <div className="p-1 rounded bg-purple-50 text-[#9575cd] shadow-2xs"><CheckCircle2 size={15}/></div>
+                      <span className="text-[14px] xl:text-[15px] font-semibold text-slate-800 tracking-tight leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                          Test Formats
+                      </span>
+                      <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 leading-tight">
+                          {allTests.length} Total
+                      </span>
                   </div>
-              </div>
-          </header>
 
-          <div className="flex-1 flex overflow-hidden">
-              <aside className="w-80 bg-slate-50 border-r border-slate-200 flex flex-col shrink-0">
-                  <div className="flex p-2 bg-slate-100 border-b border-slate-200 shrink-0">
+                  {/* Pending / Configured Filter Pills */}
+                  <div className="flex items-center bg-slate-100 p-0.5 rounded-[5px] border border-slate-200 h-[24px] xl:h-[26px]">
                       <button 
                           onClick={() => setSidebarTab('pending')}
-                          className={`flex-1 py-1.5 text-[11px] font-bold rounded-md transition-all flex items-center justify-center gap-1.5 ${sidebarTab === 'pending' ? 'bg-white shadow-sm text-amber-700 border border-slate-200' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+                          className={`h-full px-2 rounded text-[11px] xl:text-[12px] font-normal transition-all flex items-center gap-1.5 leading-none ${sidebarTab === 'pending' ? 'bg-white shadow-2xs text-amber-700 font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
                       >
-                          <AlertCircle size={14}/> Pending ({pendingList.length})
+                          <AlertCircle size={12}/>
+                          <span>Pending</span>
+                          <span className="text-[9px] px-1 py-0.2 rounded-full bg-amber-100 text-amber-700 font-bold">{pendingList.length}</span>
                       </button>
                       <button 
                           onClick={() => setSidebarTab('completed')}
-                          className={`flex-1 py-1.5 text-[11px] font-bold rounded-md transition-all flex items-center justify-center gap-1.5 ${sidebarTab === 'completed' ? 'bg-white shadow-sm text-green-700 border border-slate-200' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}
+                          className={`h-full px-2 rounded text-[11px] xl:text-[12px] font-normal transition-all flex items-center gap-1.5 leading-none ${sidebarTab === 'completed' ? 'bg-white shadow-2xs text-green-700 font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
                       >
-                          <CheckCircle2 size={14}/> Completed ({completedList.length})
+                          <CheckCircle2 size={12}/>
+                          <span>Configured</span>
+                          <span className="text-[9px] px-1 py-0.2 rounded-full bg-green-100 text-green-700 font-bold">{completedList.length}</span>
                       </button>
                   </div>
+              </div>
+
+              <div></div>
+          </header>
+
+          <div className="flex-1 flex overflow-hidden">
+              <aside className="w-64 lg:w-72 xl:w-80 bg-white border-r border-slate-200 flex flex-col shrink-0">
+                  
                   <div className="flex-1 overflow-hidden bg-white">
                       {sidebarTab === 'pending' ? (
                           <TestListPanel 
@@ -209,7 +223,7 @@ export default function TestFormatsPage() {
                   </div>
               </aside>
 
-              <main className="flex-1 bg-white flex flex-col items-center p-4 min-h-0 relative">
+              <main className="flex-1 bg-slate-50/50 flex flex-col p-2 md:p-2.5 xl:p-3 min-h-0 relative overflow-hidden">
                  <div className="absolute inset-0 bg-[#f8fafc] opacity-50 z-0 pointer-events-none"></div>
                  
                  {isLoadingDetails ? (

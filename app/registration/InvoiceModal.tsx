@@ -350,25 +350,41 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data, autoSendWh
 
   const handleEnterResults = () => { if (data?.billId) { onClose(true); router.push(`/results/entry?billNumber=${data.billId}`); } };
 
-  const plainBtnClass = "flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded border border-slate-300 bg-white text-slate-700 text-xs md:text-sm font-bold shadow-sm transition-all hover:bg-slate-50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-1 md:flex-none";
-  const mainGradient = { background: 'linear-gradient(135deg, #9575cd, #7e57c2)' };
-  const gradientBtnClass = "flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded text-white text-xs md:text-sm font-bold shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-1 md:flex-none";
-  const iconBtnClass = "p-2 flex items-center justify-center rounded text-white shadow-md transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
+  const plainBtnClass = "h-[26px] xl:h-[28px] px-2.5 xl:px-3 rounded-[5px] border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-[11px] xl:text-[12px] font-medium shadow-2xs transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap inline-flex items-center justify-center gap-1.5";
+  const mainGradient = { background: 'linear-gradient(to right, #9575cd, #b39ddb)' };
+  const gradientBtnClass = "h-[26px] xl:h-[28px] px-2.5 xl:px-3 rounded-[5px] text-white text-[11px] xl:text-[12px] font-medium shadow-2xs transition-all hover:opacity-95 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap inline-flex items-center justify-center gap-1.5";
+  const iconBtnClass = "h-[26px] xl:h-[28px] px-2.5 rounded-[5px] text-white shadow-2xs transition-all hover:opacity-95 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1 text-[11px] xl:text-[12px] font-medium";
 
   return (
     <>
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/70 backdrop-blur-sm p-2 md:p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white w-full max-w-[850px] rounded-lg shadow-2xl flex flex-col h-[95vh] md:max-h-[90vh] overflow-hidden">
+      <div className="bg-white w-full max-w-[850px] rounded-[6px] border border-slate-200 shadow-2xl flex flex-col h-[95vh] md:max-h-[90vh] overflow-hidden">
         
-        <div className="flex justify-between items-center p-3 px-4 md:px-6 border-b border-purple-100 shadow-sm print:hidden shrink-0" style={{ background: 'linear-gradient(to right, #b3e5fc, #e1bee7)' }}>
+        {/* MODAL HEADER MATCHING PATIENT LIST & RESULT ENTRY */}
+        <div className="min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px] px-3 xl:px-4 bg-white md:bg-slate-50/80 border-b border-slate-200 flex items-center justify-between gap-2 shrink-0 print:hidden">
            <div className="flex items-center gap-2">
-              <div className="bg-white/40 p-1.5 rounded text-[#9575cd] hidden md:block"><CheckCircle size={18} /></div>
-              <div>
-                <h3 className="font-bold text-slate-700 text-sm md:text-base leading-tight">Invoice Generated</h3>
-                <p className="text-[9px] md:text-[10px] text-slate-500">Ready to Print or Download</p>
+              <div className="p-1 rounded bg-purple-50 text-[#9575cd] shadow-2xs">
+                 <FileText size={15} />
+              </div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-[14px] xl:text-[15px] font-semibold text-slate-800 leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                   Invoice Generated
+                </h3>
+                <span className="font-mono text-[10px] xl:text-[11px] font-medium text-[#9575cd] bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200 leading-none">
+                   #{data.billId}
+                </span>
+                <span className="text-[10px] xl:text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 leading-none hidden sm:inline">
+                   Ready to Print
+                </span>
               </div>
            </div>
-           <button onClick={() => onClose()} className="p-1.5 hover:bg-white/40 rounded-full text-slate-600 hover:text-red-500 transition-colors"><X size={20} /></button>
+           <button 
+              onClick={() => onClose()} 
+              className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              title="Close"
+           >
+              <X size={16} />
+           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto bg-slate-50/50 flex justify-center items-start print:p-0 print:bg-white print:overflow-visible">
@@ -439,9 +455,9 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data, autoSendWh
                         <div className="mb-4">
                             <table className="w-full text-xs border-collapse mb-4">
                                 <thead>
-                                    <tr className="bg-slate-800 text-white">
-                                    <th className="py-2 pl-3 text-left rounded-l-sm">TEST DESCRIPTION</th>
-                                    <th className="py-2 pr-3 text-right rounded-r-sm w-32">AMOUNT (₹)</th>
+                                    <tr className="bg-[#9575cd] text-white">
+                                    <th className="py-1.5 pl-3 text-left rounded-l-sm font-medium text-[11px] uppercase tracking-wider" style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }}>TEST DESCRIPTION</th>
+                                    <th className="py-1.5 pr-3 text-right rounded-r-sm w-32 font-medium text-[11px] uppercase tracking-wider" style={{ padding: '5px 8px', verticalAlign: 'middle', lineHeight: 1 }}>AMOUNT (₹)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -513,8 +529,8 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data, autoSendWh
             </div>
         </div>
 
-        <div className="p-3 md:p-4 border-t border-slate-200 bg-white flex flex-col md:flex-row justify-between items-center gap-2 md:gap-3 print:hidden shrink-0">
-           <div className="flex items-center justify-between md:justify-start gap-2 w-full md:w-auto">
+        <div className="px-3 py-2 xl:px-4 xl:py-2.5 border-t border-slate-200 bg-white md:bg-slate-50/80 flex flex-col md:flex-row justify-between items-center gap-2 print:hidden shrink-0">
+           <div className="flex items-center justify-between md:justify-start gap-1.5 xl:gap-2 w-full md:w-auto">
               
               <button 
                   onClick={() => {
@@ -527,33 +543,34 @@ export default function InvoiceModal({ isOpen, onClose, onEdit, data, autoSendWh
                   }} 
                   className={plainBtnClass}
               > 
-                  <Edit size={16} /> <span className="hidden sm:inline">Edit</span>
+                  <Edit size={13} /> <span className="hidden sm:inline">Edit</span>
               </button>
               
               <button onClick={() => setIsBarcodeOpen(true)} className={plainBtnClass}> 
-                  <ScanBarcode size={16} /> <span className="hidden sm:inline">Barcode</span>
+                  <ScanBarcode size={13} /> <span className="hidden sm:inline">Barcode</span>
               </button>
               <button onClick={handleOpenTRF} disabled={isTrfLoading} className={plainBtnClass}>
-                  {isTrfLoading ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />} TRF
+                  {isTrfLoading ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />} TRF
               </button>
-              <button onClick={handleEnterResults} className={`${plainBtnClass} !text-[#9575cd] border-[#9575cd] bg-purple-50`}> 
-                  Results <ArrowRight size={16} /> 
+              <button onClick={handleEnterResults} className={`${plainBtnClass} !text-[#9575cd] border-purple-200 bg-purple-50 hover:bg-purple-100`}> 
+                  Results <ArrowRight size={13} /> 
               </button>
            </div>
-           <div className="flex items-center gap-2 w-full md:w-auto">
+           <div className="flex items-center gap-1.5 xl:gap-2 w-full md:w-auto">
               <button onClick={handleDownloadInvoice} disabled={isInvoiceLoading} className={iconBtnClass} style={mainGradient} title="Download PDF"> 
-                  {isInvoiceLoading ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />} 
+                  {isInvoiceLoading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} 
+                  <span className="hidden sm:inline">Download</span>
               </button>
               
               {whatsappManualEnabled && (
               <button onClick={handleSendWhatsapp} disabled={isSendingWA} className={gradientBtnClass} style={mainGradient}> 
-                  {isSendingWA ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} 
+                  {isSendingWA ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} 
                   <span className="hidden sm:inline">{isSendingWA ? 'Sending WA...' : 'WhatsApp'}</span> 
               </button>
               )}
 
               <button onClick={handlePrintInvoice} disabled={isInvoiceLoading} className={gradientBtnClass} style={mainGradient}> 
-                  {isInvoiceLoading ? <Loader2 size={16} className="animate-spin md:mr-1" /> : <Printer size={16} className="md:mr-1" />} <span className="hidden md:inline">Print</span>
+                  {isInvoiceLoading ? <Loader2 size={13} className="animate-spin" /> : <Printer size={13} />} <span className="hidden md:inline">Print</span>
               </button>
            </div>
         </div>

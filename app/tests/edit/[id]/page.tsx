@@ -91,7 +91,7 @@ export default function EditTestPage() {
         setShowSuccessPopup(true);
         setTimeout(() => {
             setShowSuccessPopup(false);
-            router.push('/tests?tab=Test Library');
+            router.push(formData.testType === 'Package' ? '/tests?tab=Packages' : '/tests?tab=Test Library');
             router.refresh();
         }, 1500);
       } else {
@@ -103,15 +103,15 @@ export default function EditTestPage() {
   const handleDelete = () => {
     toast((t) => (
         <div className="flex flex-col gap-3">
-            <p className="text-sm font-semibold text-slate-800">Are you sure you want to delete this test?</p>
+            <p className="text-sm font-semibold text-slate-800">Are you sure you want to delete this {formData.testType === 'Package' ? 'package' : 'test'}?</p>
             <div className="flex justify-end gap-2">
                 <button onClick={() => toast.dismiss(t.id)} className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded transition-colors">Cancel</button>
                 <button onClick={() => {
                     toast.dismiss(t.id);
                     startTransition(async () => {
                         await deleteTest(id);
-                        toast.success("Test Deleted!");
-                        router.push('/tests?tab=Test Library');
+                        toast.success(formData.testType === 'Package' ? "Package Deleted!" : "Test Deleted!");
+                        router.push(formData.testType === 'Package' ? '/tests?tab=Packages' : '/tests?tab=Test Library');
                         router.refresh();
                     });
                 }} className="px-3 py-1.5 text-xs font-bold text-white bg-red-500 hover:bg-red-600 rounded transition-colors">Yes, Delete</button>
@@ -120,8 +120,8 @@ export default function EditTestPage() {
     ), { duration: 5000 });
   };
 
-  const labelClass = "text-[11px] font-bold text-slate-500 uppercase h-4 flex items-center mb-1";
-  const inputClass = "w-full text-xs font-medium border border-slate-300 rounded px-3 h-[38px] bg-white focus:ring-1 focus:ring-[#9575cd] outline-none transition-all placeholder:text-slate-400";
+  const labelClass = "text-[10px] font-semibold text-slate-700 uppercase tracking-wider mb-1 flex items-center h-4";
+  const inputClass = "w-full text-[11px] xl:text-[12px] font-normal border border-slate-300 rounded-[5px] px-2.5 h-[26px] xl:h-[28px] bg-white focus:outline-none focus:border-[#9575cd] transition-all placeholder:text-slate-400 text-slate-800";
 
   const mLabelClass = "text-[8px] font-bold text-slate-500 uppercase mb-0.5 block tracking-wider";
   const mInputClass = "w-full text-[10px] font-medium border border-slate-200 rounded px-1.5 h-6 bg-white focus:ring-1 focus:ring-[#9575cd] focus:border-[#9575cd] outline-none transition-all placeholder:text-slate-400";
@@ -130,29 +130,59 @@ export default function EditTestPage() {
 
   return (
     <>
-      <div className="flex flex-col w-full h-full bg-[#f8fafc] p-2 md:p-6 font-sans text-slate-700">
+      <div className="w-full h-full bg-white rounded-none md:rounded-[10px] md:shadow-xl md:border md:border-slate-200 overflow-hidden flex flex-col relative z-10 font-sans">
         <RichTextEditorModal isOpen={isEditorOpen} onClose={() => setIsEditorOpen(false)} onSave={(content) => handleChange('instructions', content)} initialContent={formData.instructions} title="Pre-Collection Guidelines" />
         
         {/* --- DESKTOP LAYOUT --- */}
-        <div className="hidden md:flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between mb-6 shrink-0">
-            <div className="flex items-center gap-4">
-               <button onClick={() => router.push('/tests?tab=Test Library')} className="p-2 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"><ArrowLeft size={20} /></button>
-               <h1 className="text-xl font-bold text-slate-800">Edit Test</h1>
+        <div className="hidden md:flex flex-col h-full overflow-hidden bg-white">
+          {/* TOOLBAR / HEADER: 38px / 42px */}
+          <div className="px-2.5 xl:px-3 py-1.5 md:py-0 bg-white md:bg-slate-50 border-b border-slate-200 shrink-0 flex items-center justify-between gap-2 z-10 min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px]">
+            {/* Left: Back & Title */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button 
+                onClick={() => router.push(formData.testType === 'Package' ? '/tests?tab=Packages' : '/tests?tab=Test Library')} 
+                className="h-[24px] xl:h-[26px] px-2 rounded-[5px] border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-[11px] xl:text-[12px] font-normal flex items-center gap-1 transition-all"
+              >
+                <ArrowLeft size={13} />
+                <span>Back</span>
+              </button>
+              <div className="h-4 w-px bg-slate-300 mx-0.5"></div>
+              <h1 className="text-[20px] font-semibold text-slate-800 leading-none" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                Edit Test
+              </h1>
+              <span className="font-mono text-[11px] font-medium text-[#9575cd] bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 leading-tight">
+                {formData.code}
+              </span>
+              {formData.testName && (
+                <span className="text-[11px] font-normal text-slate-500 truncate max-w-[200px]">
+                  ({formData.testName})
+                </span>
+              )}
             </div>
-            <button onClick={handleDelete} className="text-red-500 hover:bg-red-50 px-3 py-2 rounded text-xs font-bold flex items-center gap-2 transition-colors"><Trash2 size={14} /> Delete Test</button>
+
+            {/* Right: Delete & Update */}
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleDelete} 
+                className="h-[24px] xl:h-[26px] px-2.5 rounded-[5px] border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-[11px] xl:text-[12px] font-normal flex items-center gap-1 transition-all active:scale-95"
+              >
+                <Trash2 size={12} />
+                <span>{formData.testType === 'Package' ? 'Delete Package' : 'Delete Test'}</span>
+              </button>
+              <button 
+                onClick={handleSave} 
+                disabled={isPending} 
+                className="h-[24px] xl:h-[26px] px-3 rounded-[5px] bg-[#9575cd] hover:bg-[#7e57c2] text-white text-[11px] xl:text-[12px] font-normal flex items-center gap-1.5 shadow-xs transition-all active:scale-95 disabled:opacity-60"
+              >
+                {isPending ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                <span>{isPending ? 'Updating...' : (formData.testType === 'Package' ? 'Update Package' : 'Update Test')}</span>
+              </button>
+            </div>
           </div>
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden w-full flex-1 flex flex-col">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-                <div className="flex items-center gap-2 font-bold text-slate-700"><ChevronDown size={18} /><span>{formData.testName}</span></div>
-                <button onClick={handleSave} disabled={isPending} className="px-6 py-2 text-xs font-bold text-white bg-[#9575cd] rounded hover:bg-[#7e57c2] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-70">
-                    {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {isPending ? 'Updating...' : 'Update Test'}
-                </button>
-            </div>
-            <div className="p-8 space-y-8 overflow-y-auto flex-1">
-                
-                {/* --- Core Details --- */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+          <div className="p-3 md:p-4 xl:p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar bg-white">
+{/* --- Core Details --- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 xl:gap-3.5">
                     <div className="lg:col-span-1">
                         <label className={labelClass}>Test Type</label>
                         <div className="relative">
@@ -191,9 +221,9 @@ export default function EditTestPage() {
 
                 {/* 🚨 NEW: Clinical Details & TAT Section (Replaces Configuration Tab) */}
                 {formData.testType === 'Test' && (
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6 pt-6 border-t border-slate-100">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3 xl:gap-3.5 pt-6 border-t border-slate-100">
                         <div className="md:col-span-5 mb-[-10px]">
-                            <h3 className="text-[12px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                            <h3 className="text-[11px] xl:text-[12px] font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                                 <Beaker size={14} className="text-[#9575cd]"/> Clinical & Turnaround Time
                             </h3>
                         </div>
@@ -229,8 +259,8 @@ export default function EditTestPage() {
                         </div>
 
                         {/* Turnaround Time Row */}
-                        <div className="md:col-span-5 grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-                           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <div className="md:col-span-5 grid grid-cols-1 md:grid-cols-2 gap-3 xl:gap-3.5 mt-2">
+                           <div className="bg-slate-50 p-2.5 rounded-[6px] border border-slate-200">
                                <label className="text-[10px] font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">Report Available (Min)</label>
                                <div className="flex gap-2">
                                    <div className="flex-1"><input type="number" value={formData.minDays} onChange={(e) => handleChange('minDays', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Days</span></div>
@@ -238,7 +268,7 @@ export default function EditTestPage() {
                                    <div className="flex-1"><input type="number" value={formData.minMinutes} onChange={(e) => handleChange('minMinutes', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Mins</span></div>
                                </div>
                            </div>
-                           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                           <div className="bg-slate-50 p-2.5 rounded-[6px] border border-slate-200">
                                <label className="text-[10px] font-bold text-slate-600 uppercase mb-2 flex items-center gap-1.5">Deadline (Max)</label>
                                <div className="flex gap-2">
                                    <div className="flex-1"><input type="number" value={formData.maxDays} onChange={(e) => handleChange('maxDays', e.target.value)} className={inputClass} /><span className="text-[9px] text-center block mt-1 text-slate-500 font-bold uppercase">Days</span></div>
@@ -251,7 +281,7 @@ export default function EditTestPage() {
                 )}
 
                 {/* --- Flags & Guidelines --- */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 xl:gap-3.5 pt-6 border-t border-slate-100">
                     <div>
                         <label className={labelClass}>Configuration Flags</label>
                         <div className="flex flex-col gap-2 mt-2">
@@ -281,12 +311,11 @@ export default function EditTestPage() {
                     <div>
                         <label className={labelClass}>Guidelines</label>
                         <div className="flex items-center gap-4 mt-2">
-                             <button onClick={() => setIsEditorOpen(true)} className="text-xs text-[#9575cd] border border-[#d1c4e9] rounded px-4 py-2 bg-purple-50 hover:bg-purple-100 font-bold transition-colors">{formData.instructions ? 'Edit Guidelines' : '+ Add Guidelines'}</button>
+                             <button onClick={() => setIsEditorOpen(true)} className="h-[24px] xl:h-[26px] px-2.5 text-[11px] xl:text-[12px] font-normal text-[#9575cd] border border-[#d1c4e9] rounded-[5px] bg-purple-50 hover:bg-purple-100 transition-colors">{formData.instructions ? 'Edit Guidelines' : '+ Add Guidelines'}</button>
                             {formData.instructions && <span className="text-[10px] text-green-600 font-bold">✓ Configured</span>}
                         </div>
                     </div>
                 </div>
-            </div>
           </div>
         </div>
 

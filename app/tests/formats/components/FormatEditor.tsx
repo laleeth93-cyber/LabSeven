@@ -29,7 +29,7 @@ function SequenceInput({ value, onCommit }: { value: number, onCommit: (val: num
             onChange={(e) => setLocalValue(e.target.value)} 
             onFocus={() => setIsEditing(true)} onBlur={handleBlur}
             onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-            className="w-12 text-[10px] text-center border border-slate-200 rounded px-1 h-6 focus:border-[#9575cd] outline-none font-bold text-slate-700"
+            className="w-12 text-[11px] text-center border border-slate-300 rounded-[5px] px-1 h-[22px] focus:outline-none focus:border-[#9575cd] font-normal text-slate-800"
         />
     );
 }
@@ -306,7 +306,7 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
         }).slice(0, 50);
     }, [searchQuery, availableParams]);
 
-    const inputClass = "w-full text-[10px] font-medium border border-slate-300 rounded px-2 h-7 bg-white focus:ring-1 focus:ring-[#9575cd] outline-none transition-all placeholder:text-slate-400 text-slate-700";
+    const inputClass = "w-full text-[11px] xl:text-[12px] font-normal border border-slate-300 rounded-[5px] px-2 h-[26px] xl:h-[28px] bg-white focus:outline-none focus:border-[#9575cd] transition-all placeholder:text-slate-400 text-slate-800";
     
     const nameColWidth = formData.isFormulaNeeded ? "w-[20%]" : "w-[30%]";
     const searchColWidth = formData.isFormulaNeeded ? "w-[35%]" : "w-[45%]";
@@ -358,72 +358,86 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
     return (
         <>
             {/* --- DESKTOP FORMAT EDITOR LAYOUT --- */}
-            <div className="hidden md:flex w-full h-full bg-white rounded-xl shadow-lg shadow-slate-200/40 flex-col overflow-hidden border border-slate-200 z-10 animate-in zoom-in-95 duration-200">
+            <div className="hidden md:flex w-full h-full bg-white rounded-[6px] shadow-sm flex-col overflow-hidden border border-slate-200 z-10">
                 
                 {/* HEADER BAR */}
-                <div className="p-6 pb-4 bg-white shrink-0">
-                    <div className="flex items-center justify-between gap-4 mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-lg shadow-sm ${test?.isCulture ? 'bg-rose-50 text-rose-500' : 'bg-purple-50 text-[#9575cd]'}`}>
-                                {test?.isCulture ? <Bug size={20} /> : <Settings2 size={20} />}
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-700 tracking-tight">
-                                    {test?.isCulture ? 'Culture Format Configuration' : 'Format Configuration'}
-                                </h2>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{test?.code} • {test?.name}</p>
-                            </div>
+                <div className="px-2.5 xl:px-3 py-1.5 md:py-0 bg-white md:bg-slate-50 border-b border-slate-200 shrink-0 flex items-center justify-between gap-2 z-10 min-h-[38px] h-[38px] xl:min-h-[42px] xl:h-[42px]">
+                    <div className="flex items-center gap-2 shrink-0">
+                        <div className={`p-1 rounded shadow-2xs ${test?.isCulture ? 'bg-rose-50 text-rose-500' : 'bg-purple-50 text-[#9575cd]'}`}>
+                            {test?.isCulture ? <Bug size={14} /> : <Settings2 size={14} />}
                         </div>
-                        <div className="flex items-center gap-2">
-                            {(test?.localFormats || []).length > 0 && (
-                                <select value={libraryFormatId} onChange={e => applyLibraryFormat(e.target.value)} className="max-w-40 rounded border border-slate-200 bg-white px-2 py-1.5 text-[10px] font-semibold text-slate-600">
-                                    <option value="">Use saved library format…</option>
-                                    {test.localFormats.map((format: any) => <option key={format.id} value={String(format.id)}>{format.name} v{format.version}</option>)}
-                                </select>
-                            )}
-                            <button onClick={handleSaveLibraryVersion} disabled={isPending} className="rounded-[5px] border border-purple-200 px-3 py-1.5 text-[10px] font-bold text-purple-700 hover:bg-purple-50 disabled:opacity-50">
-                                Save as Library Format
-                            </button>
-                            <button onClick={handleSave} disabled={isPending} className="flex items-center gap-2 px-5 py-1.5 rounded-[5px] text-white font-medium text-[12px] shadow-md hover:opacity-90 bg-[#9575cd]">
-                                {isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} className="opacity-80" />}
-                                {isPending ? 'Saving...' : 'Save Format'}
-                            </button>
-                        </div>
+                        <span className="text-[13px] xl:text-[14px] font-semibold text-slate-800 leading-none truncate max-w-[260px]" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            {test?.name}
+                        </span>
+                        <span className="font-mono text-[10px] text-[#9575cd] bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 font-medium leading-tight">
+                            {test?.code}
+                        </span>
+                        {test?.isCulture && (
+                            <span className="bg-rose-50 text-rose-600 border border-rose-100 text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase leading-tight">
+                                Culture
+                            </span>
+                        )}
                     </div>
-                    <div className="h-[0.5px] w-full bg-purple-100"></div>
+                    <div className="flex items-center gap-1.5 xl:gap-2">
+                        {(test?.localFormats || []).length > 0 && (
+                            <select 
+                                value={libraryFormatId} 
+                                onChange={e => applyLibraryFormat(e.target.value)} 
+                                className="h-[24px] xl:h-[26px] rounded-[5px] border border-slate-300 bg-white px-2 text-[11px] xl:text-[12px] font-normal text-slate-700 outline-none focus:border-[#9575cd]"
+                            >
+                                <option value="">Use saved library format…</option>
+                                {test.localFormats.map((format: any) => <option key={format.id} value={String(format.id)}>{format.name} v{format.version}</option>)}
+                            </select>
+                        )}
+                        <button 
+                            onClick={handleSaveLibraryVersion} 
+                            disabled={isPending} 
+                            className="h-[24px] xl:h-[26px] rounded-[5px] border border-[#d1c4e9] px-2.5 text-[11px] xl:text-[12px] font-normal text-[#9575cd] hover:bg-purple-50 disabled:opacity-50 transition-all shadow-2xs flex items-center gap-1"
+                        >
+                            Save as Library Format
+                        </button>
+                        <button 
+                            onClick={handleSave} 
+                            disabled={isPending} 
+                            className="h-[24px] xl:h-[26px] px-3 rounded-[5px] bg-[#9575cd] hover:bg-[#7e57c2] text-white text-[11px] xl:text-[12px] font-normal flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 disabled:opacity-60"
+                        >
+                            {isPending ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                            <span>{isPending ? 'Saving...' : 'Save Format'}</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex-1 flex flex-col min-h-0">
                     <div className="w-full border-b border-dashed border-slate-200 p-3 bg-slate-50/30 overflow-y-auto max-h-[40%] custom-scrollbar">
                         <div className="w-full flex flex-col justify-center">
                             <div className="grid grid-cols-3 gap-3 mb-2 shrink-0">
-                                <div><label className="text-[9px] font-bold text-slate-500 block mb-0.5">Report Title</label><input type="text" value={formData.reportTitle} onChange={e => setFormData({...formData, reportTitle: e.target.value})} className={inputClass} placeholder="REPORT TITLE"/></div>
+                                <div><label className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider block mb-1">Report Title</label><input type="text" value={formData.reportTitle} onChange={e => setFormData({...formData, reportTitle: e.target.value})} className={inputClass} placeholder="REPORT TITLE"/></div>
                                 
                                 {/* FIX: Dropdown mapped to specimenId instead of specimen */}
                                 <div>
-                                    <label className="text-[9px] font-bold text-slate-500 block mb-0.5">Specimen</label>
+                                    <label className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider block mb-1">Specimen</label>
                                     <select value={formData.specimenId || ''} onChange={e => setFormData({...formData, specimenId: e.target.value})} className={inputClass}>
                                         <option value="">-- Override --</option>
                                         {specimens.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                                     </select>
                                 </div>
                                 
-                                <div><label className="text-[9px] font-bold text-slate-500 block mb-0.5">Lab Equipment</label><input type="text" value={formData.labEquiName} onChange={e => setFormData({...formData, labEquiName: e.target.value})} className={inputClass} /></div>
+                                <div><label className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider block mb-1">Lab Equipment</label><input type="text" value={formData.labEquiName} onChange={e => setFormData({...formData, labEquiName: e.target.value})} className={inputClass} /></div>
                             </div>
                             
                             {!test?.isCulture && (
                                 <div className="grid grid-cols-5 gap-2 mb-2 shrink-0">
-                                    {[1,2,3,4,5].map(num => <div key={num}><label className="text-[9px] font-bold text-slate-500 block mb-0.5">Col {num}</label><input type="text" value={formData[`colCaption${num}`] || ''} onChange={e => setFormData({...formData, [`colCaption${num}`]: e.target.value})} className={inputClass} /></div>)}
+                                    {[1,2,3,4,5].map(num => <div key={num}><label className="text-[10px] font-semibold text-slate-700 uppercase tracking-wider block mb-1">Col {num}</label><input type="text" value={formData[`colCaption${num}`] || ''} onChange={e => setFormData({...formData, [`colCaption${num}`]: e.target.value})} className={inputClass} /></div>)}
                                 </div>
                             )}
 
                             <div className="flex items-center gap-4 shrink-0 mt-1">
                                 {!test?.isCulture && (
                                     <>
-                                        <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.isFormulaNeeded} onChange={e => setFormData({...formData, isFormulaNeeded: e.target.checked})} className="text-[#9575cd] rounded"/> <span className="text-[11px] font-bold text-slate-600">Formula Needed</span></label>
-                                        <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.isCountNeeded} onChange={e => setFormData({...formData, isCountNeeded: e.target.checked})} className="text-[#9575cd] rounded"/> <span className="text-[11px] font-bold text-slate-600">Count Target</span></label>
+                                        <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.isFormulaNeeded} onChange={e => setFormData({...formData, isFormulaNeeded: e.target.checked})} className="text-[#9575cd] rounded"/> <span className="text-[11px] font-normal text-slate-700">Formula Needed</span></label>
+                                        <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={formData.isCountNeeded} onChange={e => setFormData({...formData, isCountNeeded: e.target.checked})} className="text-[#9575cd] rounded"/> <span className="text-[11px] font-normal text-slate-700">Count Target</span></label>
                                         {formData.isCountNeeded && (
-                                            <button onClick={() => setShowCountModal(true)} className="flex items-center gap-1.5 px-3 py-1 bg-white border border-purple-200 rounded hover:bg-purple-50 text-[10px] font-bold text-purple-700 shadow-sm transition-colors">
+                                            <button onClick={() => setShowCountModal(true)} className="h-[24px] xl:h-[26px] px-2.5 rounded-[5px] border border-purple-200 bg-white hover:bg-purple-50 text-[11px] font-normal text-purple-700 shadow-2xs transition-colors flex items-center gap-1.5">
                                                 <Target size={12} className="text-purple-600"/> Target: {formData.targetCount || 'Not Set'}
                                             </button>
                                         )}
@@ -438,10 +452,10 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                                         onChange={e => setFormData({...formData, isInterpretationNeeded: e.target.checked})} 
                                         className="text-[#9575cd] rounded"
                                     /> 
-                                    <span className="text-[11px] font-bold text-slate-600">Interpretation Needed</span>
+                                    <span className="text-[11px] font-normal text-slate-700">Interpretation Needed</span>
                                 </label>
                                 {formData.isInterpretationNeeded && (
-                                    <button onClick={() => setShowInterpretationModal(true)} className="flex items-center gap-2 px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 text-[10px] font-bold text-slate-600 shadow-sm"><FileText size={12} className="text-[#9575cd]"/> Set Interpretation</button>
+                                    <button onClick={() => setShowInterpretationModal(true)} className="h-[24px] xl:h-[26px] px-2.5 rounded-[5px] border border-slate-300 bg-white hover:bg-slate-50 text-[11px] font-normal text-slate-700 shadow-2xs transition-colors flex items-center gap-1.5"><FileText size={12} className="text-[#9575cd]"/> Set Interpretation</button>
                                 )}
                                 
                                 {formData.isInterpretationNeeded && formData.interpretation && <span className="text-[9px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-200">Added</span>}
@@ -478,22 +492,22 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
 
                     {/* TABLE AREA */}
                     <div className="flex-1 w-full flex flex-col bg-white relative p-2 min-h-0">
-                        <div className="px-6 py-2 bg-[#f3e8ff] border-b border-purple-100 flex items-center gap-2 shadow-sm shrink-0 z-10 rounded-t-lg">
-                            <div className="w-[15%] text-[9px] font-bold text-[#7e22ce] uppercase tracking-wider">Type</div>
-                            <div className="w-[15%] text-[9px] font-bold text-[#7e22ce] uppercase tracking-wider">Code</div>
-                            <div className={`${nameColWidth} text-[9px] font-bold text-[#7e22ce] uppercase tracking-wider`}>Name</div>
-                            <div className="w-[20%] text-[9px] font-bold text-[#7e22ce] uppercase tracking-wider">Subtitle</div>
-                            {formData.isFormulaNeeded && <div className="w-[10%] text-[9px] font-bold text-[#7e22ce] uppercase tracking-wider text-center">Formula</div>}
-                            <div className="w-[10%] text-[9px] font-bold text-[#7e22ce] uppercase tracking-wider text-center">Seq</div>
-                            <div className="w-[5%] text-[9px] font-bold text-[#7e22ce] uppercase tracking-wider text-center">Status</div>
-                            <div className="w-[5%] text-[9px] font-bold text-[#7e22ce] uppercase tracking-wider text-center">Del</div>
+                        <div className="px-3 py-1.5 bg-[#9575cd] border-b border-[#7e57c2] flex items-center gap-2 shadow-2xs shrink-0 z-10 text-white">
+                            <div className="w-[15%] text-[11px] font-medium text-white uppercase tracking-wider leading-none">Type</div>
+                            <div className="w-[15%] text-[11px] font-medium text-white uppercase tracking-wider leading-none">Code</div>
+                            <div className={`${nameColWidth} text-[11px] font-medium text-white uppercase tracking-wider leading-none`}>Name</div>
+                            <div className="w-[20%] text-[11px] font-medium text-white uppercase tracking-wider leading-none">Subtitle</div>
+                            {formData.isFormulaNeeded && <div className="w-[10%] text-[11px] font-medium text-white uppercase tracking-wider leading-none text-center">Formula</div>}
+                            <div className="w-[10%] text-[11px] font-medium text-white uppercase tracking-wider leading-none text-center">Seq</div>
+                            <div className="w-[5%] text-[11px] font-medium text-white uppercase tracking-wider leading-none text-center">Status</div>
+                            <div className="w-[5%] text-[11px] font-medium text-white uppercase tracking-wider leading-none text-center">Del</div>
                         </div>
                         
                         <div className="flex-1 overflow-y-auto z-0 pb-12 custom-scrollbar">
                             {tableRows.map((row, idx) => (
-                                <div key={row.uiId} className={`flex items-center gap-2 px-6 py-2 border-b border-slate-50 hover:bg-slate-50 group ${row.isCountDependent ? 'bg-purple-50/30' : ''}`}>
+                                <div key={row.uiId} className={`flex items-center gap-2 px-3 py-1 border-b border-[#d9d9d9] hover:bg-purple-50/40 text-[11px] font-normal text-slate-700 group ${row.isCountDependent ? "bg-purple-50/30" : ""}`}>
                                     <div className="w-[15%]">
-                                        <select value={row.isHeading ? 'Sub Title' : (row.isCultureField ? 'Culture Block' : 'Parameter')} onChange={e => handleRowChange(idx, 'isHeading', e.target.value === 'Sub Title')} className="w-full text-[10px] border border-slate-200 rounded px-1 h-6 bg-white outline-none">
+                                        <select value={row.isHeading ? 'Sub Title' : (row.isCultureField ? 'Culture Block' : 'Parameter')} onChange={e => handleRowChange(idx, 'isHeading', e.target.value === 'Sub Title')} className="w-full text-[11px] font-normal border border-slate-300 rounded-[5px] px-1 h-[22px] bg-white outline-none focus:border-[#9575cd]">
                                             {row.isCultureField ? (
                                                 <option value="Culture Block">Culture Block</option>
                                             ) : (
@@ -510,7 +524,7 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                                         {row.isCultureField && <span className="bg-rose-100 text-rose-600 text-[8px] px-1 py-0.5 rounded shadow-sm">CULTURE INFO</span>}
                                         {row.isCountDependent && <span title="Part of Count Target" className="flex items-center"><Target size={12} className="text-purple-500" /></span>}
                                     </div>
-                                    <div className="w-[20%]"><input type="text" value={row.headingText || ''} onChange={e => handleRowChange(idx, 'headingText', e.target.value)} disabled={!row.isHeading} className={`w-full text-[10px] border border-slate-200 rounded px-2 h-6 outline-none ${!row.isHeading ? 'bg-slate-50' : 'bg-white'}`} placeholder="-"/></div>
+                                    <div className="w-[20%]"><input type="text" value={row.headingText || ''} onChange={e => handleRowChange(idx, 'headingText', e.target.value)} disabled={!row.isHeading} className={`w-full text-[11px] font-normal border border-slate-300 rounded-[5px] px-2 h-[22px] outline-none focus:border-[#9575cd] ${!row.isHeading ? "bg-slate-50" : "bg-white"}`} placeholder="-"/></div>
                                     {formData.isFormulaNeeded && (
                                         <div className="w-[10%] flex justify-center">
                                             <button 
@@ -523,17 +537,25 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                                         </div>
                                     )}
                                     <div className="w-[10%] text-center"><SequenceInput value={row.order} onCommit={v => handleOrderCommit(idx, v)}/></div>
-                                    <div className="w-[5%] flex justify-center"><button onClick={() => handleRowChange(idx, 'isActive', !row.isActive)} className={`w-8 h-4 rounded-full flex items-center p-0.5 ${row.isActive ? 'bg-green-500' : 'bg-slate-300'}`}><div className={`w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${row.isActive ? 'translate-x-4' : 'translate-x-0'}`}/></button></div>
-                                    <div className="w-[5%] flex justify-center"><button onClick={() => setTableRows(p => p.filter((_, i) => i !== idx))} className="text-slate-300 hover:text-red-500"><Trash2 size={12}/></button></div>
+                                    <div className="w-[5%] flex justify-center"><button onClick={() => handleRowChange(idx, 'isActive', !row.isActive)} className={`relative inline-flex h-3.5 w-6 items-center rounded-full transition-colors ${row.isActive ? "bg-green-500" : "bg-slate-300"}`}><div className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${row.isActive ? "translate-x-[11px]" : "translate-x-[1px]"}`}/></button></div>
+                                    <div className="w-[5%] flex justify-center">
+                                        <button 
+                                            onClick={() => setTableRows(p => p.filter((_, i) => i !== idx))} 
+                                            className="h-[20px] md:h-[22px] px-1 md:px-1.5 rounded border border-slate-200 hover:border-rose-300 bg-white hover:bg-rose-50 text-rose-600 shadow-2xs transition-all inline-flex items-center justify-center leading-none"
+                                            title="Delete Row"
+                                        >
+                                            <Trash2 className="w-3 h-3 md:w-3.5 md:h-3.5 shrink-0 block" strokeWidth={2} />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                             <div className="h-12 w-full"></div>
                         </div>
 
                         {/* ADD ROW FOOTER */}
-                        <div ref={searchContainerRef} className="absolute bottom-2 left-2 right-2 flex items-center gap-2 px-6 py-3 border-t border-slate-100 bg-purple-50/90 backdrop-blur-sm z-20 rounded-b-lg">
+                        <div ref={searchContainerRef} className="absolute bottom-2 left-2 right-2 flex items-center gap-2 px-3 py-1.5 border border-purple-200 bg-purple-50/95 backdrop-blur-sm z-20 rounded-[6px] shadow-sm">
                             <div className="w-[15%]">
-                                <select value={newRowType} onChange={e => setNewRowType(e.target.value)} className="w-full text-[10px] border border-slate-200 rounded px-1 h-7 bg-white outline-none">
+                                <select value={newRowType} onChange={e => setNewRowType(e.target.value)} className="w-full text-[11px] xl:text-[12px] font-normal border border-slate-300 rounded-[5px] px-1 h-[24px] xl:h-[26px] bg-white outline-none focus:border-[#9575cd]">
                                     <option value="Parameter">Parameter</option>
                                     <option value="Sub Title">Sub Title</option>
                                     {test?.isCulture && <option value="Culture Block">Susceptibility Block</option>}
@@ -557,7 +579,7 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                                             onFocus={() => setShowDropdown(true)}
                                             onChange={e => { setSearchQuery(e.target.value); if(e.target.value==='') setSelectedItemToAdd(null); setShowDropdown(true); }} 
                                             disabled={newRowType === 'Sub Title'} 
-                                            className="w-full text-[10px] border border-slate-200 rounded pl-7 pr-2 h-7 bg-white outline-none focus:ring-1 focus:ring-[#9575cd]"
+                                            className="w-full text-[11px] xl:text-[12px] font-normal border border-slate-300 rounded-[5px] pl-7 pr-2 h-[24px] xl:h-[26px] bg-white outline-none focus:border-[#9575cd] placeholder:text-slate-400"
                                         />
                                     </div>
 
@@ -588,10 +610,10 @@ export default function FormatEditor({ test, specimens, availableParams = [], on
                                 </div>
                             )}
                             
-                            <div className="w-[20%]"><input type="text" placeholder="Subtitle..." value={newRowSubtitle} onChange={e => setNewRowSubtitle(e.target.value)} disabled={newRowType !== 'Sub Title'} className="w-full text-[10px] border border-slate-200 rounded px-2 h-7 bg-white outline-none"/></div>
+                            <div className="w-[20%]"><input type="text" placeholder="Subtitle..." value={newRowSubtitle} onChange={e => setNewRowSubtitle(e.target.value)} disabled={newRowType !== 'Sub Title'} className="w-full text-[11px] xl:text-[12px] font-normal border border-slate-300 rounded-[5px] px-2 h-[24px] xl:h-[26px] bg-white outline-none focus:border-[#9575cd] placeholder:text-slate-400"/></div>
                             {formData.isFormulaNeeded && <div className="w-[10%]"></div>}
                             <div className="w-[10%] text-center text-[10px] text-slate-400 font-bold">Auto</div>
-                            <div className="w-[10%] flex justify-center"><button onClick={handleAddNewRow} className="bg-[#9575cd] text-white p-1 rounded hover:opacity-90"><Plus size={14}/></button></div>
+                            <div className="w-[10%] flex justify-center"><button onClick={handleAddNewRow} className="h-[24px] xl:h-[26px] px-2.5 rounded-[5px] bg-[#9575cd] hover:bg-[#7e57c2] text-white text-[11px] xl:text-[12px] font-normal flex items-center justify-center shadow-2xs active:scale-95 transition-all"><Plus size={14}/></button></div>
                         </div>
                     </div>
                 </div>

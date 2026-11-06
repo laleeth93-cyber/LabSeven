@@ -56,12 +56,14 @@ export default function PrintControls({ formData, handleChange, handleCustomChan
         <div className="flex flex-col gap-2.5 md:gap-5 w-full pb-2">
             
             {/* Paper & Orientation Card */}
-            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col shrink-0">
                 <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                     <Maximize size={14} className="text-[#9575cd]" />
                     <div>
-                        <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Paper & Orientation</h3>
-                        <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">Select the physical dimensions of the printed report.</p>
+                        <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            Paper & Orientation
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Select the physical dimensions of the printed report.</p>
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 md:gap-4">
@@ -95,30 +97,32 @@ export default function PrintControls({ formData, handleChange, handleCustomChan
             </div>
 
             {/* Letterhead Source Card */}
-            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col shrink-0">
                 <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2 mb-2.5">
                     <FileUp size={14} className="text-[#9575cd]" />
                     <div>
-                        <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Letterhead Source</h3>
-                        <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">Choose how background letterhead is applied to the PDF.</p>
+                        <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            Letterhead Source
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Choose how background letterhead is applied to the PDF.</p>
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-1.5 md:gap-2.5">
-                    <label className={`flex items-center gap-2 p-1.5 md:p-3 rounded-md md:rounded-xl border cursor-pointer transition-colors ${formData.letterheadStyle === 'none' ? 'bg-purple-50/40 border-[#9575cd]' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
+                <div className="flex flex-col gap-1.5 md:gap-2">
+                    <label className={`flex items-center gap-2 p-2 md:p-2.5 rounded-[5px] border cursor-pointer transition-colors ${formData.letterheadStyle === 'none' ? 'bg-purple-50/40 border-[#9575cd]' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
                         <input type="radio" name="letterheadStyle" value="none" checked={formData.letterheadStyle === 'none'} onChange={handleChange} className="accent-[#9575cd] w-3 h-3 shrink-0" />
                         <div>
-                            <span className="text-[9.5px] md:text-xs font-bold text-slate-800 block leading-tight">No Letterhead (Pre-Printed Paper)</span>
-                            <span className="text-[8px] md:text-[10px] text-slate-400 mt-0.5 block leading-tight">Use this if you feed branded paper into the printer. Only margins are applied.</span>
+                            <span className="text-[10px] md:text-[11px] font-semibold text-slate-800 block leading-tight">No Letterhead (Pre-Printed Paper)</span>
+                            <span className="text-[9px] text-slate-400 mt-0.5 block leading-tight">Use this if you feed branded paper into the printer. Only margins are applied.</span>
                         </div>
                     </label>
 
                     {['custom1', 'custom2', 'custom3', 'custom4'].map((styleOpt, i) => (
-                        <label key={styleOpt} className={`flex items-center gap-2 p-1.5 md:p-3 rounded-md md:rounded-xl border cursor-pointer transition-colors ${formData.letterheadStyle === styleOpt ? 'bg-purple-50/40 border-[#9575cd]' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
+                        <label key={styleOpt} className={`flex items-center gap-2 p-2 md:p-2.5 rounded-[5px] border cursor-pointer transition-colors ${formData.letterheadStyle === styleOpt ? 'bg-purple-50/40 border-[#9575cd]' : 'border-slate-200 hover:border-slate-300 bg-white'}`}>
                             <input type="radio" name="letterheadStyle" value={styleOpt} checked={formData.letterheadStyle === styleOpt} onChange={handleChange} className="accent-[#9575cd] w-3 h-3 shrink-0" />
                             <div>
-                                <span className="text-[9.5px] md:text-xs font-bold text-slate-800 block leading-tight">Custom Letterhead {i + 1} (Digital Overlay)</span>
-                                <span className="text-[8px] md:text-[10px] text-slate-400 mt-0.5 block leading-tight">Full-page background image stamped onto every page.</span>
+                                <span className="text-[10px] md:text-[11px] font-semibold text-slate-800 block leading-tight">Custom Letterhead {i + 1} (Digital Overlay)</span>
+                                <span className="text-[9px] text-slate-400 mt-0.5 block leading-tight">Full-page background image stamped onto every page.</span>
                             </div>
                         </label>
                     ))}
@@ -126,11 +130,13 @@ export default function PrintControls({ formData, handleChange, handleCustomChan
             </div>
 
             {/* Margins & Background Image Card */}
-            <div className="bg-white border border-slate-200 shadow-2xs rounded-xl p-2.5 md:p-4 flex flex-col shrink-0">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-[6px] p-2.5 md:p-3 flex flex-col shrink-0">
                 <div className="border-b border-slate-100 pb-2 mb-2.5 flex items-center justify-between">
                     <div>
-                        <h3 className="font-bold text-slate-800 text-[11px] md:text-sm leading-tight">Margins & Background Image</h3>
-                        <p className="text-[8.5px] text-slate-400 mt-0.5 leading-none">
+                        <h3 className="font-semibold text-slate-800 text-[12px] md:text-[13px] leading-tight" style={{ fontFamily: "'Calibri', Arial, sans-serif" }}>
+                            Margins & Background Image
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-none">
                             {formData.letterheadStyle === 'none' ? 'Set physical margins for pre-printed paper.' : `Configure margins and upload image for ${activeStyle}.`}
                         </p>
                     </div>

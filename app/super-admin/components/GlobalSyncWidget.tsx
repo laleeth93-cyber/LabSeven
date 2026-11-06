@@ -7,10 +7,11 @@ export default function GlobalSyncWidget() {
   return (
     <Link
       href="/super-admin/central-library"
-      className="flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-fuchsia-500 to-purple-700 px-3 text-[10px] font-bold text-white shadow-sm sm:h-9 sm:text-xs"
+      className="h-[24px] xl:h-[26px] px-2.5 rounded-[5px] text-[11px] xl:text-[12px] font-medium text-white flex items-center gap-1 shadow-2xs hover:opacity-95 transition-all shrink-0"
+      style={{ background: 'linear-gradient(to right, #9575cd, #b39ddb)' }}
     >
-      <LibraryBig size={14} />
-      Central Library
+      <LibraryBig size={13} />
+      <span>Central Library</span>
     </Link>
   );
 }

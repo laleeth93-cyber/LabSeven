@@ -205,14 +205,14 @@ export default function CentralParametersLibraryView() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {/* User Account / ID Selector Dropdown */}
               <div className="relative">
                 <select
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
                   disabled={isPulling}
-                  className="h-8 pl-2.5 pr-7 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-md shadow-2xs outline-none focus:border-[#9575cd] focus:ring-1 focus:ring-[#9575cd] appearance-none cursor-pointer transition-colors max-w-[210px] truncate disabled:opacity-60"
+                  className="h-[24px] xl:h-[26px] pl-2 pr-6 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-[11px] xl:text-[12px] font-normal rounded-[5px] shadow-2xs outline-none focus:border-[#9575cd] appearance-none cursor-pointer transition-colors max-w-[190px] truncate disabled:opacity-60"
                   title="Select user account to pull data from"
                 >
                   <option value="ALL">All User Accounts</option>
@@ -222,62 +222,65 @@ export default function CentralParametersLibraryView() {
                     </option>
                   ))}
                 </select>
-                <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <ChevronDown size={11} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               </div>
 
               <button
                 onClick={handleDataPull}
                 disabled={isPulling}
-                className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-3.5 h-8 rounded-md text-xs font-bold shadow-2xs flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-60 cursor-pointer shrink-0"
+                className="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 px-2.5 h-[24px] xl:h-[26px] rounded-[5px] text-[11px] xl:text-[12px] font-medium shadow-2xs flex items-center gap-1 transition-all active:scale-95 disabled:opacity-60 cursor-pointer shrink-0"
                 title="Pull parameter data from selected user account"
               >
                 {isPulling ? (
-                  <Loader2 size={14} className="animate-spin text-[#9575cd]" />
+                  <Loader2 size={12} className="animate-spin text-[#9575cd]" />
                 ) : (
-                  <CloudDownload size={14} className="text-[#9575cd]" />
+                  <CloudDownload size={12} className="text-[#9575cd]" />
                 )}
-                <span>{isPulling ? "Pulling Data..." : "Data Pull"}</span>
+                <span>{isPulling ? "Pulling..." : "Data Pull"}</span>
               </button>
               <Link href="/super-admin/central-library/parameters/add" className="shrink-0">
-                <button className="bg-[#9575cd] hover:bg-[#7e57c2] text-white px-3.5 h-8 rounded-md text-xs font-bold shadow-md flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer">
-                  <Plus size={15} /> ADD NEW CENTRAL PARAMETER
+                <button 
+                  className="text-white px-2.5 xl:px-3 h-[24px] xl:h-[26px] rounded-[5px] text-[11px] xl:text-[12px] font-medium shadow-2xs flex items-center gap-1 transition-all active:scale-95 cursor-pointer hover:opacity-95"
+                  style={{ background: 'linear-gradient(to right, #9575cd, #b39ddb)' }}
+                >
+                  <Plus size={13} strokeWidth={2.5} /> Add Parameter
                 </button>
               </Link>
             </div>
           </div>
 
-          <div className="px-6 py-4 flex items-center gap-4 shrink-0 bg-white border-b border-slate-50">
-            <div className="relative flex-1 max-w-md">
+          <div className="px-4 py-2 flex items-center gap-3 shrink-0 bg-white border-b border-slate-100">
+            <div className="relative flex-1 max-w-sm">
               <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                size={16}
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                size={13}
               />
               <input
                 type="text"
                 placeholder="Search central parameters..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-10 pl-10 pr-4 rounded-lg border border-slate-200 text-sm focus:border-[#9575cd] focus:ring-1 focus:ring-[#9575cd] outline-none transition-all"
+                className="w-full h-[24px] xl:h-[26px] pl-7 pr-2.5 text-[11px] xl:text-[12px] rounded-[5px] border border-slate-300 focus:border-[#9575cd] outline-none"
               />
             </div>
 
             <div className="relative" ref={filterRef}>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`h-10 px-4 border rounded-lg flex items-center gap-2 text-xs font-bold transition-colors ${
+                className={`h-[24px] xl:h-[26px] px-2.5 border rounded-[5px] flex items-center gap-1.5 text-[11px] xl:text-[12px] font-medium transition-colors shadow-2xs ${
                   showFilters || activeFilterCount > 0
                     ? "bg-purple-50 border-[#9575cd] text-[#9575cd]"
-                    : "bg-white border-slate-200 text-slate-600 hover:border-[#9575cd] hover:text-[#9575cd]"
+                    : "bg-white border-slate-300 text-slate-700"
                 }`}
               >
-                <Filter size={14} /> FILTER
+                <Filter size={12} /> Filter
                 {activeFilterCount > 0 && (
-                  <span className="bg-[#9575cd] text-white text-[9px] px-1.5 py-0.5 rounded-full">
+                  <span className="bg-[#9575cd] text-white text-[9px] px-1 py-0.2 rounded-full">
                     {activeFilterCount}
                   </span>
                 )}
                 <ChevronDown
-                  size={12}
+                  size={11}
                   className={`transition-transform ${showFilters ? "rotate-180" : ""}`}
                 />
               </button>
@@ -348,23 +351,15 @@ export default function CentralParametersLibraryView() {
           </div>
 
           <div className="flex-1 overflow-hidden flex flex-col bg-white">
-            <div className="h-10 bg-slate-50 border-b border-slate-200 flex items-center px-6 shrink-0">
-              <div className="w-40 text-[10px] font-bold text-slate-500 uppercase">Code</div>
-              <div className="flex-1 text-[10px] font-bold text-slate-500 uppercase">
-                Parameter Name
-              </div>
-              <div className="flex-1 text-[10px] font-bold text-slate-500 uppercase">
-                Associated Test
-              </div>
-              <div className="w-24 text-[10px] font-bold text-slate-500 uppercase">Units</div>
-              <div className="w-24 text-[10px] font-bold text-slate-500 uppercase">Type</div>
-              <div className="w-24 text-[10px] font-bold text-slate-500 uppercase">Format</div>
-              <div className="w-24 text-center text-[10px] font-bold text-slate-500 uppercase">
-                Status
-              </div>
-              <div className="w-24 text-center text-[10px] font-bold text-slate-500 uppercase">
-                Action
-              </div>
+            <div className="h-[28px] xl:h-[30px] bg-[#9575cd] border-b border-[#7e57c2] flex items-center px-4 shrink-0 text-white font-medium text-[11px] uppercase tracking-wider leading-none">
+              <div className="w-36">Code</div>
+              <div className="flex-1">Parameter Name</div>
+              <div className="flex-1">Associated Test</div>
+              <div className="w-20">Units</div>
+              <div className="w-20">Type</div>
+              <div className="w-20">Format</div>
+              <div className="w-20 text-center">Status</div>
+              <div className="w-20 text-center">Action</div>
             </div>
 
             <div className="flex-1 overflow-y-auto">
