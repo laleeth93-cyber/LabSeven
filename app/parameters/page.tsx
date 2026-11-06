@@ -8,7 +8,8 @@ import { getParameters, deleteParameter, updateParameterStatus } from '@/app/act
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 import { usePermissions } from '@/app/context/PermissionContext';
 
-export default function ParametersListPage({ embedded = true }: { embedded?: boolean } = {}) {
+export default function ParametersListPage(props: any) {
+  const embedded = props?.embedded ?? true;
   const { orgId, permissions, userRole, permsLoaded } = usePermissions();
 
   const [parameters, setParameters] = useState<any[]>([]);

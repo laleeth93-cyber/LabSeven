@@ -12,7 +12,8 @@ import {
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 import { usePermissions } from '@/app/context/PermissionContext';
 
-export default function DepartmentPage({ embedded = false }: { embedded?: boolean } = {}) {
+export default function DepartmentPage(props: any) {
+  const embedded = props?.embedded ?? false;
   const { orgId, permissions, userRole, permsLoaded } = usePermissions();
 
   const [departments, setDepartments] = useState<any[]>([]);

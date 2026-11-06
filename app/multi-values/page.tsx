@@ -5,7 +5,8 @@ import { Save, Loader2, ListTree, Edit2, Trash2, Plus, CheckCircle, Search, Chev
 import { getInterpretationsPaginated, saveMicrobiologyMaster, deleteMicrobiologyMaster, deleteAllMicrobiologyMaster } from '@/app/actions/microbiology';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 
-export default function MultiValuesPage({ embedded = false }: { embedded?: boolean }) {
+export default function MultiValuesPage(props: any) {
+    const embedded = props?.embedded ?? false;
     const [isPending, startTransition] = useTransition();
     const [isLoading, setIsLoading] = useState(true);
     const [isTableLoading, setIsTableLoading] = useState(false);

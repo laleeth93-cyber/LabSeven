@@ -6,7 +6,8 @@ import { getMicrobiologyMaster, getOrganismsPaginated, saveMicrobiologyMaster, d
 import * as XLSX from 'xlsx';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 
-export default function OrganismsPage({ embedded = false }: { embedded?: boolean }) {
+export default function OrganismsPage(props: any) {
+    const embedded = props?.embedded ?? false;
     const [isPending, startTransition] = useTransition();
     const [isLoading, setIsLoading] = useState(true);
     const [isTableLoading, setIsTableLoading] = useState(false);

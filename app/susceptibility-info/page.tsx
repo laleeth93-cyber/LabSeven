@@ -5,7 +5,8 @@ import { Save, Loader2, Search, Bug, Pill, CheckCircle, ChevronLeft, ChevronRigh
 import { getOrganismsPaginated, getMicrobiologyMaster, saveMicrobiologyMaster, deleteMicrobiologyMaster } from '@/app/actions/microbiology';
 import MusicBarLoader from '@/app/components/MusicBarLoader';
 
-export default function SusceptibilityInfoPage({ embedded = false }: { embedded?: boolean }) {
+export default function SusceptibilityInfoPage(props: any) {
+    const embedded = props?.embedded ?? false;
     const [isPending, startTransition] = useTransition();
     
     // UI Loading States
