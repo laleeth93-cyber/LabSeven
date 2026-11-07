@@ -39,8 +39,8 @@ export default withAuth(
   }
 );
 
-// Explicitly match all routes, letting the 'authorized' callback handle the logic
+// Explicitly match all routes except NextAuth internal endpoints and static assets
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|logo\\.png).*)'],
+  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico|logo\\.png).*)'],
 };
 // --- BLOCK middleware.ts CLOSE ---

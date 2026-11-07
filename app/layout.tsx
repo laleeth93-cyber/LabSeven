@@ -8,6 +8,8 @@ import { NextAuthProvider } from "@/app/components/NextAuthProvider";
 import { PermissionProvider } from "@/app/context/PermissionContext";
 import { Toaster } from "react-hot-toast";
 import { Suspense } from "react"; 
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth"; 
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' }); 
 
@@ -39,16 +41,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerSession(authOptions);
+
   return (
     <html lang="en" className="h-full">
       <body className={`${inter.className} bg-gray-50 subpixel-antialiased flex flex-col h-full min-h-screen overflow-hidden`}>
         
-        <NextAuthProvider>
+        <NextAuthProvider session={session}>
             {/* WRAP THE APP IN THE PERMISSION PROVIDER */}
             <PermissionProvider>
                 <Toaster 

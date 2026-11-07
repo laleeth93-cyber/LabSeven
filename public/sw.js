@@ -10,6 +10,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Never intercept auth endpoints to avoid Service Worker thread latency
+  if (event.request.url.includes('/api/auth/')) {
+    return;
+  }
+
   // Pass-through fetch handler for PWA criteria
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
